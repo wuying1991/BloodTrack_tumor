@@ -1,0 +1,51 @@
+.App {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.App-header {
+  background-color: #4a90e2;
+  padding: 20px;
+  color: white;
+}
+
+.App-content {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Error message */
+.error-message {
+  background-color: #d0021b;
+  color: white;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+/* Success message */
+.success-message {
+  background-color: #50e3c2;
+  color: #333;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+/* Warning message */
+.warning-message {
+  background-color: #f5a623;
+  color: white;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+}

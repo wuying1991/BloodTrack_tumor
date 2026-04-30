@@ -1,0 +1,44 @@
+import mongoose, { Document, Schema } from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+export interface IUser extends Document {
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date;
+  gender: string;
+  settings: {
+    notifications: { email: boolean; push: boolean };
+    dataSharing: { enabled: boolean; sharedWith: string[] };
+  };
+  comparePassword(candidatePassword: string): Promise<boolean>;
+}
+
+const userSchema = new Schema<IUser>(
+  {
+    email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+    passwordHash: { type: String, required: true },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    dateOfBirth: { type: Date, required: true },
+    gender: { type: String, required: true },
+    settings: {
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true }
+      },
+      dataSharing: {
+        enabled: { type: Boolean, default: false },
+        sharedWith: [{ type: String }]
+      }
+    }
+  },
+  { timestamps: true }
+);
+
+userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.passwordHash);
+};
+
+export const User = mongoose.model<IUser>('User', userSchema);

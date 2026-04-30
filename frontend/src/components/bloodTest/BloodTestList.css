@@ -1,0 +1,248 @@
+.blood-test-list {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading and error states */
+.blood-test-list.loading,
+.blood-test-list.error,
+.blood-test-list.empty {
+  text-align: center;
+  padding: 3rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4a90e2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-hint {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* List header */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.list-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.record-count {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Table container */
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+/* Blood test table */
+.blood-test-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.blood-test-table th,
+.blood-test-table td {
+  padding: 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.blood-test-table th {
+  background-color: #f8f9fa;
+  color: #555;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.blood-test-table th small {
+  color: #888;
+  font-weight: normal;
+}
+
+.blood-test-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.blood-test-table tbody tr.abnormal {
+  background-color: #fff5f5;
+}
+
+.blood-test-table tbody tr.abnormal:hover {
+  background-color: #ffe0e0;
+}
+
+/* Cell styles */
+.date-cell {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.abnormal-badge {
+  display: inline-block;
+  background-color: #d0021b;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  margin-left: 0.5rem;
+  font-weight: normal;
+}
+
+.value-cell {
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+}
+
+.value-cell.abnormal-value {
+  color: #d0021b;
+  font-weight: 600;
+}
+
+.notes-cell {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #666;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+/* Action buttons */
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin: 0 0.25rem;
+  font-size: 1.1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.btn-icon:hover {
+  opacity: 1;
+}
+
+.btn-edit:hover {
+  color: #4a90e2;
+}
+
+.btn-delete:hover {
+  color: #d0021b;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid #eee;
+}
+
+.btn-page {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  border-color: #4a90e2;
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Legend */
+.list-legend {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.list-legend p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.legend-abnormal {
+  background-color: #d0021b;
+  color: white;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.legend-arrows {
+  color: #d0021b;
+  font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .blood-test-list {
+    padding: 1rem;
+  }
+
+  .blood-test-table {
+    font-size: 0.8rem;
+  }
+
+  .blood-test-table th,
+  .blood-test-table td {
+    padding: 0.5rem;
+  }
+
+  .notes-cell {
+    max-width: 80px;
+  }
+
+  .btn-icon {
+    font-size: 1rem;
+  }
+}

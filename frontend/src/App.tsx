@@ -1,0 +1,73 @@
+import React from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
+import './App.css';
+import Layout from './components/Layout/Layout';
+import Dashboard from './pages/dashboard/Dashboard';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import BloodTests from './pages/bloodTests/BloodTests';
+import ChemoCycles from './pages/chemoCycles/ChemoCycles';
+import Analytics from './pages/Analytics/Analytics';
+import Settings from './pages/settings/Settings';
+import { AuthProvider } from './context/AuthContext';
+import {
+  ProtectedRoute,
+  PublicOnlyRoute,
+} from './components/auth/ProtectedRoute';
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            {/* Public only routes - redirect to dashboard if logged in */}
+            <Route
+              path="/login"
+              element={
+                <PublicOnlyRoute>
+                  <Login />
+                </PublicOnlyRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicOnlyRoute>
+                  <Register />
+                </PublicOnlyRoute>
+              }
+            />
+
+            {/* Protected routes - require authentication */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="blood-tests" element={<BloodTests />} />
+              <Route path="chemo-cycles" element={<ChemoCycles />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+
+            {/* Catch all - redirect to dashboard if authenticated, otherwise to login */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
+  );
+}
+
+export default App;
