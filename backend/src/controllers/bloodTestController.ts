@@ -61,15 +61,10 @@ export const createBloodTest = asyncHandler(async (req: AuthRequest, res: Respon
 // @route   GET /api/blood-tests/:id
 // @access  Private
 export const getBloodTestById = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const bloodTest = await BloodTest.findById(req.params.id);
+  const bloodTest = await BloodTest.findOne({ _id: req.params.id, user: req.user?._id });
 
   if (!bloodTest) {
     throw ApiError.notFound('记录未找到 (Record not found)');
-  }
-
-  // Check if the blood test belongs to the logged in user
-  if (bloodTest.user.toString() !== req.user?._id.toString()) {
-    throw ApiError.forbidden('无权访问此记录 (Not authorized to access this record)');
   }
 
   res.json({
@@ -82,22 +77,15 @@ export const getBloodTestById = asyncHandler(async (req: AuthRequest, res: Respo
 // @route   PUT /api/blood-tests/:id
 // @access  Private
 export const updateBloodTest = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const bloodTest = await BloodTest.findById(req.params.id);
-
-  if (!bloodTest) {
-    throw ApiError.notFound('记录未找到 (Record not found)');
-  }
-
-  // Check if the blood test belongs to the logged in user
-  if (bloodTest.user.toString() !== req.user?._id.toString()) {
-    throw ApiError.forbidden('无权访问此记录 (Not authorized to access this record)');
-  }
-
-  const updatedTest = await BloodTest.findByIdAndUpdate(
-    req.params.id,
+  const updatedTest = await BloodTest.findOneAndUpdate(
+    { _id: req.params.id, user: req.user?._id },
     req.body,
     { new: true, runValidators: true }
   );
+
+  if (!updatedTest) {
+    throw ApiError.notFound('记录未找到 (Record not found)');
+  }
 
   res.json({
     success: true,
@@ -109,18 +97,11 @@ export const updateBloodTest = asyncHandler(async (req: AuthRequest, res: Respon
 // @route   DELETE /api/blood-tests/:id
 // @access  Private
 export const deleteBloodTest = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const bloodTest = await BloodTest.findById(req.params.id);
+  const result = await BloodTest.deleteOne({ _id: req.params.id, user: req.user?._id });
 
-  if (!bloodTest) {
+  if (result.deletedCount === 0) {
     throw ApiError.notFound('记录未找到 (Record not found)');
   }
-
-  // Check if the blood test belongs to the logged in user
-  if (bloodTest.user.toString() !== req.user?._id.toString()) {
-    throw ApiError.forbidden('无权访问此记录 (Not authorized to access this record)');
-  }
-
-  await BloodTest.deleteOne({ _id: req.params.id });
 
   res.json({
     success: true,

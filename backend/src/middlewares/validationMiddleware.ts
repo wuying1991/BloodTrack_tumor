@@ -206,4 +206,114 @@ export const validateId = runValidation([
     .withMessage('无效的资源ID (Invalid resource ID)'),
 ]);
 
+// Chemo cycle validation
+export const validateChemoCycle = runValidation([
+  body('startDate')
+    .notEmpty()
+    .withMessage('开始日期是必需的 (Start date is required)')
+    .isISO8601()
+    .withMessage('请输入有效的日期格式'),
+  body('endDate')
+    .notEmpty()
+    .withMessage('结束日期是必需的 (End date is required)')
+    .isISO8601()
+    .withMessage('请输入有效的日期格式')
+    .custom((value, { req }) => {
+      if (new Date(value) < new Date(req.body.startDate)) {
+        throw new Error('结束日期必须晚于开始日期');
+      }
+      return true;
+    }),
+  body('medications')
+    .isArray({ min: 1 })
+    .withMessage('至少需要一种药物'),
+  body('medications.*.name')
+    .notEmpty()
+    .withMessage('药物名称是必需的'),
+  body('medications.*.dosage')
+    .notEmpty()
+    .withMessage('药物剂量是必需的'),
+  body('medications.*.schedule')
+    .notEmpty()
+    .withMessage('用药时间表是必需的'),
+  body('doctorNotes')
+    .optional()
+    .isString()
+    .withMessage('医生备注必须是文本'),
+]);
+
+// Update validation - all fields optional
+export const validateChemoCycleUpdate = runValidation([
+  body('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('请输入有效的日期格式'),
+  body('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('请输入有效的日期格式'),
+  body('medications')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('至少需要一种药物'),
+  body('medications.*.name')
+    .optional()
+    .notEmpty()
+    .withMessage('药物名称不能为空'),
+  body('medications.*.dosage')
+    .optional()
+    .notEmpty()
+    .withMessage('药物剂量不能为空'),
+  body('medications.*.schedule')
+    .optional()
+    .notEmpty()
+    .withMessage('用药时间表不能为空'),
+  body('doctorNotes')
+    .optional()
+    .isString()
+    .withMessage('医生备注必须是文本'),
+]);
+
+// Profile update validation
+export const validateProfileUpdate = runValidation([
+  body('firstName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('名字不能为空 (First name cannot be empty)'),
+  body('lastName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('姓氏不能为空 (Last name cannot be empty)'),
+  body('dateOfBirth')
+    .optional()
+    .isISO8601()
+    .withMessage('请输入有效的日期格式'),
+  body('gender')
+    .optional()
+    .isIn(['male', 'female', 'other', 'prefer-not-to-say'])
+    .withMessage('请选择有效的性别选项'),
+]);
+
+// Settings update validation
+export const validateSettingsUpdate = runValidation([
+  body('notifications.email')
+    .optional()
+    .isBoolean()
+    .withMessage('邮件通知设置必须为布尔值'),
+  body('notifications.push')
+    .optional()
+    .isBoolean()
+    .withMessage('推送通知设置必须为布尔值'),
+  body('dataSharing.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('数据共享设置必须为布尔值'),
+  body('dataSharing.sharedWith')
+    .optional()
+    .isArray()
+    .withMessage('共享用户列表必须为数组'),
+]);
+
 export default validate;

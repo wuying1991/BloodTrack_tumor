@@ -15,6 +15,7 @@ interface AuthContextType {
   login: (accessToken: string, refreshToken: string, user: User) => void;
   logout: () => void;
   refreshAccessToken: () => Promise<boolean>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -258,12 +259,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [clearTimers]);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const response = await authService.getProfile();
+      if (response.success) {
+        setUser(response.data);
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+    } catch {
+      // silently fail — user state remains unchanged
+    }
+  }, []);
+
   const value = {
     user,
     accessToken,
     login,
     logout,
     refreshAccessToken,
+    refreshUser,
     isAuthenticated: !!accessToken,
     isLoading,
   };

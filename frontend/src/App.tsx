@@ -10,6 +10,8 @@ import Layout from './components/Layout/Layout';
 import Dashboard from './pages/dashboard/Dashboard';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import BloodTests from './pages/bloodTests/BloodTests';
 import ChemoCycles from './pages/chemoCycles/ChemoCycles';
 import Analytics from './pages/Analytics/Analytics';
@@ -43,6 +45,8 @@ function App() {
                 </PublicOnlyRoute>
               }
             />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected routes - require authentication */}
             <Route

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -158,5 +159,172 @@ export const logoutUser = asyncHandler(async (req: AuthRequest, res: Response): 
   res.json({
     success: true,
     message: '已成功登出 (Logged out successfully)',
+  });
+});
+
+// @desc    Forgot password - send reset token
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw ApiError.notFound('该邮箱未注册 (Email not found)');
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const salt = await bcrypt.genSalt(12);
+  const hashedToken = await bcrypt.hash(resetToken, salt);
+
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  await user.save();
+
+  // In production, send email here. For dev, return token in response.
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  res.json({
+    success: true,
+    message: '密码重置链接已发送至您的邮箱 (Reset link sent to your email)',
+    ...(isDev && { resetToken }),
+  });
+});
+
+// @desc    Reset password using token
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { token, password } = req.body;
+
+  const candidates = await User.find({
+    resetPasswordExpires: { $gt: new Date() },
+    resetPasswordToken: { $exists: true },
+  });
+
+  let matchedUser: typeof candidates[0] | null = null;
+  for (const candidate of candidates) {
+    const isValid = await bcrypt.compare(token, candidate.resetPasswordToken!);
+    if (isValid) {
+      matchedUser = candidate;
+      break;
+    }
+  }
+
+  if (!matchedUser) {
+    throw ApiError.badRequest('无效或已过期的重置令牌 (Invalid or expired reset token)');
+  }
+
+  const pwSalt = await bcrypt.genSalt(10);
+  matchedUser.passwordHash = await bcrypt.hash(password, pwSalt);
+  matchedUser.resetPasswordToken = undefined;
+  matchedUser.resetPasswordExpires = undefined;
+  await matchedUser.save();
+
+  res.json({
+    success: true,
+    message: '密码已成功重置 (Password has been reset)',
+  });
+});
+
+// @desc    Get current user profile
+// @route   GET /api/auth/profile
+// @access  Private
+export const getProfile = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const user = await User.findById(req.user?._id).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
+
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)');
+  }
+
+  res.json({
+    success: true,
+    data: {
+      _id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      settings: user.settings,
+      createdAt: (user as any).createdAt,
+      updatedAt: (user as any).updatedAt,
+    },
+  });
+});
+
+// @desc    Update current user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const fields: Record<string, unknown> = {};
+  if (req.body.firstName !== undefined) fields.firstName = req.body.firstName;
+  if (req.body.lastName !== undefined) fields.lastName = req.body.lastName;
+  if (req.body.dateOfBirth !== undefined) fields.dateOfBirth = req.body.dateOfBirth;
+  if (req.body.gender !== undefined) fields.gender = req.body.gender;
+
+  if (Object.keys(fields).length === 0) {
+    throw ApiError.badRequest('至少需要提供一个要更新的字段');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    { $set: fields },
+    { new: true, runValidators: true }
+  ).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
+
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)');
+  }
+
+  res.json({
+    success: true,
+    data: {
+      _id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      settings: user.settings,
+      createdAt: (user as any).createdAt,
+      updatedAt: (user as any).updatedAt,
+    },
+  });
+});
+
+// @desc    Update user settings (notifications & data sharing)
+// @route   PUT /api/auth/settings
+// @access  Private
+export const updateSettings = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { notifications, dataSharing } = req.body;
+
+  const updateFields: Record<string, unknown> = {};
+  if (notifications) {
+    if (notifications.email !== undefined) updateFields['settings.notifications.email'] = notifications.email;
+    if (notifications.push !== undefined) updateFields['settings.notifications.push'] = notifications.push;
+  }
+  if (dataSharing) {
+    if (dataSharing.enabled !== undefined) updateFields['settings.dataSharing.enabled'] = dataSharing.enabled;
+    if (dataSharing.sharedWith !== undefined) updateFields['settings.dataSharing.sharedWith'] = dataSharing.sharedWith;
+  }
+
+  if (Object.keys(updateFields).length === 0) {
+    throw ApiError.badRequest('至少需要提供一个设置项');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    { $set: updateFields },
+    { new: true }
+  ).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
+
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)');
+  }
+
+  res.json({
+    success: true,
+    data: user.settings,
   });
 });

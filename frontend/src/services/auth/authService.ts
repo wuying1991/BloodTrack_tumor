@@ -79,6 +79,38 @@ class AuthService {
     return apiClient.post<LogoutResponse>('/auth/logout', {});
   }
 
+  async forgotPassword(
+    email: string
+  ): Promise<{ success: boolean; message: string }> {
+    return apiClient.post('/auth/forgot-password', { email });
+  }
+
+  async resetPassword(
+    token: string,
+    password: string
+  ): Promise<{ success: boolean; message: string }> {
+    return apiClient.post('/auth/reset-password', { token, password });
+  }
+
+  async getProfile(): Promise<{ success: boolean; data: User }> {
+    return apiClient.get('/auth/profile');
+  }
+
+  async updateProfile(
+    fields: Partial<
+      Pick<User, 'firstName' | 'lastName' | 'dateOfBirth' | 'gender'>
+    >
+  ): Promise<{ success: boolean; data: User }> {
+    return apiClient.put('/auth/profile', fields);
+  }
+
+  async updateSettings(settings: {
+    notifications?: { email?: boolean; push?: boolean };
+    dataSharing?: { enabled?: boolean };
+  }): Promise<{ success: boolean; data: User['settings'] }> {
+    return apiClient.put('/auth/settings', settings);
+  }
+
   /**
    * Check if stored tokens are valid
    */
