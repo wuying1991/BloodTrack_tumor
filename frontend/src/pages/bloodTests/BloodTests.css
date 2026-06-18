@@ -96,3 +96,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.page-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}

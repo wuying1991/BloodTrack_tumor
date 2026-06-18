@@ -90,6 +90,21 @@ class BloodTestService {
   }
 
   /**
+   * 导出全部血常规为 CSV，触发浏览器下载
+   */
+  async exportCsv(): Promise<void> {
+    const blob = await apiClient.download('/blood-tests/export?format=csv');
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `blood-tests-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
+  /**
    * Convert form data to API data format
    */
   convertFormToApiData(formData: BloodTestFormData): Partial<BloodTest> {

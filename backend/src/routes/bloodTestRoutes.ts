@@ -1,10 +1,11 @@
 import express from 'express';
-import { 
-  getBloodTests, 
-  createBloodTest, 
-  getBloodTestById, 
-  updateBloodTest, 
-  deleteBloodTest 
+import {
+  getBloodTests,
+  createBloodTest,
+  getBloodTestById,
+  updateBloodTest,
+  deleteBloodTest,
+  exportBloodTests,
 } from '../controllers/bloodTestController';
 import { protect } from '../middlewares/authMiddleware';
 import { validateBloodTest, validateBloodTestUpdate, validatePagination, validateId } from '../middlewares/validationMiddleware';
@@ -17,6 +18,9 @@ router.use(protect);
 router.route('/')
   .get(validatePagination, getBloodTests)
   .post(validateBloodTest, createBloodTest);
+
+// 必须在 /:id 之前，否则会被 mongoId 校验拦截
+router.get('/export', exportBloodTests);
 
 router.route('/:id')
   .get(validateId, getBloodTestById)

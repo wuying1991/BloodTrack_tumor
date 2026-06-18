@@ -11,10 +11,10 @@
 | 后端 API 模块 | 5 / 5 | 5 | 100% |
 | 后端基础设施 | 6 / 6 | 6 | 100% |
 | 前端页面 | 9 / 9 | 9 | 100% |
-| 后端测试 | 38 | TBD | — |
+| 后端测试 | 46 | TBD | — |
 | 前端测试 | 22 | TBD | — |
 
-**项目总进度**: ████████████████░░░ 70%
+**项目总进度**: █████████████████░░ 80%
 
 ---
 
@@ -81,25 +81,35 @@
 
 | ID | 功能 | 预估 | 状态 |
 |----|------|------|------|
-| H-P1 | 前端 Settings 页面接入后端 profile/settings API | 0.5天 | ❌ |
+| ~~H-P1~~ | ~~前端 Settings 页面接入后端 profile/settings API~~ | 0.5天 | ✅ |
 | H-P2 | 前端补充测试 (Login, Register, BloodTests, Settings) | 3天 | ❌ |
+| ~~H-P3~~ | ~~修改密码 (PUT /api/auth/change-password + Settings 表单)~~ | 0.5天 | ✅ |
+| ~~H-P4~~ | ~~血常规 ↔ 化疗周期关联~~ | 1天 | ✅ |
+| ~~H-P5~~ | ~~数据导出 (CSV / 图表 PNG)~~ | 0.5天 | ✅ |
+| H-P6 | 提醒系统 (Reminder Model + API + 前端) | 6-8天 | ❌ |
 
 ### 🟡 中优先级
 
 | ID | 功能 | 预估 | 状态 |
 |----|------|------|------|
-| M-P1 | Settings 页面接入后端 | 0.5天 | ❌ (同上H-P1) |
+| ~~M-P1~~ | ~~Analytics 时间范围筛选 (1m/3m/6m/1y/全部)~~ | 0.5天 | ✅ |
+| ~~M-P2~~ | ~~Analytics 图表异常区间标记~~ | 0.5天 | ✅ |
+| M-P3 | Dashboard 接入提醒列表 (依赖 H-P6) | 0.5天 | ❌ |
+| M-P4 | 数据共享 (生成只读链接 + 撤销) | 2天 | ❌ |
+| M-P5 | 账户删除 (DELETE /api/auth/account, GDPR) | 0.5天 | ❌ |
 
 ### 🟢 低优先级
 
 | ID | 功能 | 预估 | 状态 |
 |----|------|------|------|
-| L-P1 | 提醒通知系统 (模型+API+前端) | 6-8天 | ❌ |
-| L-P2 | 数据共享 (链接+权限+只读) | 4天 | ❌ |
-| L-P3 | PWA 离线支持 | 3天 | ❌ |
-| L-P4 | 安全审计日志 | 2天 | ❌ |
-| L-P5 | CI/CD + Docker | 3天 | ❌ |
-| L-P6 | E2E 测试 (Cypress) | 3天 | ❌ |
+| L-P1 | PWA 离线支持 | 3天 | ❌ |
+| L-P2 | 安全审计日志 (异常登录检测) | 2天 | ❌ |
+| L-P3 | CI/CD + Docker | 3天 | ❌ |
+| L-P4 | E2E 测试 (Cypress) | 3天 | ❌ |
+| L-P5 | i18n / 国际化 (i18next) | 2天 | ❌ |
+| L-P6 | axios 升级到 1.x (CVE) | 0.1天 | ❌ |
+| L-P7 | JWT secret fallback 启动校验 (生产环境强制 env) | 0.1天 | ❌ |
+| L-P8 | 登录端点单独限流 (5/min vs 全局 100/15min) | 0.2天 | ❌ |
 
 ---
 
@@ -111,13 +121,37 @@
 | 前端 TypeScript 编译 | `cd frontend && npx tsc --noEmit` | ✅ 通过 |
 | 前端 ESLint | `cd frontend && npm run lint` | ✅ 0 错误 |
 | 后端契约测试 | `cd backend && npm run test:contract` | ✅ 16/16 |
-| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 22/22 |
+| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 30/30 |
+| 后端全部测试 | `cd backend && npx jest` | ✅ 46/46 |
 | 前端单元测试 | `cd frontend && npm test` | ✅ 22/22 |
 | 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 3/3 |
 
 ---
 
 ## 📅 变更日志
+
+### 2026-06-17（第二轮：Analytics 增强 + CSV 导出）
+- **M-P1 时间范围筛选**: `GET /api/analytics/trends?range=1m|3m|6m|1y|all`，前端 chip 切换；默认 3 月
+- **M-P2 图表异常标记**: 上下限红色虚线参考 dataset；超出范围的点用红色 + 加大半径；Tooltip 显示 高/低 标签；不引入 annotation 插件
+- **H-P5 数据导出**:
+  - 后端: `GET /api/blood-tests/export?format=csv`，UTF-8 BOM + CRLF + CSV 注入防护（`= + - @` 前置单引号），输出含周期日期、药物、是否异常等 11 列
+  - 前端: `apiClient.download()` 复用拦截器（auth + 自动刷新 token），blood-tests 页面"⬇ 导出 CSV"按钮；Analytics 页面 chart.js `toBase64Image()` "📷 导出图表" 按钮
+- 顺手修复: BloodTests 删除函数动态 import → 直接 import；Login/Register 之外的所有 `any` 警告清理
+- 路由顺序: `/blood-tests/export` 必须在 `/:id` 之前，否则被 `validateId` 拦截
+- 全部测试 46/46，契约 3/3，前端 lint 0 错误
+
+### 2026-06-17（第一轮：DEVLOG 修正 + 修改密码 + 周期关联）
+- **DEVLOG 修正**: H-P1 (Settings 接入后端) 标记为已完成，与代码现状对齐
+- **H-P3 修改密码**:
+  - 后端: `PUT /api/auth/change-password` + `validateChangePassword` + 集成测试 8 用例 (新旧密码相同/弱密码/不一致/错误密码/未授权/成功/旧密码失效/新密码登录)
+  - 前端: `authService.changePassword`，Settings 页面账户操作区改为可展开内嵌表单（替换原死按钮）
+- **H-P4 周期关联**:
+  - Model: `BloodTest.chemoCycleId` (可选 ObjectId, ref ChemoCycle)
+  - Controller: 新建/更新时若未显式传 chemoCycleId 则按 date 自动落入对应周期；显式 null 解除关联
+  - Validation: chemoCycleId 接受 24-hex / null / 空
+  - Contracts: contracts/index.ts、frontend types、contract-validator.js 三处同步
+  - 前端: BloodTestForm 加"自动按日期匹配 / 不关联 / 选择周期"下拉；BloodTestList 加"关联周期"列
+- 集成测试 22→30，全部测试 38→46 全绿；契约校验 3/3 通过
 
 ### 2026-04-30（今天第二轮）
 - **B1**: 实现用户资料 API (GET/PUT /api/auth/profile)
@@ -140,4 +174,4 @@
 - 第一次进度审查报告
 
 ---
-*最后更新: 2026-04-30*
+*最后更新: 2026-06-17*

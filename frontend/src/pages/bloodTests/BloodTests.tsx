@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { BloodTest } from '../../types';
 import BloodTestForm from '../../components/bloodTest/BloodTestForm';
 import BloodTestList from '../../components/bloodTest/BloodTestList';
+import bloodTestService from '../../services/bloodTest/bloodTestService';
+import { ApiError } from '../../services/api/apiClient';
 import './BloodTests.css';
 
 type ViewMode = 'list' | 'add' | 'edit';
@@ -12,6 +14,7 @@ const BloodTests: React.FC = () => {
     undefined
   );
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleAddNew = () => {
     setEditingTest(undefined);
@@ -26,14 +29,24 @@ const BloodTests: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('确定要删除这条记录吗？此操作无法撤销。')) {
       try {
-        const { default: bloodTestService } = await import(
-          '../../services/bloodTest/bloodTestService'
-        );
         await bloodTestService.deleteBloodTest(id);
         setRefreshTrigger(prev => prev + 1);
-      } catch (err: any) {
-        alert('删除失败: ' + (err.message || '请重试'));
+      } catch (err: unknown) {
+        const msg = err instanceof ApiError ? err.message : '请重试';
+        alert('删除失败: ' + msg);
       }
+    }
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await bloodTestService.exportCsv();
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : '导出失败，请重试';
+      alert(msg);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -53,9 +66,19 @@ const BloodTests: React.FC = () => {
       <div className="page-header">
         <h1>血常规记录</h1>
         {viewMode === 'list' && (
-          <button className="btn btn-primary" onClick={handleAddNew}>
-            + 添加记录
-          </button>
+          <div className="page-header-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={handleExport}
+              disabled={isExporting}
+              title="导出全部记录为 CSV"
+            >
+              {isExporting ? '导出中...' : '⬇ 导出 CSV'}
+            </button>
+            <button className="btn btn-primary" onClick={handleAddNew}>
+              + 添加记录
+            </button>
+          </div>
         )}
       </div>
 

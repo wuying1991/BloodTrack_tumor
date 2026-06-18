@@ -3,11 +3,30 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { BloodTest } from '../models/BloodTest';
 import { asyncHandler } from '../utils/asyncHandler';
 
+type RangeKey = '1m' | '3m' | '6m' | '1y' | 'all';
+
+const RANGE_DAYS: Record<Exclude<RangeKey, 'all'>, number> = {
+  '1m': 30,
+  '3m': 90,
+  '6m': 180,
+  '1y': 365,
+};
+
+function buildDateFilter(range: unknown): { date?: { $gte: Date } } {
+  const r = (typeof range === 'string' ? range : 'all') as RangeKey;
+  if (r === 'all' || !(r in RANGE_DAYS)) return {};
+  const days = RANGE_DAYS[r as Exclude<RangeKey, 'all'>];
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return { date: { $gte: since } };
+}
+
 // @desc    Get trend data for blood test values over time
-// @route   GET /api/analytics/trends
+// @route   GET /api/analytics/trends?range=1m|3m|6m|1y|all
 // @access  Private
 export const getTrends = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const tests = await BloodTest.find({ user: req.user?._id })
+  const dateFilter = buildDateFilter(req.query.range);
+
+  const tests = await BloodTest.find({ user: req.user?._id, ...dateFilter })
     .sort('date')
     .select('date wbc rbc hgb plt neu lym isAbnormal')
     .lean();

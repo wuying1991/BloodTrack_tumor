@@ -250,6 +250,17 @@ class ApiClient {
     const response: AxiosResponse<T> = await this.client.delete(url, config);
     return response.data;
   }
+
+  /**
+   * Download a file as Blob via GET (auth headers + refresh interceptor still apply)
+   */
+  async download(url: string, config?: AxiosRequestConfig): Promise<Blob> {
+    const response = await this.client.get<Blob>(url, {
+      ...config,
+      responseType: 'blob',
+    });
+    return response.data;
+  }
 }
 
 const apiClient = new ApiClient();

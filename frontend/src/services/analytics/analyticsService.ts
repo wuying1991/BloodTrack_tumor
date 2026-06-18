@@ -32,8 +32,10 @@ export interface SummaryData {
 }
 
 class AnalyticsService {
-  async getTrends(): Promise<{ success: boolean; data: TrendPoint[] }> {
-    return apiClient.get('/analytics/trends');
+  async getTrends(
+    range: '1m' | '3m' | '6m' | '1y' | 'all' = 'all'
+  ): Promise<{ success: boolean; data: TrendPoint[] }> {
+    return apiClient.get(`/analytics/trends?range=${range}`);
   }
 
   async getSummary(): Promise<{ success: boolean; data: SummaryData }> {
