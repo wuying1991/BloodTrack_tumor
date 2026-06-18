@@ -50,6 +50,11 @@ const Layout: React.FC = () => {
               </Link>
             </li>
             <li>
+              <Link to="/reminders" className="nav-link">
+                提醒管理
+              </Link>
+            </li>
+            <li>
               <Link to="/settings" className="nav-link">
                 设置
               </Link>

@@ -15,6 +15,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import BloodTests from './pages/bloodTests/BloodTests';
 import ChemoCycles from './pages/chemoCycles/ChemoCycles';
 import Analytics from './pages/Analytics/Analytics';
+import Reminders from './pages/reminders/Reminders';
 import Settings from './pages/settings/Settings';
 import { AuthProvider } from './context/AuthContext';
 import {
@@ -62,6 +63,7 @@ function App() {
               <Route path="blood-tests" element={<BloodTests />} />
               <Route path="chemo-cycles" element={<ChemoCycles />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="reminders" element={<Reminders />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

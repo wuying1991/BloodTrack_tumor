@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BloodTest } from '../../types';
 import bloodTestService from '../../services/bloodTest/bloodTestService';
+import reminderService, {
+  Reminder,
+} from '../../services/reminder/reminderService';
 import { useAuth } from '../../context/AuthContext';
 import './Dashboard.css';
 
@@ -21,18 +24,25 @@ const Dashboard: React.FC = () => {
     abnormalCount: 0,
     recentTests: [],
   });
+  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([]);
+  const [remindersError, setRemindersError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
     setError('');
+    setRemindersError('');
+
+    // 主数据 (血常规) 和提醒并行加载，提醒失败不影响主数据展示
+    const [bloodResult, reminderResult] = await Promise.allSettled([
+      bloodTestService.getBloodTests(1, 20),
+      reminderService.getUpcoming(7),
+    ]);
 
     try {
-      const response = await bloodTestService.getBloodTests(1, 20);
-
-      if (response.success) {
-        const tests = response.data;
+      if (bloodResult.status === 'fulfilled' && bloodResult.value.success) {
+        const tests = bloodResult.value.data;
         const abnormalCount = tests.filter(t => t.isAbnormal).length;
 
         let latestTestDate: string | null = null;
@@ -47,14 +57,23 @@ const Dashboard: React.FC = () => {
         }
 
         setStats({
-          totalTests: response.pagination.total,
+          totalTests: bloodResult.value.pagination.total,
           latestTestDate,
           abnormalCount,
           recentTests: tests.slice(0, 5),
         });
+      } else if (bloodResult.status === 'rejected') {
+        setError('加载失败，请检查网络连接后重试');
       }
-    } catch {
-      setError('加载失败，请检查网络连接后重试');
+
+      if (
+        reminderResult.status === 'fulfilled' &&
+        reminderResult.value.success
+      ) {
+        setUpcomingReminders(reminderResult.value.data);
+      } else if (reminderResult.status === 'rejected') {
+        setRemindersError('提醒加载失败');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -71,6 +90,28 @@ const Dashboard: React.FC = () => {
       month: '2-digit',
       day: '2-digit',
     });
+  };
+
+  const formatDueDateTime = (iso: string): string => {
+    const d = new Date(iso);
+    return d.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  /** "今天" / "明天" / "3 天后" / "已过期 2 天" 这种相对描述 */
+  const relativeDueLabel = (iso: string): string => {
+    const due = new Date(iso).getTime();
+    const now = Date.now();
+    const dayMs = 86400000;
+    const diff = Math.round((due - now) / dayMs);
+    if (diff < 0) return `已过期 ${-diff} 天`;
+    if (diff === 0) return '今天到期';
+    if (diff === 1) return '明天到期';
+    return `${diff} 天后到期`;
   };
 
   const formatValue = (value: number | undefined): string => {
@@ -129,6 +170,50 @@ const Dashboard: React.FC = () => {
             查看全部
           </button>
         </div>
+      </div>
+
+      <div className="upcoming-section">
+        <div className="section-header">
+          <h3>即将到期的提醒（7 天内）</h3>
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={() => navigate('/reminders')}
+          >
+            管理提醒
+          </button>
+        </div>
+        {remindersError ? (
+          <div className="upcoming-error">{remindersError}</div>
+        ) : upcomingReminders.length === 0 ? (
+          <div className="upcoming-empty">未来 7 天暂无待办提醒</div>
+        ) : (
+          <ul className="upcoming-list">
+            {upcomingReminders.map(r => {
+              const overdue = new Date(r.dueDate).getTime() < Date.now();
+              return (
+                <li
+                  key={r._id}
+                  className={`upcoming-item ${overdue ? 'overdue' : ''}`}
+                >
+                  <div className="upcoming-main">
+                    <span className="upcoming-title">{r.title}</span>
+                    {r.description && (
+                      <span className="upcoming-desc">{r.description}</span>
+                    )}
+                  </div>
+                  <div className="upcoming-meta">
+                    <span className="upcoming-relative">
+                      {relativeDueLabel(r.dueDate)}
+                    </span>
+                    <span className="upcoming-time">
+                      {formatDueDateTime(r.dueDate)}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {stats.totalTests === 0 ? (

@@ -10,6 +10,7 @@ import {
   updateProfile,
   updateSettings,
   changePassword,
+  deleteAccount,
 } from '../controllers/authController';
 import {
   validateRegister,
@@ -19,6 +20,7 @@ import {
   validateProfileUpdate,
   validateSettingsUpdate,
   validateChangePassword,
+  validateDeleteAccount,
 } from '../middlewares/validationMiddleware';
 import { protect } from '../middlewares/authMiddleware';
 
@@ -36,6 +38,7 @@ router.get('/profile', protect, getProfile);
 router.put('/profile', protect, validateProfileUpdate, updateProfile);
 router.put('/settings', protect, validateSettingsUpdate, updateSettings);
 router.put('/change-password', protect, validateChangePassword, changePassword);
+router.delete('/account', protect, validateDeleteAccount, deleteAccount);
 router.post('/logout', protect, logoutUser);
 
 export default router;

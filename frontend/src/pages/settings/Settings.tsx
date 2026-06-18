@@ -41,6 +41,12 @@ const Settings: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
+  // 删除账户确认流
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
   useEffect(() => {
     if (user) {
       setFormFirstName(user.firstName || '');
@@ -170,6 +176,31 @@ const Settings: React.FC = () => {
       newPassword: '',
       confirmPassword: '',
     });
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleteError('');
+
+    if (!deletePassword) {
+      setDeleteError('请输入密码以确认操作');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      await authService.deleteAccount(deletePassword);
+      // 删除成功后强制登出
+      await logout();
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setDeleteError(err.message || '删除失败');
+      } else {
+        setDeleteError('删除失败，请重试');
+      }
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -360,7 +391,65 @@ const Settings: React.FC = () => {
                   </div>
                 </form>
               )}
-            </div>
+              <div className="settings-divider" />
+
+              <h4 className="danger-zone-title">🗑️ 危险区域</h4>
+              <p className="danger-zone-desc">
+                删除账户后将永久移除您的所有数据（血常规记录、化疗周期、提醒等），此操作不可撤销。
+              </p>
+
+              {!showDeleteConfirm ? (
+                <button
+                  className="btn btn-danger"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  删除我的账户
+                </button>
+              ) : (
+                <form
+                  className="delete-account-form"
+                  onSubmit={handleDeleteAccount}
+                >
+                  {deleteError && (
+                    <div className="save-message error">{deleteError}</div>
+                  )}
+                  <p className="delete-warn">
+                    ⚠️ 请输入您的密码以确认删除账户。所有数据将永久丢失。
+                  </p>
+                  <div className="form-group">
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={deletePassword}
+                      onChange={e => setDeletePassword(e.target.value)}
+                      placeholder="输入密码确认"
+                      required
+                    />
+                  </div>
+                  <div className="account-actions">
+                    <button
+                      type="submit"
+                      className="btn btn-danger"
+                      disabled={isDeletingAccount}
+                    >
+                      {isDeletingAccount ? '处理中...' : '确认删除账户'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeletePassword('');
+                        setDeleteError('');
+                      }}
+                      disabled={isDeletingAccount}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </form>
+              )}
+              </div>
           )}
 
           {activeTab === 'notifications' && (

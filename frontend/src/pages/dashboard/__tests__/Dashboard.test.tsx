@@ -5,12 +5,21 @@ import '@testing-library/jest-dom';
 import Dashboard from '../../../pages/dashboard/Dashboard';
 
 import bloodTestService from '../../../services/bloodTest/bloodTestService';
+import reminderService from '../../../services/reminder/reminderService';
 
 // Mock bloodTestService
 jest.mock('../../../services/bloodTest/bloodTestService', () => ({
   __esModule: true,
   default: {
     getBloodTests: jest.fn(),
+  },
+}));
+
+// Mock reminderService — 默认空数组，避免每个测试都要显式 mock
+jest.mock('../../../services/reminder/reminderService', () => ({
+  __esModule: true,
+  default: {
+    getUpcoming: jest.fn().mockResolvedValue({ success: true, data: [] }),
   },
 }));
 
@@ -94,6 +103,11 @@ const renderDashboard = () => {
 describe('Dashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // clearAllMocks 也会清掉 jest.mock factory 的默认实现，需要每次重新装
+    (reminderService.getUpcoming as jest.Mock).mockResolvedValue({
+      success: true,
+      data: [],
+    });
   });
 
   describe('数据加载状态', () => {
@@ -203,6 +217,65 @@ describe('Dashboard', () => {
       await waitFor(() => {
         expect(screen.getByText(/加载失败/)).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('即将到期提醒', () => {
+    beforeEach(() => {
+      (bloodTestService.getBloodTests as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: [],
+        pagination: { page: 1, limit: 20, total: 0, pages: 0 },
+      });
+    });
+
+    it('无提醒时显示空态文案', async () => {
+      (reminderService.getUpcoming as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: [],
+      });
+      renderDashboard();
+      await waitFor(() => {
+        expect(screen.getByText(/未来 7 天暂无待办提醒/)).toBeInTheDocument();
+      });
+    });
+
+    it('有提醒时渲染条目和到期文案', async () => {
+      const future = new Date(Date.now() + 86400000 * 2).toISOString();
+      (reminderService.getUpcoming as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: [
+          {
+            _id: 'r1',
+            user: 'u1',
+            title: '复查血常规',
+            description: '空腹',
+            type: 'blood-test',
+            dueDate: future,
+            recurrence: 'none',
+            enabled: true,
+            completed: false,
+            notifications: { email: true, push: true },
+          },
+        ],
+      });
+      renderDashboard();
+      await waitFor(() => {
+        expect(screen.getByText('复查血常规')).toBeInTheDocument();
+      });
+      expect(screen.getByText(/天后到期|今天到期|明天到期/)).toBeInTheDocument();
+    });
+
+    it('提醒接口失败显示错误，不影响主数据', async () => {
+      (reminderService.getUpcoming as jest.Mock).mockRejectedValueOnce(
+        new Error('Network Error')
+      );
+      renderDashboard();
+      await waitFor(() => {
+        expect(screen.getByText(/提醒加载失败/)).toBeInTheDocument();
+      });
+      // 主数据 (空态) 仍正常展示
+      expect(screen.getByText(/暂无血常规数据/)).toBeInTheDocument();
     });
   });
 });

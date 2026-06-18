@@ -32,3 +32,108 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* 即将到期提醒区块 */
+.upcoming-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.upcoming-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.upcoming-section h3 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 1.05rem;
+}
+
+.upcoming-empty,
+.upcoming-error {
+  padding: 0.75rem;
+  text-align: center;
+  color: #718096;
+  font-size: 0.9rem;
+  background: #f7fafc;
+  border-radius: 4px;
+}
+
+.upcoming-error {
+  color: #c53030;
+  background: #fff5f5;
+}
+
+.upcoming-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upcoming-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.8rem;
+  background: #f7fafc;
+  border-left: 3px solid #4299e1;
+  border-radius: 4px;
+}
+
+.upcoming-item.overdue {
+  border-left-color: #e53e3e;
+  background: #fff5f5;
+}
+
+.upcoming-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.upcoming-title {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.upcoming-desc {
+  font-size: 0.85rem;
+  color: #718096;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.upcoming-relative {
+  font-weight: 600;
+  color: #2b6cb0;
+  font-size: 0.9rem;
+}
+
+.upcoming-item.overdue .upcoming-relative {
+  color: #c53030;
+}
+
+.upcoming-time {
+  font-size: 0.8rem;
+  color: #718096;
+}

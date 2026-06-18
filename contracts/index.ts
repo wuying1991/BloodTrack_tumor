@@ -140,6 +140,53 @@ export type BloodTestResponse = ApiResponse<BloodTest>;
 export type BloodTestDeleteResponse = ApiResponse<{ message: string }>;
 
 // ============================================================
+// 提醒 (Reminder)
+// ============================================================
+
+export type ReminderType =
+  | 'blood-test'
+  | 'chemo-cycle'
+  | 'medication'
+  | 'follow-up'
+  | 'custom';
+
+export type ReminderRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface Reminder {
+  _id: string;
+  user: string;
+  title: string;
+  description?: string;
+  type: ReminderType;
+  dueDate: string;
+  recurrence: ReminderRecurrence;
+  enabled: boolean;
+  completed: boolean;
+  notifications: { email: boolean; push: boolean };
+  lastTriggeredAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ReminderCreateRequest {
+  title: string;
+  description?: string;
+  type?: ReminderType;
+  dueDate: string;
+  recurrence?: ReminderRecurrence;
+  enabled?: boolean;
+  notifications?: { email?: boolean; push?: boolean };
+}
+
+export type ReminderUpdateRequest = Partial<ReminderCreateRequest> & {
+  completed?: boolean;
+};
+
+export type ReminderListResponse = ApiResponse<Reminder[]>;
+export type ReminderResponse = ApiResponse<Reminder>;
+export type ReminderDeleteResponse = ApiResponse<{ message: string }>;
+
+// ============================================================
 // 正常参考范围
 // ============================================================
 

@@ -37,6 +37,7 @@ jest.mock('../../../services/auth/authService', () => ({
     updateProfile: jest.fn(),
     updateSettings: jest.fn(),
     changePassword: jest.fn(),
+    deleteAccount: jest.fn(),
   },
 }));
 
@@ -233,5 +234,80 @@ describe('Settings', () => {
     render(<Settings />);
     await userEvent.click(screen.getByRole('button', { name: '退出登录' }));
     expect(mockLogout).toHaveBeenCalled();
+  });
+
+  describe('删除账户', () => {
+    it('点击 "删除我的账户" 展开确认表单', async () => {
+      render(<Settings />);
+      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      expect(
+        screen.getByRole('button', { name: '确认删除账户' })
+      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('输入密码确认')).toBeInTheDocument();
+    });
+
+    it('取消按钮关闭确认表单并清空输入', async () => {
+      render(<Settings />);
+      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      const input = screen.getByPlaceholderText('输入密码确认');
+      await userEvent.type(input, 'somepassword');
+      await userEvent.click(screen.getByRole('button', { name: '取消' }));
+      expect(
+        screen.queryByRole('button', { name: '确认删除账户' })
+      ).not.toBeInTheDocument();
+    });
+
+    it('未输入密码直接提交显示校验文案', async () => {
+      render(<Settings />);
+      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '确认删除账户' })
+      );
+      expect(
+        await screen.findByText('请输入密码以确认操作')
+      ).toBeInTheDocument();
+      expect(authService.deleteAccount).not.toHaveBeenCalled();
+    });
+
+    it('密码正确 → 调用 deleteAccount + logout', async () => {
+      (authService.deleteAccount as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        message: 'ok',
+        data: { bloodTests: 3, chemoCycles: 1, reminders: 2 },
+      });
+      render(<Settings />);
+      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.type(
+        screen.getByPlaceholderText('输入密码确认'),
+        'MyPass123!'
+      );
+      await userEvent.click(
+        screen.getByRole('button', { name: '确认删除账户' })
+      );
+      await waitFor(() => {
+        expect(authService.deleteAccount).toHaveBeenCalledWith('MyPass123!');
+      });
+      // 删除成功后应调 logout
+      await waitFor(() => {
+        expect(mockLogout).toHaveBeenCalled();
+      });
+    });
+
+    it('后端返回 ApiError 时显示 message 且不登出', async () => {
+      (authService.deleteAccount as jest.Mock).mockRejectedValueOnce(
+        new ApiError(401, '密码不正确')
+      );
+      render(<Settings />);
+      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.type(
+        screen.getByPlaceholderText('输入密码确认'),
+        'WrongPass!'
+      );
+      await userEvent.click(
+        screen.getByRole('button', { name: '确认删除账户' })
+      );
+      expect(await screen.findByText('密码不正确')).toBeInTheDocument();
+      expect(mockLogout).not.toHaveBeenCalled();
+    });
   });
 });

@@ -353,4 +353,103 @@ export const validateChangePassword = runValidation([
     }),
 ]);
 
+// Delete account validation - 仅需密码二次确认
+export const validateDeleteAccount = runValidation([
+  body('password')
+    .notEmpty()
+    .withMessage('请输入密码以确认删除 (Password is required to confirm deletion)'),
+]);
+
+// ============================================================
+// Reminder validation
+// ============================================================
+
+const REMINDER_TYPES = [
+  'blood-test',
+  'chemo-cycle',
+  'medication',
+  'follow-up',
+  'custom',
+];
+const REMINDER_RECURRENCES = ['none', 'daily', 'weekly', 'monthly'];
+
+export const validateReminderCreate = runValidation([
+  body('title')
+    .isString()
+    .trim()
+    .isLength({ min: 1, max: 120 })
+    .withMessage('标题必须为 1-120 字符 (Title must be 1-120 chars)'),
+  body('description')
+    .optional({ nullable: true })
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage('备注最多 1000 字符 (Description must be ≤1000 chars)'),
+  body('type')
+    .optional()
+    .isIn(REMINDER_TYPES)
+    .withMessage('提醒类型不合法 (Invalid reminder type)'),
+  body('dueDate')
+    .isISO8601()
+    .withMessage('请输入合法的到期日期 (Invalid due date)'),
+  body('recurrence')
+    .optional()
+    .isIn(REMINDER_RECURRENCES)
+    .withMessage('循环类型不合法 (Invalid recurrence)'),
+  body('enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('enabled 必须为布尔值'),
+  body('notifications.email')
+    .optional()
+    .isBoolean()
+    .withMessage('邮件通知必须为布尔值'),
+  body('notifications.push')
+    .optional()
+    .isBoolean()
+    .withMessage('推送通知必须为布尔值'),
+]);
+
+// Update: 全部字段 optional
+export const validateReminderUpdate = runValidation([
+  body('title')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 1, max: 120 })
+    .withMessage('标题必须为 1-120 字符 (Title must be 1-120 chars)'),
+  body('description')
+    .optional({ nullable: true })
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage('备注最多 1000 字符 (Description must be ≤1000 chars)'),
+  body('type')
+    .optional()
+    .isIn(REMINDER_TYPES)
+    .withMessage('提醒类型不合法 (Invalid reminder type)'),
+  body('dueDate')
+    .optional()
+    .isISO8601()
+    .withMessage('请输入合法的到期日期 (Invalid due date)'),
+  body('recurrence')
+    .optional()
+    .isIn(REMINDER_RECURRENCES)
+    .withMessage('循环类型不合法 (Invalid recurrence)'),
+  body('enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('enabled 必须为布尔值'),
+  body('completed')
+    .optional()
+    .isBoolean()
+    .withMessage('completed 必须为布尔值'),
+  body('notifications.email')
+    .optional()
+    .isBoolean()
+    .withMessage('邮件通知必须为布尔值'),
+  body('notifications.push')
+    .optional()
+    .isBoolean()
+    .withMessage('推送通知必须为布尔值'),
+]);
+
 export default validate;

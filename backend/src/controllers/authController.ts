@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User';
+import { BloodTest } from '../models/BloodTest';
+import { ChemoCycle } from '../models/ChemoCycle';
+import { Reminder } from '../models/Reminder';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -361,3 +364,43 @@ export const changePassword = asyncHandler(async (req: AuthRequest, res: Respons
     message: '密码已成功修改 (Password changed successfully)',
   });
 });
+
+// @desc    Delete current user's account and all related data (GDPR)
+// @route   DELETE /api/auth/account
+// @access  Private
+export const deleteAccount = asyncHandler(
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const { password } = req.body;
+    const userId = req.user?._id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw ApiError.notFound('用户未找到 (User not found)');
+    }
+
+    // 二次密码验证 - 防止误删 / token 被盗后远程销户
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      throw ApiError.unauthorized('密码不正确 (Password is incorrect)');
+    }
+
+    // 级联删除该用户的所有数据 (Mongoose 不支持事务时尽力而为：先数据后用户)
+    const [bloodTestsRes, chemoCyclesRes, remindersRes] = await Promise.all([
+      BloodTest.deleteMany({ user: userId }),
+      ChemoCycle.deleteMany({ user: userId }),
+      Reminder.deleteMany({ user: userId }),
+    ]);
+
+    await user.deleteOne();
+
+    res.json({
+      success: true,
+      message: '账户已删除 (Account deleted)',
+      data: {
+        bloodTests: bloodTestsRes.deletedCount,
+        chemoCycles: chemoCyclesRes.deletedCount,
+        reminders: remindersRes.deletedCount,
+      },
+    });
+  }
+);
