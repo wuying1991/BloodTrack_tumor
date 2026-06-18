@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth/authService';
+import { ApiError } from '../../services/api/apiClient';
 import './Settings.css';
 
 const Settings: React.FC = () => {
@@ -29,6 +30,16 @@ const Settings: React.FC = () => {
   const [dataSharing, setDataSharing] = useState({
     enabled: user?.settings?.dataSharing?.enabled ?? false,
   });
+
+  // 修改密码内嵌表单状态
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -106,6 +117,59 @@ const Settings: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    // 客户端预校验，与后端一致
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('两次输入的新密码不一致');
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('新密码至少需要6个字符');
+      return;
+    }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordForm.newPassword)) {
+      setPasswordError('新密码必须包含大小写字母和数字');
+      return;
+    }
+    if (passwordForm.newPassword === passwordForm.currentPassword) {
+      setPasswordError('新密码不能与当前密码相同');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await authService.changePassword(passwordForm);
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      setShowPasswordForm(false);
+      showToast('密码已成功修改');
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setPasswordError(err.message || '修改失败');
+      } else {
+        setPasswordError('修改失败，请重试');
+      }
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const cancelPasswordForm = () => {
+    setShowPasswordForm(false);
+    setPasswordError('');
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
   };
 
   return (
@@ -215,11 +279,87 @@ const Settings: React.FC = () => {
 
               <h4>账户操作</h4>
               <div className="account-actions">
-                <button className="btn btn-secondary">修改密码</button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowPasswordForm(prev => !prev)}
+                >
+                  {showPasswordForm ? '取消修改密码' : '修改密码'}
+                </button>
                 <button className="btn btn-danger" onClick={logout}>
                   退出登录
                 </button>
               </div>
+
+              {showPasswordForm && (
+                <form className="password-form" onSubmit={handleChangePassword}>
+                  {passwordError && (
+                    <div className="save-message error">{passwordError}</div>
+                  )}
+                  <div className="form-group">
+                    <label>当前密码</label>
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={passwordForm.currentPassword}
+                      onChange={e =>
+                        setPasswordForm(prev => ({
+                          ...prev,
+                          currentPassword: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>新密码</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={passwordForm.newPassword}
+                      onChange={e =>
+                        setPasswordForm(prev => ({
+                          ...prev,
+                          newPassword: e.target.value,
+                        }))
+                      }
+                      placeholder="至少6位，含大小写字母和数字"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>确认新密码</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={passwordForm.confirmPassword}
+                      onChange={e =>
+                        setPasswordForm(prev => ({
+                          ...prev,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="account-actions">
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={isChangingPassword}
+                    >
+                      {isChangingPassword ? '提交中...' : '确认修改'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={cancelPasswordForm}
+                      disabled={isChangingPassword}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
 

@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AuthRequest } from '../middlewares/authMiddleware';
+import { secrets } from '../config/secrets';
 
 // Token configurations
 const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes
@@ -15,16 +16,14 @@ const REFRESH_TOKEN_EXPIRES_IN = '7d'; // 7 days
  * Generate access token
  */
 const generateAccessToken = (id: string): string => {
-  const secret = process.env.JWT_SECRET || 'fallback_secret_key';
-  return jwt.sign({ id, type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
+  return jwt.sign({ id, type: 'access' }, secrets.jwt, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
 };
 
 /**
  * Generate refresh token
  */
 const generateRefreshToken = (id: string): string => {
-  const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'fallback_refresh_secret';
-  return jwt.sign({ id, type: 'refresh' }, secret, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  return jwt.sign({ id, type: 'refresh' }, secrets.jwtRefresh, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 };
 
 /**
@@ -122,8 +121,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response): Pr
   }
 
   try {
-    const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'fallback_refresh_secret';
-    const decoded = jwt.verify(refreshToken, secret) as { id: string; type: string };
+    const decoded = jwt.verify(refreshToken, secrets.jwtRefresh) as { id: string; type: string };
 
     if (decoded.type !== 'refresh') {
       throw ApiError.unauthorized('无效的刷新令牌 (Invalid refresh token)');
@@ -326,5 +324,40 @@ export const updateSettings = asyncHandler(async (req: AuthRequest, res: Respons
   res.json({
     success: true,
     data: user.settings,
+  });
+});
+
+// @desc    Change current user's password
+// @route   PUT /api/auth/change-password
+// @access  Private
+export const changePassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)');
+  }
+
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    throw ApiError.unauthorized('当前密码不正确 (Current password is incorrect)');
+  }
+
+  // 防止新旧密码相同
+  const isSame = await user.comparePassword(newPassword);
+  if (isSame) {
+    throw ApiError.badRequest('新密码不能与当前密码相同 (New password must differ from current)');
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  user.passwordHash = await bcrypt.hash(newPassword, salt);
+  // 修改密码后使所有 reset token 失效（如有）
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: '密码已成功修改 (Password changed successfully)',
   });
 });

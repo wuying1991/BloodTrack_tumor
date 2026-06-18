@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BloodTest } from '../../types';
 import bloodTestService from '../../services/bloodTest/bloodTestService';
+import chemoCycleService, {
+  ChemoCycle,
+} from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
 import './BloodTestList.css';
 
@@ -16,6 +19,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
   refreshTrigger,
 }) => {
   const [bloodTests, setBloodTests] = useState<BloodTest[]>([]);
+  const [cycleMap, setCycleMap] = useState<Record<string, ChemoCycle>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pagination, setPagination] = useState({
@@ -30,13 +34,18 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
     setError('');
 
     try {
-      const response = await bloodTestService.getBloodTests(
-        page,
-        pagination.limit
-      );
-      setBloodTests(response.data);
-      setPagination(response.pagination);
-    } catch (err: any) {
+      const [testsRes, cyclesRes] = await Promise.all([
+        bloodTestService.getBloodTests(page, pagination.limit),
+        chemoCycleService.getChemoCycles(1, 100).catch(() => null),
+      ]);
+      setBloodTests(testsRes.data);
+      setPagination(testsRes.pagination);
+      if (cyclesRes?.data) {
+        const map: Record<string, ChemoCycle> = {};
+        for (const c of cyclesRes.data) map[c._id] = c;
+        setCycleMap(map);
+      }
+    } catch (err: unknown) {
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
@@ -80,6 +89,23 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
     if (value < min) return '↓';
     if (value > max) return '↑';
     return '';
+  };
+
+  const renderCycleLabel = (cycleId?: string | null) => {
+    if (!cycleId) return <span className="cycle-empty">—</span>;
+    const c = cycleMap[cycleId];
+    if (!c) return <span className="cycle-empty">已关联（已删除？）</span>;
+    const start = new Date(c.startDate).toLocaleDateString('zh-CN');
+    const end = new Date(c.endDate).toLocaleDateString('zh-CN');
+    const drugs = (c.medications || [])
+      .map(m => m.name)
+      .filter(Boolean)
+      .join('、');
+    return (
+      <span className="cycle-label" title={drugs}>
+        {start}~{end}
+      </span>
+    );
   };
 
   if (loading) {
@@ -146,6 +172,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
                 <br />
                 <small>(×10⁹/L)</small>
               </th>
+              <th>关联周期</th>
               <th>备注</th>
               <th>操作</th>
             </tr>
@@ -198,6 +225,9 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
                 >
                   {renderValue(test.plt, '')}
                   {getAbnormalIndicator(test.plt, 100, 300)}
+                </td>
+                <td className="cycle-cell">
+                  {renderCycleLabel(test.chemoCycleId)}
                 </td>
                 <td className="notes-cell" title={test.notes || ''}>
                   {test.notes

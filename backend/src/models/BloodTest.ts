@@ -11,6 +11,7 @@ export interface IBloodTest extends Document {
   lym?: number; // Lymphocytes
   notes?: string;
   isAbnormal: boolean;
+  chemoCycleId?: mongoose.Types.ObjectId; // 关联的化疗周期
 }
 
 const bloodTestSchema = new Schema<IBloodTest>(
@@ -24,7 +25,8 @@ const bloodTestSchema = new Schema<IBloodTest>(
     neu: { type: Number },
     lym: { type: Number },
     notes: { type: String },
-    isAbnormal: { type: Boolean, default: false }
+    isAbnormal: { type: Boolean, default: false },
+    chemoCycleId: { type: Schema.Types.ObjectId, ref: 'ChemoCycle' },
   },
   { timestamps: true }
 );

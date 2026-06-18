@@ -10,6 +10,8 @@ export interface BloodTestFormData {
   neu: string;
   lym: string;
   notes: string;
+  /** '' 表示自动按日期匹配, 'none' 表示明确不关联, 否则为 cycleId */
+  chemoCycleId: string;
 }
 
 export interface PaginationData {
@@ -91,6 +93,15 @@ class BloodTestService {
    * Convert form data to API data format
    */
   convertFormToApiData(formData: BloodTestFormData): Partial<BloodTest> {
+    let chemoCycleId: string | null | undefined;
+    if (formData.chemoCycleId === 'none') {
+      chemoCycleId = null; // 明确解除/不关联
+    } else if (formData.chemoCycleId === '' || formData.chemoCycleId == null) {
+      chemoCycleId = undefined; // 让后端按日期自动匹配
+    } else {
+      chemoCycleId = formData.chemoCycleId;
+    }
+
     return {
       date: formData.date,
       wbc: formData.wbc ? parseFloat(formData.wbc) : 0,
@@ -100,6 +111,7 @@ class BloodTestService {
       neu: formData.neu ? parseFloat(formData.neu) : undefined,
       lym: formData.lym ? parseFloat(formData.lym) : undefined,
       notes: formData.notes || undefined,
+      ...(chemoCycleId !== undefined && { chemoCycleId }),
     };
   }
 
@@ -116,6 +128,7 @@ class BloodTestService {
       neu: bloodTest.neu?.toString() || '',
       lym: bloodTest.lym?.toString() || '',
       notes: bloodTest.notes || '',
+      chemoCycleId: bloodTest.chemoCycleId ?? '',
     };
   }
 }

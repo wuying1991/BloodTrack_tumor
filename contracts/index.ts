@@ -106,6 +106,7 @@ export interface BloodTest {
   lym?: number;
   notes?: string;
   isAbnormal: boolean;
+  chemoCycleId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -119,6 +120,8 @@ export interface BloodTestCreateRequest {
   neu?: number;
   lym?: number;
   notes?: string;
+  /** 显式关联到周期；不传则按 date 自动关联；显式传 null 解除关联 */
+  chemoCycleId?: string | null;
 }
 
 export type BloodTestUpdateRequest = Partial<BloodTestCreateRequest>;

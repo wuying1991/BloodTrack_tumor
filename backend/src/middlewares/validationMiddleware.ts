@@ -147,6 +147,15 @@ export const validateBloodTest = runValidation([
     .optional()
     .isString()
     .withMessage('备注必须是文本 (Notes must be text)'),
+  body('chemoCycleId')
+    .optional({ nullable: true })
+    .custom(value => {
+      if (value === null || value === '') return true;
+      if (typeof value !== 'string' || !/^[a-f\d]{24}$/i.test(value)) {
+        throw new Error('无效的化疗周期ID (Invalid chemo cycle id)');
+      }
+      return true;
+    }),
 ]);
 
 // Update validation - all fields optional (partial update)
@@ -183,6 +192,15 @@ export const validateBloodTestUpdate = runValidation([
     .optional()
     .isString()
     .withMessage('备注必须是文本 (Notes must be text)'),
+  body('chemoCycleId')
+    .optional({ nullable: true })
+    .custom(value => {
+      if (value === null || value === '') return true;
+      if (typeof value !== 'string' || !/^[a-f\d]{24}$/i.test(value)) {
+        throw new Error('无效的化疗周期ID (Invalid chemo cycle id)');
+      }
+      return true;
+    }),
 ]);
 
 // Pagination validation
@@ -314,6 +332,25 @@ export const validateSettingsUpdate = runValidation([
     .optional()
     .isArray()
     .withMessage('共享用户列表必须为数组'),
+]);
+
+// Change password validation
+export const validateChangePassword = runValidation([
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('请输入当前密码 (Current password is required)'),
+  body('newPassword')
+    .isLength({ min: 6 })
+    .withMessage('密码至少需要6个字符 (Password must be at least 6 characters)')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('密码必须包含大小写字母和数字 (Password must contain uppercase, lowercase and number)'),
+  body('confirmPassword')
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error('两次输入的新密码不一致 (Passwords do not match)');
+      }
+      return true;
+    }),
 ]);
 
 export default validate;

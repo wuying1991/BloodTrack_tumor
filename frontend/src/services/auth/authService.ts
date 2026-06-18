@@ -111,6 +111,14 @@ class AuthService {
     return apiClient.put('/auth/settings', settings);
   }
 
+  async changePassword(payload: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }): Promise<{ success: boolean; message: string }> {
+    return apiClient.put('/auth/change-password', payload);
+  }
+
   /**
    * Check if stored tokens are valid
    */

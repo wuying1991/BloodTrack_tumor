@@ -267,9 +267,105 @@ describe('Auth 全链路集成测试', () => {
   });
 
   // ============================================================
-  // 场景5: 登出
+  // 场景5: 修改密码 (已登录用户主动修改)
   // ============================================================
-  describe('场景5: 登出', () => {
+  describe('场景5: 修改密码', () => {
+    // 场景4 结束时密码已改为 'NewPass999!'
+    const oldPassword = 'NewPass999!';
+    const changedPassword = 'Changed888!';
+
+    it('PUT /api/auth/change-password - 无token返回401', async () => {
+      const res = await request(app)
+        .put('/api/auth/change-password')
+        .send({
+          currentPassword: oldPassword,
+          newPassword: changedPassword,
+          confirmPassword: changedPassword,
+        });
+      expect(res.status).toBe(401);
+    });
+
+    it('PUT /api/auth/change-password - 当前密码错误返回401', async () => {
+      const res = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: 'WrongPass1!',
+          newPassword: changedPassword,
+          confirmPassword: changedPassword,
+        });
+      expect(res.status).toBe(401);
+    });
+
+    it('PUT /api/auth/change-password - 两次新密码不一致返回422', async () => {
+      const res = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: oldPassword,
+          newPassword: changedPassword,
+          confirmPassword: 'Mismatch1!',
+        });
+      expect(res.status).toBe(422);
+    });
+
+    it('PUT /api/auth/change-password - 新密码强度不足返回422', async () => {
+      const res = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: oldPassword,
+          newPassword: 'weak',
+          confirmPassword: 'weak',
+        });
+      expect(res.status).toBe(422);
+    });
+
+    it('PUT /api/auth/change-password - 新旧密码相同返回400', async () => {
+      const res = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: oldPassword,
+          newPassword: oldPassword,
+          confirmPassword: oldPassword,
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('PUT /api/auth/change-password - 修改成功', async () => {
+      const res = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: oldPassword,
+          newPassword: changedPassword,
+          confirmPassword: changedPassword,
+        });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('POST /api/auth/login - 修改后旧密码登录失败', async () => {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: newUser.email, password: oldPassword });
+      expect(res.status).toBe(401);
+    });
+
+    it('POST /api/auth/login - 修改后新密码登录成功', async () => {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: newUser.email, password: changedPassword });
+      expect(res.status).toBe(200);
+      accessToken = res.body.data.accessToken;
+    });
+  });
+
+  // ============================================================
+  // 场景6: 登出
+  // ============================================================
+  describe('场景6: 登出', () => {
     it('POST /api/auth/logout - 成功登出', async () => {
       const res = await request(app)
         .post('/api/auth/logout')

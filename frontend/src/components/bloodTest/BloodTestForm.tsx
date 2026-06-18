@@ -3,6 +3,9 @@ import { BloodTest } from '../../types';
 import bloodTestService, {
   BloodTestFormData,
 } from '../../services/bloodTest/bloodTestService';
+import chemoCycleService, {
+  ChemoCycle,
+} from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
 import './BloodTestForm.css';
 
@@ -49,11 +52,29 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
     neu: { value: '', touched: false },
     lym: { value: '', touched: false },
     notes: { value: '', touched: false },
+    chemoCycleId: { value: '', touched: false },
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [formLevelWarning, setFormLevelWarning] = useState('');
+  const [cycles, setCycles] = useState<ChemoCycle[]>([]);
+
+  // 加载所有化疗周期供选择（一次性即可，数量不会大）
+  useEffect(() => {
+    let mounted = true;
+    chemoCycleService
+      .getChemoCycles(1, 100)
+      .then(res => {
+        if (mounted) setCycles(res.data || []);
+      })
+      .catch(() => {
+        // 周期加载失败不阻塞表单
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Initialize form with existing data if editing
   useEffect(() => {
@@ -68,6 +89,7 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
         neu: { value: formValues.neu, touched: false },
         lym: { value: formValues.lym, touched: false },
         notes: { value: formValues.notes, touched: false },
+        chemoCycleId: { value: formValues.chemoCycleId, touched: false },
       };
       setFormData(newFormData);
 
@@ -273,6 +295,7 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
         neu: formData.neu.value,
         lym: formData.lym.value,
         notes: formData.notes.value,
+        chemoCycleId: formData.chemoCycleId.value,
       });
 
       if (isEditing && initialData?._id) {
@@ -307,6 +330,7 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
       neu: { value: '', touched: false },
       lym: { value: '', touched: false },
       notes: { value: '', touched: false },
+      chemoCycleId: { value: '', touched: false },
     });
     setFormLevelWarning('');
     setSubmitError('');
@@ -406,6 +430,45 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
           {renderField('plt', '血小板', '×10⁹/L', true, '100-300')}
           {renderField('neu', '中性粒细胞', '×10⁹/L', false, '1.8-6.3')}
           {renderField('lym', '淋巴细胞', '×10⁹/L', false, '1.0-4.8')}
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>化疗周期关联</h3>
+        <div className="form-field">
+          <label htmlFor="chemoCycleId">关联到化疗周期（可选）</label>
+          <select
+            id="chemoCycleId"
+            name="chemoCycleId"
+            value={formData.chemoCycleId.value}
+            onChange={e =>
+              setFormData(prev => ({
+                ...prev,
+                chemoCycleId: { value: e.target.value, touched: true },
+              }))
+            }
+            disabled={isSubmitting}
+          >
+            <option value="">自动按日期匹配</option>
+            <option value="none">不关联任何周期</option>
+            {cycles.map(c => {
+              const start = new Date(c.startDate).toLocaleDateString('zh-CN');
+              const end = new Date(c.endDate).toLocaleDateString('zh-CN');
+              const drugs = (c.medications || [])
+                .map(m => m.name)
+                .filter(Boolean)
+                .join('、');
+              return (
+                <option key={c._id} value={c._id}>
+                  {start} ~ {end}
+                  {drugs ? `（${drugs}）` : ''}
+                </option>
+              );
+            })}
+          </select>
+          <span className="reference-note">
+            选择"自动按日期匹配"后，系统会根据检测日期落入哪个周期自动关联。
+          </span>
         </div>
       </div>
 

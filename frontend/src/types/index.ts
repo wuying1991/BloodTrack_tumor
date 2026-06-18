@@ -59,6 +59,7 @@ export interface BloodTest {
   lym?: number;
   notes?: string;
   isAbnormal?: boolean;
+  chemoCycleId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -72,6 +73,7 @@ export interface BloodTestCreateRequest {
   neu?: number;
   lym?: number;
   notes?: string;
+  chemoCycleId?: string | null;
 }
 
 export type BloodTestUpdateRequest = Partial<BloodTestCreateRequest>;

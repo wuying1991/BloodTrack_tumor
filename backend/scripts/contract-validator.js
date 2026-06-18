@@ -25,7 +25,7 @@ check('后端 BloodTest Model 字段规范', () => {
   );
 
   const requiredFields = ['user:', 'date:', 'wbc:', 'rbc:', 'hgb:', 'plt:'];
-  const optionalFields = ['neu?', 'lym?', 'notes?', 'isAbnormal'];
+  const optionalFields = ['neu?', 'lym?', 'notes?', 'isAbnormal', 'chemoCycleId?'];
 
   for (const f of requiredFields) {
     if (!content.includes(f)) errors.push(`Model 缺少必选字段: ${f}`);
@@ -57,7 +57,7 @@ check('Validation 中间件字段对齐 Model', () => {
     content.indexOf('export const validateBloodTestUpdate =')
   );
 
-  const expectedFields = ['date', 'wbc', 'rbc', 'hgb', 'plt', 'neu', 'lym', 'notes'];
+  const expectedFields = ['date', 'wbc', 'rbc', 'hgb', 'plt', 'neu', 'lym', 'notes', 'chemoCycleId'];
   for (const f of expectedFields) {
     if (!section.includes(`body('${f}')`)) {
       errors.push(`validateBloodTest 缺少字段校验: ${f}`);
@@ -90,7 +90,7 @@ check('前端 types/index.ts 字段规范', () => {
 
   const contractFields = [
     '_id:', 'user:', 'date:', 'wbc:', 'rbc:', 'hgb:', 'plt:',
-    'neu?:', 'lym?:', 'notes?:', 'isAbnormal?:', 'createdAt?:', 'updatedAt?:',
+    'neu?:', 'lym?:', 'notes?:', 'isAbnormal?:', 'chemoCycleId?:', 'createdAt?:', 'updatedAt?:',
   ];
 
   const bloodTestSection = content.substring(
