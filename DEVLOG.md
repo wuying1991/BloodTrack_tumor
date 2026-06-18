@@ -12,7 +12,7 @@
 | 后端基础设施 | 6 / 6 | 6 | 100% |
 | 前端页面 | 9 / 9 | 9 | 100% |
 | 后端测试 | 46 | TBD | — |
-| 前端测试 | 22 | TBD | — |
+| 前端测试 | 56 | TBD | — |
 
 **项目总进度**: █████████████████░░ 80%
 
@@ -72,6 +72,10 @@
 | 04-30 | Dashboard 单元测试 | 加载/空数据/有数据/错误状态 | 10 |
 | 04-30 | ChemoCycles 单元测试 | 加载/列表/编辑/删除/添加药物 | 12 |
 | **04-30** | **Auth 集成测试** | **注册→登录→资料→Token→设置→重置密码→登出 全链路** | **22** |
+| **06-18** | **Login 单元测试** | **渲染/会话过期提示/成功登录跳转/ApiError/未知错误/Loading 态** | **7** |
+| **06-18** | **Register 单元测试** | **渲染/密码不一致/成功注册/字段错误回填/未知错误** | **5** |
+| **06-18** | **BloodTests 页面测试** | **三视图切换/编辑/删除 confirm 二态/导出 loading/导出失败** | **9** |
+| **06-18** | **Settings 页面测试** | **个人资料保存/Tab 切换 (通知+数据)/修改密码 5 种校验/成功/失败/退出** | **13** |
 
 ---
 
@@ -82,7 +86,7 @@
 | ID | 功能 | 预估 | 状态 |
 |----|------|------|------|
 | ~~H-P1~~ | ~~前端 Settings 页面接入后端 profile/settings API~~ | 0.5天 | ✅ |
-| H-P2 | 前端补充测试 (Login, Register, BloodTests, Settings) | 3天 | ❌ |
+| ~~H-P2~~ | ~~前端补充测试 (Login, Register, BloodTests, Settings)~~ | 3天 | ✅ |
 | ~~H-P3~~ | ~~修改密码 (PUT /api/auth/change-password + Settings 表单)~~ | 0.5天 | ✅ |
 | ~~H-P4~~ | ~~血常规 ↔ 化疗周期关联~~ | 1天 | ✅ |
 | ~~H-P5~~ | ~~数据导出 (CSV / 图表 PNG)~~ | 0.5天 | ✅ |
@@ -123,12 +127,23 @@
 | 后端契约测试 | `cd backend && npm run test:contract` | ✅ 16/16 |
 | 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 30/30 |
 | 后端全部测试 | `cd backend && npx jest` | ✅ 46/46 |
-| 前端单元测试 | `cd frontend && npm test` | ✅ 22/22 |
+| 前端单元测试 | `cd frontend && npm test` | ✅ 56/56 |
 | 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 3/3 |
 
 ---
 
 ## 📅 变更日志
+
+### 2026-06-18（H-P2 前端测试补全）
+- **Login (7 用例)**: 字段渲染、`?expired=1` 会话过期提示、登录成功 → useNavigate('/dashboard') + AuthContext.login、ApiError 显示后端 message、未知错误兜底文案、loading 期按钮禁用
+- **Register (5 用例)**: 字段渲染、客户端"两次密码不一致"短路、成功注册、ApiError.errors 字段级回填、未知错误
+- **BloodTests 页面 (9 用例)**: list/add/edit 视图切换、编辑入口、删除流 confirm true/false 二态、删除失败 alert ApiError.message、导出按钮 loading 文案、导出失败 alert
+  - 用 jest.mock 把 `BloodTestList` / `BloodTestForm` 桩成最小假组件，专注页面级编排（不重测子组件的 fetch 路径）
+- **Settings 页面 (13 用例)**: profile 表单预填+只读邮箱、保存成功 toast、保存失败 toast、Tab 切换到通知/数据并保存、修改密码 5 种客户端校验（不一致/太短/缺大小写数字/与旧相同/缺位）、成功修改密码、ApiError 显示后端 message、退出登录
+  - 关键坑: `useAuth` mock 的 user 对象要 hoist 成模块级常量，否则 `useEffect([user])` 引用变化触发无限渲染
+  - Settings.tsx 的密码 `<label>` 没有 `htmlFor`，`getByLabelText` 不工作，改用 form 内 `querySelectorAll('input[type=password]')` 按位置取
+- 前端测试 22 → 56，6 个 suite 全绿
+- 已知遗留: `core.autocrlf=true` 让 prettier 在 Windows checkout 后报 CRLF 错（与本次改动无关，整个 working tree 都报）
 
 ### 2026-06-17（第二轮：Analytics 增强 + CSV 导出）
 - **M-P1 时间范围筛选**: `GET /api/analytics/trends?range=1m|3m|6m|1y|all`，前端 chip 切换；默认 3 月
@@ -174,4 +189,4 @@
 - 第一次进度审查报告
 
 ---
-*最后更新: 2026-06-17*
+*最后更新: 2026-06-18*
