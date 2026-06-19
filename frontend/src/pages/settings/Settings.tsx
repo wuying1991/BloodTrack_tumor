@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth/authService';
 import { ApiError } from '../../services/api/apiClient';
+import SharesSection from './components/SharesSection';
 import './Settings.css';
 
 const Settings: React.FC = () => {
@@ -449,7 +450,7 @@ const Settings: React.FC = () => {
                   </div>
                 </form>
               )}
-              </div>
+            </div>
           )}
 
           {activeTab === 'notifications' && (
@@ -558,6 +559,8 @@ const Settings: React.FC = () => {
                   您可以随时撤销共享权限。
                 </p>
               </div>
+
+              <SharesSection sharingEnabled={dataSharing.enabled} />
             </div>
           )}
         </div>
