@@ -4,6 +4,8 @@ import { Share, IShare } from '../models/Share';
 import { User, IUser } from '../models/User';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { BloodTest } from '../models/BloodTest';
+import { ChemoCycle } from '../models/ChemoCycle';
 
 /**
  * 公开端 helper: token → share + owner，含 expiresAt 与 PIN 校验。
@@ -83,4 +85,80 @@ export const verifySharePin = asyncHandler(async (req: Request, res: Response): 
   }
 
   res.json({ success: true, message: 'PIN 验证成功' });
+});
+
+type RangeKey = '1m' | '3m' | '6m' | '1y' | 'all';
+const RANGE_DAYS: Record<Exclude<RangeKey, 'all'>, number> = {
+  '1m': 30,
+  '3m': 90,
+  '6m': 180,
+  '1y': 365,
+};
+function buildDateFilter(range: unknown): { date?: { $gte: Date } } {
+  const r = (typeof range === 'string' ? range : 'all') as RangeKey;
+  if (r === 'all' || !(r in RANGE_DAYS)) return {};
+  const days = RANGE_DAYS[r as Exclude<RangeKey, 'all'>];
+  return { date: { $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) } };
+}
+
+// @desc    Get blood tests via share token
+// @route   GET /api/public/shares/:token/blood-tests
+// @access  Public (token + optional PIN via X-Share-Pin header)
+export const getSharedBloodTests = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { share } = await loadShareWithPin(req);
+  if (!share.scope.bloodTests) {
+    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)');
+  }
+  const tests = await BloodTest.find({ user: share.user }).sort('-date').lean();
+  res.json({ success: true, data: tests });
+});
+
+// @desc    Get chemo cycles via share token
+// @route   GET /api/public/shares/:token/chemo-cycles
+// @access  Public
+export const getSharedChemoCycles = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { share } = await loadShareWithPin(req);
+  if (!share.scope.chemoCycles) {
+    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)');
+  }
+  const cycles = await ChemoCycle.find({ user: share.user }).sort('-startDate').lean();
+  res.json({ success: true, data: cycles });
+});
+
+// @desc    Get analytics (trends + summary) via share token
+// @route   GET /api/public/shares/:token/analytics?range=1m|3m|6m|1y|all
+// @access  Public
+export const getSharedAnalytics = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { share } = await loadShareWithPin(req);
+  if (!share.scope.analytics) {
+    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)');
+  }
+
+  const dateFilter = buildDateFilter(req.query.range);
+  const tests = await BloodTest.find({ user: share.user, ...dateFilter })
+    .sort('date')
+    .select('date wbc rbc hgb plt neu lym isAbnormal')
+    .lean();
+
+  const trends = tests.map((t: any) => ({
+    date: t.date.toISOString().split('T')[0],
+    wbc: t.wbc, rbc: t.rbc, hgb: t.hgb, plt: t.plt,
+    neu: t.neu, lym: t.lym,
+    isAbnormal: t.isAbnormal,
+  }));
+
+  // 简版 summary（不含趋势箭头计算 — 受邀者不需要那么细）
+  const totalTests = await BloodTest.countDocuments({ user: share.user });
+  const abnormalCount = await BloodTest.countDocuments({ user: share.user, isAbnormal: true });
+
+  res.json({
+    success: true,
+    data: {
+      trends,
+      summary: {
+        totalTests,
+        abnormalRate: totalTests > 0 ? Math.round((abnormalCount / totalTests) * 100) : 0,
+      },
+    },
+  });
 });
