@@ -764,7 +764,7 @@ describe('Share API 契约测试', () => {
       expect(res.body.data.hasPin).toBe(true);
     });
 
-    it('总开关关闭时返回 422', async () => {
+    it('总开关关闭时返回 403', async () => {
       // 临时关掉
       await User.updateOne(
         { email: testUser.email },
@@ -777,7 +777,7 @@ describe('Share API 契约测试', () => {
           scope: { bloodTests: true, chemoCycles: false, analytics: false },
           expiresIn: '7d',
         });
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(403);
       // 恢复
       await User.updateOne(
         { email: testUser.email },
@@ -955,7 +955,7 @@ describe('Share 集成测试 (受保护 API)', () => {
     expect(after.body.data.find((s: any) => s._id === id)).toBeUndefined();
   });
 
-  it('总开关关闭时拒绝创建', async () => {
+  it('总开关关闭时拒绝创建（403）', async () => {
     await request(app)
       .put('/api/auth/settings')
       .set('Authorization', `Bearer ${tokenB}`)
@@ -967,11 +967,11 @@ describe('Share 集成测试 (受保护 API)', () => {
         scope: { bloodTests: true, chemoCycles: false, analytics: false },
         expiresIn: '7d',
       });
-    expect(r.status).toBe(422);
+    expect(r.status).toBe(403);
     await enableSharing(tokenB);
   });
 
-  it('50 条上限', async () => {
+  it('50 条上限（409）', async () => {
     // 直接 batch insert 50 条
     const aRes = await request(app)
       .post('/api/auth/login')
@@ -993,7 +993,7 @@ describe('Share 集成测试 (受保护 API)', () => {
         scope: { bloodTests: true, chemoCycles: false, analytics: false },
         expiresIn: '7d',
       });
-    expect(r.status).toBe(422);
+    expect(r.status).toBe(409);
     expect(r.body.message).toMatch(/50/);
 
     // 清理

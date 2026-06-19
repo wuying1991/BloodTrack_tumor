@@ -118,8 +118,10 @@
 - `pin` 可选；存在时必须 `^\d{4,6}$`
 
 **业务前置**（controller 内）：
-- `req.user.settings.dataSharing.enabled === true`，否则 422 + `"请先在设置→数据中开启数据共享"`
-- `Share.countDocuments({ user: req.user._id }) < 50`，否则 422 + `"每个用户最多 50 条活跃分享链接"`
+- `req.user.settings.dataSharing.enabled === true`，否则 **403 (forbidden)** + `"请先在设置→数据中开启数据共享"`
+- `Share.countDocuments({ user: req.user._id }) < 50`，否则 **409 (conflict)** + `"每个用户最多 50 条活跃分享链接"`
+
+> 状态码语义：422 专留给 express-validator 字段校验；业务前置失败属于"已认证但状态阻止"用 403，"与现有资源冲突"用 409。
 
 **Response 200**（**完整 token 仅此一次返回**）
 ```ts
