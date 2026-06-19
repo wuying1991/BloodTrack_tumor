@@ -3,6 +3,7 @@ import { User } from '../models/User';
 import { BloodTest } from '../models/BloodTest';
 import { ChemoCycle } from '../models/ChemoCycle';
 import { Reminder } from '../models/Reminder';
+import { Share } from '../models/Share';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -385,10 +386,11 @@ export const deleteAccount = asyncHandler(
     }
 
     // 级联删除该用户的所有数据 (Mongoose 不支持事务时尽力而为：先数据后用户)
-    const [bloodTestsRes, chemoCyclesRes, remindersRes] = await Promise.all([
+    const [bloodTestsRes, chemoCyclesRes, remindersRes, sharesRes] = await Promise.all([
       BloodTest.deleteMany({ user: userId }),
       ChemoCycle.deleteMany({ user: userId }),
       Reminder.deleteMany({ user: userId }),
+      Share.deleteMany({ user: userId }),
     ]);
 
     await user.deleteOne();
@@ -400,6 +402,7 @@ export const deleteAccount = asyncHandler(
         bloodTests: bloodTestsRes.deletedCount,
         chemoCycles: chemoCyclesRes.deletedCount,
         reminders: remindersRes.deletedCount,
+        shares: sharesRes.deletedCount,
       },
     });
   }
