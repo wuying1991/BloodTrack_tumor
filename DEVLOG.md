@@ -8,13 +8,13 @@
 
 | 维度 | 完成 | 总数 | 占比 |
 |------|------|------|------|
-| 后端 API 模块 | 6 / 6 | 6 | 100% |
+| 后端 API 模块 | 7 / 7 | 7 | 100% |
 | 后端基础设施 | 6 / 6 | 6 | 100% |
-| 前端页面 | 10 / 10 | 10 | 100% |
-| 后端测试 | 73 | TBD | — |
-| 前端测试 | 56 | TBD | — |
+| 前端页面 | 11 / 11 | 11 | 100% |
+| 后端测试 | 105 | TBD | — |
+| 前端测试 | 71 | TBD | — |
 
-**项目总进度**: ████████████████████░ 96%
+**项目总进度**: █████████████████████ 99%
 
 ---
 
@@ -105,7 +105,7 @@
 | ~~M-P1~~ | ~~Analytics 时间范围筛选 (1m/3m/6m/1y/全部)~~ | 0.5天 | ✅ |
 | ~~M-P2~~ | ~~Analytics 图表异常区间标记~~ | 0.5天 | ✅ |
 | M-P3 | Dashboard 接入提醒列表 (依赖 H-P6) | 0.5天 | ✅ |
-| M-P4 | 数据共享 (生成只读链接 + 撤销) | 2天 | ❌ |
+| ~~M-P4~~ | ~~数据共享 (生成只读链接 + 撤销)~~ | 2天 | ✅ |
 | M-P5 | 账户删除 (DELETE /api/auth/account, GDPR) | 0.5天 | ✅ |
 
 ### 🟢 低优先级
@@ -129,16 +129,58 @@
 |--------|------|------|
 | 后端 TypeScript 编译 | `cd backend && npx tsc --noEmit` | ✅ 通过 |
 | 前端 TypeScript 编译 | `cd frontend && npx tsc --noEmit` | ✅ 通过 |
-| 前端 ESLint | `cd frontend && npm run lint` | ✅ 0 错误 |
-| 后端契约测试 | `cd backend && npm run test:contract` | ✅ 26/26 |
-| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 47/47 |
-| 后端全部测试 | `cd backend && npx jest` | ✅ 81/81 |
-| 前端单元测试 | `cd frontend && npm test` | ✅ 64/64 |
-| 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 3/3 |
+| 前端 ESLint | `cd frontend && npm run lint` | ✅ M-P4 新增/改动 0 错误 (旧 prettier CRLF 噪声依旧) |
+| 后端契约测试 | `cd backend && npm run test:contract` | ✅ 33/33 |
+| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 64/64 |
+| 后端全部测试 | `cd backend && npx jest` | ✅ 105/105 |
+| 前端单元测试 | `cd frontend && npm test` | ✅ 71/71 |
+| 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 4/4 |
 
 ---
 
 ## 📅 变更日志
+
+### 2026-06-19（M-P4 数据共享只读链接）
+- **后端 Model**: `Share.ts` — `user(ref)/token(64-hex unique)/pinHash(bcrypt nullable)/scope{bloodTests,chemoCycles,analytics}/expiresAt(nullable)`，pre-validate 至少一项 scope；索引 `{token unique}` + `{user, createdAt:-1}`
+- **受保护 API** (`/api/shares`，`protect` 中间件):
+  - `POST` — 业务前置（总开关 → 403 forbidden / <50 上限 → 409 conflict）+ 32-byte token + bcrypt PIN(cost 10) + 一次性返回 `{token, shareUrl}`
+  - `GET` — 列表通过 `publicView()` 剔除 token / pinHash
+  - `DELETE /:id` — `findOneAndDelete({_id, user})` 硬撤销，跨用户隔离 → 404
+- **公开 API** (`/api/public/shares`，无 JWT):
+  - `GET /:token` — 元信息：ownerName(`firstName lastName`) + scope + expiresAt + requiresPin（owner 仅 `select('firstName lastName')`，不暴露 email/_id/dateOfBirth）
+  - `POST /:token/verify` — bcrypt PIN 校验，无 PIN 链接直接成功
+  - `GET /:token/{blood-tests, chemo-cycles, analytics}` — 共享 helper `loadShareWithPin(req)` → 校验 token+expiresAt+PIN → 校验 `share.scope.<resource>` 否则 403；PIN 通过 `X-Share-Pin` header 传递
+  - 错误码: 404 / 410 / 403 / 401，新增 `ApiError.gone()` 静态工厂
+  - 限流: 整体 30/min/IP，`/verify` 端点 5/min/IP+token (skipSuccessfulRequests)，用 `ipKeyGenerator` 归一化 IPv6
+- **deleteAccount 级联**: 加 `Share.deleteMany({user})`，response data 加 `shares: deletedCount`
+- **contracts/index.ts** 新增: `ShareScope/ShareExpiresIn/Share/ShareCreateRequest/ShareCreateResponseData/ShareListResponse/ShareCreateResponse/ShareDeleteResponse/PublicShareMeta/PublicShareMetaResponse/PublicSharePinVerifyResponse`（11 个 export，前端 `types/index.ts` 镜像）
+- **contract-validator.js**: 加第 4 项 — Share Model / validateShareCreate / 前端 types 三处对齐校验，报告从 3/3 升级到 4/4
+- **前端 services**:
+  - `publicApiClient.ts`：干净 axios 实例（不挂任何拦截器），避免登录用户在 viewer 页误带 Authorization
+  - `shareService.ts`：受保护，走 apiClient（含 Bearer 自动刷新）
+  - `publicShareService.ts`：公开，走 publicApiClient；`pinHeader(pin)` helper 把 PIN 放进 X-Share-Pin header
+- **前端 Settings**: 数据 tab 新增 `<SharesSection sharingEnabled={dataSharing.enabled} />`
+  - `SharesSection`：列表 + 撤销 confirm 二态 + 总开关 disabled tooltip 提示
+  - `CreateShareDialog`：scope 至少一项校验 / PIN 4-6 位校验 / 一次性显示完整 URL + `navigator.clipboard.writeText` 自动复制 + "仅本次显示" 警告
+  - `CreateShareDialog.css` 提供 `.modal-backdrop` / `.modal` 全局样式
+- **前端 viewer**: 公开路由 `/share/:token`、`/share/:token/expired`、`/share/not-found`（不在 ProtectedRoute / PublicOnlyRoute 包裹下）
+  - `SharedView.tsx` 状态机：`loading → meta-error / pin / data` 4 phase；GET meta → 404→/not-found / 410→/:token/expired / 其他→meta-error；PIN 走 sessionStorage 缓存 `share-pin-${token}`（关页即丢）；按 scope 并行加载 3 资源；try-catch-finally 让加载失败也进 data phase（防止永久转圈）
+  - 4 个展示组件：`PinPrompt`（4-6 位数字 + 429 提示）/ `SharedBloodTestList`（异常红字行）/ `SharedChemoCycleList` / `SharedAnalytics`（数值表 + 摘要，**不引入 Chart.js** 减小 viewer 包体）
+  - `SharedView.css` 通用样式 + `.shared-blood-row.is-abnormal` 异常红字
+  - 错误页 `ShareNotFound` / `ShareExpired`
+- **测试**:
+  - 后端契约 +6（创建响应形状 / 总开关 403 / scope 全 false 422 / pin 非数字 422 / 列表无 token / 删除 + 401）
+  - 后端集成 +18（受保护 5：CRUD/总开关 403/50 上限 409/跨用户隔离/never；公开 12：meta 200/404/410/不泄露敏感字段, verify 无 PIN/正确 PIN/错误 PIN, blood-tests 无 PIN/缺 header 401/正确 header, chemo-cycles scope 403, analytics trends+summary, deleteAccount 级联 → 旧 token 404）
+  - 前端 SharedView +6 用例（无 PIN/有 PIN/正确 PIN/错误 PIN/404/410）
+  - 前端 Settings 扩展 +1（总开关关闭 → 创建按钮 disabled）
+- **修正**:
+  - Spec 业务前置错误码：原写 422，review 改为 403（forbidden, 已认证但状态阻止）+ 409（conflict, 与现有资源冲突），422 专留给字段校验
+  - Share Model `token: { unique: true }` 删除冗余 `index: true`（unique 已隐含）
+  - `pinVerifyLimiter` keyGenerator 用 `ipKeyGenerator` 归一化 IPv6（修 ERR_ERL_KEY_GEN_IPV6 警告）
+  - SharedView loadData try-catch-finally 让失败也 setPhase('data')
+  - CreateShareDialog 的 `modal-backdrop`/`modal` class 之前没 CSS 定义，新建 CreateShareDialog.css
+- **质量门禁**: tsc 双侧 ✅、contract:check 4/4 ✅、后端 jest 105/105 ✅、前端 jest 71/71 ✅、M-P4 新增/改动文件 ESLint 0 错误（项目其它历史 prettier CRLF 噪声不变）
+- **未覆盖**：端到端手动验证（需要本地 MongoDB 启动），自动化 145+ 用例已覆盖完整链路
 
 ### 2026-06-18（第三轮：M-P5 账户删除 + L-P6/P7/P8 安全加固 + CLAUDE.md）
 - **M-P5 账户删除前端**: Settings.tsx 新增"危险区域"区域 — 初始按钮"删除我的账户"，点击后展开确认表单（密码输入 + "确认删除"/"取消"），空密码客户端拦截，成功删除后自动 logout，ApiError 显示后端 message
@@ -224,4 +266,4 @@
 - 第一次进度审查报告
 
 ---
-*最后更新: 2026-06-18*
+*最后更新: 2026-06-19*
