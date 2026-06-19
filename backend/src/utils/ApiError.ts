@@ -58,6 +58,13 @@ export class ApiError extends Error {
   }
 
   /**
+   * Gone Error (410) — 资源曾经存在但已永久消失（如已过期的分享链接）
+   */
+  static gone(message: string = 'Gone'): ApiError {
+    return new ApiError(410, message, true);
+  }
+
+  /**
    * Validation Error (422)
    */
   static validation(message: string = 'Validation Error', errors?: Record<string, string>): ApiError {
