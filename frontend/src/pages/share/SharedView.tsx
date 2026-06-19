@@ -54,11 +54,13 @@ const SharedView: React.FC = () => {
       }
       try {
         await Promise.all(calls);
-        setPhase('data');
       } catch (err) {
         setDataError(
           err instanceof PublicApiError ? err.message : '加载数据失败'
         );
+      } finally {
+        // 无论成功失败都进入 data phase, 让 header / dataError / 已加载的 section 都能渲染
+        setPhase('data');
       }
     },
     [token]
