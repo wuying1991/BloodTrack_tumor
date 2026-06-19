@@ -154,3 +154,54 @@ export interface BloodTestRanges {
   neu: { min: number; max: number; unit: string };
   lym: { min: number; max: number; unit: string };
 }
+
+// ============================================================
+// 数据共享 (Data Sharing) — M-P4
+// ============================================================
+
+export interface ShareScope {
+  bloodTests: boolean;
+  chemoCycles: boolean;
+  analytics: boolean;
+}
+
+export type ShareExpiresIn = '1d' | '7d' | '30d' | '90d' | 'never';
+
+export interface Share {
+  _id: string;
+  scope: ShareScope;
+  expiresAt: string | null;
+  hasPin: boolean;
+  createdAt: string;
+}
+
+export interface ShareCreateRequest {
+  scope: ShareScope;
+  expiresIn: ShareExpiresIn;
+  pin?: string;
+}
+
+export interface ShareCreateResponseData {
+  _id: string;
+  scope: ShareScope;
+  expiresAt: string | null;
+  hasPin: boolean;
+  token: string;       // 64-char hex，仅本次返回
+  shareUrl: string;
+  createdAt: string;
+}
+
+export type ShareListResponse = ApiResponse<Share[]>;
+export type ShareCreateResponse = ApiResponse<ShareCreateResponseData>;
+export type ShareDeleteResponse = ApiResponse<{ message: string }>;
+
+// 公开端
+export interface PublicShareMeta {
+  ownerName: string;        // "<firstName> <lastName>"
+  scope: ShareScope;
+  expiresAt: string | null;
+  requiresPin: boolean;
+}
+
+export type PublicShareMetaResponse = ApiResponse<PublicShareMeta>;
+export type PublicSharePinVerifyResponse = ApiResponse<{ message: string }>;

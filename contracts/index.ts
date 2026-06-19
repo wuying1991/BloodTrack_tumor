@@ -205,3 +205,54 @@ export const BLOOD_TEST_NORMAL_RANGES: Record<string, NormalRange> = {
   neu: { min: 1.8, max: 6.3, unit: '\u00d710\u2079/L', name: '\u4e2d\u6027\u7c92\u7ec6\u80de (NEU)' },
   lym: { min: 1.0, max: 4.8, unit: '\u00d710\u2079/L', name: '\u6dcb\u5df4\u7ec6\u80de (LYM)' },
 };
+
+// ============================================================
+// \u6570\u636e\u5171\u4eab (Data Sharing) \u2014 M-P4
+// ============================================================
+
+export interface ShareScope {
+  bloodTests: boolean;
+  chemoCycles: boolean;
+  analytics: boolean;
+}
+
+export type ShareExpiresIn = '1d' | '7d' | '30d' | '90d' | 'never';
+
+export interface Share {
+  _id: string;
+  scope: ShareScope;
+  expiresAt: string | null;
+  hasPin: boolean;
+  createdAt: string;
+}
+
+export interface ShareCreateRequest {
+  scope: ShareScope;
+  expiresIn: ShareExpiresIn;
+  pin?: string;
+}
+
+export interface ShareCreateResponseData {
+  _id: string;
+  scope: ShareScope;
+  expiresAt: string | null;
+  hasPin: boolean;
+  token: string;       // 64-char hex\uff0c\u4ec5\u672c\u6b21\u8fd4\u56de
+  shareUrl: string;
+  createdAt: string;
+}
+
+export type ShareListResponse = ApiResponse<Share[]>;
+export type ShareCreateResponse = ApiResponse<ShareCreateResponseData>;
+export type ShareDeleteResponse = ApiResponse<{ message: string }>;
+
+// \u516c\u5f00\u7aef
+export interface PublicShareMeta {
+  ownerName: string;        // "<firstName> <lastName>"
+  scope: ShareScope;
+  expiresAt: string | null;
+  requiresPin: boolean;
+}
+
+export type PublicShareMetaResponse = ApiResponse<PublicShareMeta>;
+export type PublicSharePinVerifyResponse = ApiResponse<{ message: string }>;
