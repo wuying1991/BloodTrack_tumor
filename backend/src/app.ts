@@ -8,6 +8,7 @@ import bloodTestRoutes from './routes/bloodTestRoutes';
 import chemoCycleRoutes from './routes/chemoCycleRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import reminderRoutes from './routes/reminderRoutes';
+import shareRoutes from './routes/shareRoutes';
 import { errorHandler, notFoundHandler } from './middlewares/errorMiddleware';
 
 const app: Application = express();
@@ -67,6 +68,7 @@ app.use('/api/blood-tests', bloodTestRoutes);
 app.use('/api/chemo-cycles', chemoCycleRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/shares', shareRoutes);
 
 // 404 Handler - Must be after all routes
 app.use(notFoundHandler);
