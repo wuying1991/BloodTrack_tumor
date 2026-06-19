@@ -452,4 +452,36 @@ export const validateReminderUpdate = runValidation([
     .withMessage('推送通知必须为布尔值'),
 ]);
 
+// ============================================================
+// Share validation (M-P4 数据共享)
+// ============================================================
+
+const SHARE_EXPIRES_IN = ['1d', '7d', '30d', '90d', 'never'] as const;
+
+export const validateShareCreate = runValidation([
+  body('scope').isObject().withMessage('scope 必须为对象 (scope must be an object)'),
+  body('scope.bloodTests')
+    .isBoolean()
+    .withMessage('scope.bloodTests 必须为布尔值'),
+  body('scope.chemoCycles')
+    .isBoolean()
+    .withMessage('scope.chemoCycles 必须为布尔值'),
+  body('scope.analytics')
+    .isBoolean()
+    .withMessage('scope.analytics 必须为布尔值'),
+  body('scope').custom((s) => {
+    if (!s || (!s.bloodTests && !s.chemoCycles && !s.analytics)) {
+      throw new Error('至少需要选择一项分享内容 (At least one scope item must be enabled)');
+    }
+    return true;
+  }),
+  body('expiresIn')
+    .isIn(SHARE_EXPIRES_IN)
+    .withMessage('有效期必须为 1d/7d/30d/90d/never 之一'),
+  body('pin')
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(/^\d{4,6}$/)
+    .withMessage('PIN 必须为 4–6 位数字'),
+]);
+
 export default validate;
