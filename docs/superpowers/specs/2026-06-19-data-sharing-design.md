@@ -386,7 +386,7 @@ export type PublicSharePinVerifyResponse = ApiResponse<{ message: string }>;
 | 契约校验 | `backend/scripts/contract-validator.js` | 第 4 项：Share Model ↔ Validation ↔ contracts/index.ts |
 
 测试预期增量：
-- 后端：契约 +10 用例、集成 +20 用例 → 总 73→103 用例
+- 后端：契约 +10 用例、集成 +20 用例 → 总 81→111 用例
 - 前端：+10 用例左右 → 总 64→74 用例
 
 ---
