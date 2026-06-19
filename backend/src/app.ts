@@ -1,7 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 import authRoutes from './routes/authRoutes';
 import bloodTestRoutes from './routes/bloodTestRoutes';
@@ -58,7 +58,7 @@ const pinVerifyLimiter = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.ip}:${req.params?.token ?? 'no-token'}`,
+  keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? '')}:${req.params?.token ?? 'no-token'}`,
   skip: () => isTest,
   message: { success: false, message: '尝试过多，请稍后再试 (Too many attempts)' },
 });
