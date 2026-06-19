@@ -17,6 +17,9 @@ import ChemoCycles from './pages/chemoCycles/ChemoCycles';
 import Analytics from './pages/Analytics/Analytics';
 import Reminders from './pages/reminders/Reminders';
 import Settings from './pages/settings/Settings';
+import SharedView from './pages/share/SharedView';
+import ShareNotFound from './pages/share/ShareNotFound';
+import ShareExpired from './pages/share/ShareExpired';
 import { AuthProvider } from './context/AuthContext';
 import {
   ProtectedRoute,
@@ -48,6 +51,11 @@ function App() {
             />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* 公开 viewer 路由 - 不在 ProtectedRoute / PublicOnlyRoute 任一包裹下 */}
+            <Route path="/share/not-found" element={<ShareNotFound />} />
+            <Route path="/share/:token/expired" element={<ShareExpired />} />
+            <Route path="/share/:token" element={<SharedView />} />
 
             {/* Protected routes - require authentication */}
             <Route
