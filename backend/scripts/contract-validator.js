@@ -115,6 +115,50 @@ check('前端 types/index.ts 字段规范', () => {
 });
 
 // ============================================================
+// 检查 4: Share 字段三处一致 (M-P4)
+// ============================================================
+check('Share 类型定义三处一致 (M-P4)', () => {
+  const errors = [];
+
+  // 4a. 后端 Share Model
+  const modelPath = path.join(ROOT, 'src', 'models', 'Share.ts');
+  if (!fs.existsSync(modelPath)) {
+    errors.push('找不到 backend/src/models/Share.ts');
+  } else {
+    const content = fs.readFileSync(modelPath, 'utf-8');
+    const required = ['user:', 'token:', 'pinHash', 'scope', 'bloodTests:', 'chemoCycles:', 'analytics:', 'expiresAt'];
+    for (const f of required) {
+      if (!content.includes(f)) errors.push(`Share Model 缺少字段: ${f}`);
+    }
+  }
+
+  // 4b. 后端 validation
+  const valPath = path.join(ROOT, 'src', 'middlewares', 'validationMiddleware.ts');
+  const valContent = fs.readFileSync(valPath, 'utf-8');
+  const valSection = valContent.substring(valContent.indexOf('export const validateShareCreate ='));
+  if (!valSection || valSection.length < 50) {
+    errors.push('validationMiddleware.ts 找不到 validateShareCreate');
+  } else {
+    for (const f of ['scope.bloodTests', 'scope.chemoCycles', 'scope.analytics', 'expiresIn', 'pin']) {
+      if (!valSection.includes(`'${f}'`)) {
+        errors.push(`validateShareCreate 缺少字段: ${f}`);
+      }
+    }
+  }
+
+  // 4c. 前端 types/index.ts
+  const typesPath = path.join(ROOT, '..', 'frontend', 'src', 'types', 'index.ts');
+  const typesContent = fs.readFileSync(typesPath, 'utf-8');
+  for (const f of ['ShareScope', 'ShareExpiresIn', 'ShareCreateRequest', 'PublicShareMeta', 'bloodTests:', 'chemoCycles:', 'analytics:']) {
+    if (!typesContent.includes(f)) {
+      errors.push(`前端 types/index.ts 缺少 Share 相关定义: ${f}`);
+    }
+  }
+
+  return errors;
+});
+
+// ============================================================
 // 输出报告
 // ============================================================
 console.log('========================================');
