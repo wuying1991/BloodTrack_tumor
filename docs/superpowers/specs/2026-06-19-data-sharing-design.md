@@ -437,3 +437,18 @@ export type PublicSharePinVerifyResponse = ApiResponse<{ message: string }>;
 8. 端到端手动验证：创建 → 在隐身窗口打开 → PIN → 看到数据；撤销 → 隐身窗口刷新 → 404
 9. 全量门禁：tsc / lint / 后端 jest / 前端 jest / contract:check
 10. 更新 DEVLOG.md M-P4 状态为 ✅
+
+---
+
+## 12. 部署注意事项与已知设计权衡
+
+实现完成后，以下点需要在部署/运维时留意，或属于有意的安全权衡：
+
+- **`FRONTEND_URL` 环境变量**：`shareController.buildShareUrl()` 从 `process.env.FRONTEND_URL` 拼分享链接，dev 默认 `http://localhost:3000`。**生产部署必须在 backend `.env` 配置 `FRONTEND_URL=https://<生产域名>`**，否则复制出去的链接全部指向 localhost。建议在启动时对生产环境做 fail-fast 校验（类似 `secrets.ts` 对 JWT_SECRET 的处理）。
+- **`/share/:token` 路由顺序依赖**：`App.tsx` 中 `/share/not-found` 与 `/share/:token/expired` 必须在 `/share/:token` 之前注册，否则字面量路径会被 `:token` 参数捕获。当前实现顺序正确，改动路由时需保持。
+- **PIN 明文存 sessionStorage**：viewer 验证 PIN 后写入 `sessionStorage['share-pin-${token}']`（关页即失效，不用 localStorage）。受同源策略 + tab 生命周期保护，但**同源第三方脚本可读**。若未来在 viewer 页面引入第三方 analytics / embed，需重新评估此设计（可改为服务端短期 session token）。
+- **`MAX_ACTIVE_SHARES = 50` 非原子**：`countDocuments` 与 `create` 之间无事务，高并发下可能略微超上限。属于软策略，不阻塞。
+- **`deleteAccount` 级联非事务**：`Promise.all([deleteMany ×4]) + user.deleteOne()` 不原子，任一步失败留孤儿数据。与项目既有模式一致，注释已说明。
+- **`pre('validate')` 仅在 `create`/`save` 触发**：Share 的"scope 至少一项"约束通过 Mongoose pre-validate 钩子实现，`findOneAndUpdate`/`updateOne` 不触发。当前无更新 scope 的入口（设计上不可改），属隐性约束 —— 未来若加更新接口需在 controller 层补校验。
+- **过期 share 文档不自动清理**：`expiresAt` 没配 TTL 索引，过期 share 文档会长期累积。后续可加 `{ expiresAt: 1 }` + `expireAfterSeconds: 0` 让 MongoDB 自动清理。
+- **公开 API 限流按 IP**：`publicShareLimiter` 30/min/IP 在 NAT/办公网下多受邀者可能共享配额偏紧；跨 IP 撞同链接（僵尸网络）只受全局限流约束。链接维度全局尝试上限可作为 v2 增强。
