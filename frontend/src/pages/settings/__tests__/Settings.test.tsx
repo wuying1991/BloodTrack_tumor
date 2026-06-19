@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import Settings from '../Settings';
@@ -38,6 +38,15 @@ jest.mock('../../../services/auth/authService', () => ({
     updateSettings: jest.fn(),
     changePassword: jest.fn(),
     deleteAccount: jest.fn(),
+  },
+}));
+
+jest.mock('../../../services/share/shareService', () => ({
+  __esModule: true,
+  default: {
+    listShares: jest.fn().mockResolvedValue({ success: true, data: [] }),
+    createShare: jest.fn(),
+    deleteShare: jest.fn(),
   },
 }));
 
@@ -308,6 +317,29 @@ describe('Settings', () => {
       );
       expect(await screen.findByText('密码不正确')).toBeInTheDocument();
       expect(mockLogout).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('我的分享 (M-P4)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // 重新设置 listShares 的默认返回（clearAllMocks 会清理）
+      const shareService = require('../../../services/share/shareService').default;
+      shareService.listShares.mockResolvedValue({ success: true, data: [] });
+    });
+
+    it('总开关关闭时创建按钮 disabled', async () => {
+      // 默认 mockUser 的 dataSharing.enabled = false
+      render(<Settings />);
+      // 切到 "数据与隐私" tab
+      const dataTabBtn = screen.getByRole('button', { name: /数据与隐私/ });
+      fireEvent.click(dataTabBtn);
+
+      // 等加载完成或空列表渲染
+      const createBtn = await screen.findByRole('button', {
+        name: /创建分享链接/,
+      });
+      expect(createBtn).toBeDisabled();
     });
   });
 });
