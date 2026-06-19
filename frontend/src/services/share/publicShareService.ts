@@ -21,8 +21,12 @@ export interface PublicVerifyResponse {
 export interface PublicBloodTest {
   _id: string;
   date: string;
-  wbc: number; rbc: number; hgb: number; plt: number;
-  neu?: number; lym?: number;
+  wbc: number;
+  rbc: number;
+  hgb: number;
+  plt: number;
+  neu?: number;
+  lym?: number;
   notes?: string;
   isAbnormal: boolean;
 }
@@ -37,8 +41,12 @@ export interface PublicChemoCycle {
 
 export interface PublicAnalyticsTrend {
   date: string;
-  wbc: number; rbc: number; hgb: number; plt: number;
-  neu?: number; lym?: number;
+  wbc: number;
+  rbc: number;
+  hgb: number;
+  plt: number;
+  neu?: number;
+  lym?: number;
   isAbnormal: boolean;
 }
 
@@ -61,13 +69,29 @@ class PublicShareService {
       { pin }
     );
   }
-  async getBloodTests(token: string, pin?: string): Promise<{ success: boolean; data: PublicBloodTest[] }> {
-    return publicApiClient.get(`/public/shares/${token}/blood-tests`, pinHeader(pin));
+  async getBloodTests(
+    token: string,
+    pin?: string
+  ): Promise<{ success: boolean; data: PublicBloodTest[] }> {
+    return publicApiClient.get(
+      `/public/shares/${token}/blood-tests`,
+      pinHeader(pin)
+    );
   }
-  async getChemoCycles(token: string, pin?: string): Promise<{ success: boolean; data: PublicChemoCycle[] }> {
-    return publicApiClient.get(`/public/shares/${token}/chemo-cycles`, pinHeader(pin));
+  async getChemoCycles(
+    token: string,
+    pin?: string
+  ): Promise<{ success: boolean; data: PublicChemoCycle[] }> {
+    return publicApiClient.get(
+      `/public/shares/${token}/chemo-cycles`,
+      pinHeader(pin)
+    );
   }
-  async getAnalytics(token: string, range = 'all', pin?: string): Promise<{ success: boolean; data: PublicAnalytics }> {
+  async getAnalytics(
+    token: string,
+    range = 'all',
+    pin?: string
+  ): Promise<{ success: boolean; data: PublicAnalytics }> {
     return publicApiClient.get(
       `/public/shares/${token}/analytics?range=${range}`,
       pinHeader(pin)

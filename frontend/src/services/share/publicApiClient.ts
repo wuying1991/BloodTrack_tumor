@@ -4,7 +4,12 @@
  * 关键差异：不挂任何拦截器，绝不带 Authorization header
  * （避免登录用户在打开 /share/:token 时把自己的 JWT 误带过去）。
  */
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, AxiosResponse } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosError,
+  AxiosResponse,
+} from 'axios';
 
 const API_BASE_URL =
   process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -13,7 +18,11 @@ export class PublicApiError extends Error {
   public statusCode: number;
   public errors?: Record<string, string>;
 
-  constructor(statusCode: number, message: string, errors?: Record<string, string>) {
+  constructor(
+    statusCode: number,
+    message: string,
+    errors?: Record<string, string>
+  ) {
     super(message);
     this.statusCode = statusCode;
     this.errors = errors;
@@ -31,7 +40,7 @@ class PublicApiClient {
     });
     // 一个简单 response 拦截器，把 axios error 标准化成 PublicApiError
     this.client.interceptors.response.use(
-      (r) => r,
+      r => r,
       (error: AxiosError) => this.handleError(error)
     );
   }
@@ -52,7 +61,11 @@ class PublicApiClient {
     return r.data;
   }
 
-  async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  async post<T>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
     const r: AxiosResponse<T> = await this.client.post(url, data, config);
     return r.data;
   }

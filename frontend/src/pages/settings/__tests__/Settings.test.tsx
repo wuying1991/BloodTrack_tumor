@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import Settings from '../Settings';
 import authService from '../../../services/auth/authService';
+import shareService from '../../../services/share/shareService';
 import { ApiError } from '../../../services/api/apiClient';
 
 const mockLogout = jest.fn();
@@ -70,7 +71,9 @@ describe('Settings', () => {
         data: {},
       });
       render(<Settings />);
-      await userEvent.click(screen.getByRole('button', { name: '保存个人资料' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '保存个人资料' })
+      );
       await waitFor(() => {
         expect(authService.updateProfile).toHaveBeenCalledWith({
           firstName: '三',
@@ -88,7 +91,9 @@ describe('Settings', () => {
         new ApiError(500, 'oops')
       );
       render(<Settings />);
-      await userEvent.click(screen.getByRole('button', { name: '保存个人资料' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '保存个人资料' })
+      );
       expect(await screen.findByText('更新失败，请重试')).toBeInTheDocument();
     });
   });
@@ -248,7 +253,9 @@ describe('Settings', () => {
   describe('删除账户', () => {
     it('点击 "删除我的账户" 展开确认表单', async () => {
       render(<Settings />);
-      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '删除我的账户' })
+      );
       expect(
         screen.getByRole('button', { name: '确认删除账户' })
       ).toBeInTheDocument();
@@ -257,7 +264,9 @@ describe('Settings', () => {
 
     it('取消按钮关闭确认表单并清空输入', async () => {
       render(<Settings />);
-      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '删除我的账户' })
+      );
       const input = screen.getByPlaceholderText('输入密码确认');
       await userEvent.type(input, 'somepassword');
       await userEvent.click(screen.getByRole('button', { name: '取消' }));
@@ -268,7 +277,9 @@ describe('Settings', () => {
 
     it('未输入密码直接提交显示校验文案', async () => {
       render(<Settings />);
-      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '删除我的账户' })
+      );
       await userEvent.click(
         screen.getByRole('button', { name: '确认删除账户' })
       );
@@ -285,7 +296,9 @@ describe('Settings', () => {
         data: { bloodTests: 3, chemoCycles: 1, reminders: 2 },
       });
       render(<Settings />);
-      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '删除我的账户' })
+      );
       await userEvent.type(
         screen.getByPlaceholderText('输入密码确认'),
         'MyPass123!'
@@ -307,7 +320,9 @@ describe('Settings', () => {
         new ApiError(401, '密码不正确')
       );
       render(<Settings />);
-      await userEvent.click(screen.getByRole('button', { name: '删除我的账户' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: '删除我的账户' })
+      );
       await userEvent.type(
         screen.getByPlaceholderText('输入密码确认'),
         'WrongPass!'
@@ -324,8 +339,10 @@ describe('Settings', () => {
     beforeEach(() => {
       jest.clearAllMocks();
       // 重新设置 listShares 的默认返回（clearAllMocks 会清理）
-      const shareService = require('../../../services/share/shareService').default;
-      shareService.listShares.mockResolvedValue({ success: true, data: [] });
+      (shareService.listShares as jest.Mock).mockResolvedValue({
+        success: true,
+        data: [],
+      });
     });
 
     it('总开关关闭时创建按钮 disabled', async () => {
