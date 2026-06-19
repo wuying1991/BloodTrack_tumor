@@ -5,6 +5,7 @@ import shareService, {
   ShareScope,
 } from '../../../services/share/shareService';
 import { ApiError } from '../../../services/api/apiClient';
+import './CreateShareDialog.css';
 
 interface Props {
   open: boolean;
