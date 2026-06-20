@@ -10,8 +10,7 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    firstName: '',
-    lastName: '',
+    fullName: '',
   });
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<
@@ -48,8 +47,7 @@ const Register: React.FC = () => {
       const response = await authService.register({
         email: formData.email,
         password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        fullName: formData.fullName,
       });
 
       if (response.success && response.data) {
@@ -88,41 +86,21 @@ const Register: React.FC = () => {
         <h2>注册</h2>
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="firstName">名字</label>
-              <input
-                type="text"
-                id="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-                placeholder="名"
-                disabled={isLoading}
-                className={validationErrors.firstName ? 'input-error' : ''}
-              />
-              {validationErrors.firstName && (
-                <span className="field-error">
-                  {validationErrors.firstName}
-                </span>
-              )}
-            </div>
-            <div className="form-group">
-              <label htmlFor="lastName">姓氏</label>
-              <input
-                type="text"
-                id="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-                placeholder="姓"
-                disabled={isLoading}
-                className={validationErrors.lastName ? 'input-error' : ''}
-              />
-              {validationErrors.lastName && (
-                <span className="field-error">{validationErrors.lastName}</span>
-              )}
-            </div>
+          <div className="form-group">
+            <label htmlFor="fullName">姓名</label>
+            <input
+              type="text"
+              id="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              required
+              placeholder="请输入您的姓名"
+              disabled={isLoading}
+              className={validationErrors.fullName ? 'input-error' : ''}
+            />
+            {validationErrors.fullName && (
+              <span className="field-error">{validationErrors.fullName}</span>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="email">电子邮箱</label>

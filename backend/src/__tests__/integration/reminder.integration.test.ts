@@ -25,8 +25,7 @@ afterAll(async () => {
 const userA = {
   email: 'reminder-a@example.com',
   password: 'Test1234!',
-  firstName: 'Rem',
-  lastName: 'AlphaUser',
+  fullName: 'Rem AlphaUser',
   dateOfBirth: '1990-01-01',
   gender: 'female',
 };
@@ -34,8 +33,7 @@ const userA = {
 const userB = {
   email: 'reminder-b@example.com',
   password: 'Test1234!',
-  firstName: 'Rem',
-  lastName: 'BetaUser',
+  fullName: 'Rem BetaUser',
   dateOfBirth: '1991-02-02',
   gender: 'male',
 };

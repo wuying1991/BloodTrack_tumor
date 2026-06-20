@@ -17,7 +17,7 @@ const Layout: React.FC = () => {
           <h1 className="app-title">化疗血常规追踪器</h1>
           <div className="user-info">
             <span className="user-name">
-              {user?.firstName} {user?.lastName}
+              {user?.fullName}
             </span>
             <button onClick={logout} className="logout-button">
               登出

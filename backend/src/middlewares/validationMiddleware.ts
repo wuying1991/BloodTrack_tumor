@@ -50,18 +50,12 @@ export const validateRegister = runValidation([
     .withMessage('密码至少需要6个字符 (Password must be at least 6 characters)')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage('密码必须包含大小写字母和数字 (Password must contain uppercase, lowercase and number)'),
-  body('firstName')
+  body('fullName')
     .trim()
     .notEmpty()
-    .withMessage('请输入名字 (First name is required)')
+    .withMessage('请输入姓名 (Full name is required)')
     .isLength({ max: 50 })
-    .withMessage('名字不能超过50个字符 (First name cannot exceed 50 characters)'),
-  body('lastName')
-    .trim()
-    .notEmpty()
-    .withMessage('请输入姓氏 (Last name is required)')
-    .isLength({ max: 50 })
-    .withMessage('姓氏不能超过50个字符 (Last name cannot exceed 50 characters)'),
+    .withMessage('姓名不能超过50个字符 (Full name cannot exceed 50 characters)'),
   body('dateOfBirth')
     .optional()
     .isISO8601()
@@ -294,16 +288,11 @@ export const validateChemoCycleUpdate = runValidation([
 
 // Profile update validation
 export const validateProfileUpdate = runValidation([
-  body('firstName')
+  body('fullName')
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('名字不能为空 (First name cannot be empty)'),
-  body('lastName')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('姓氏不能为空 (Last name cannot be empty)'),
+    .withMessage('姓名不能为空 (Full name cannot be empty)'),
   body('dateOfBirth')
     .optional()
     .isISO8601()

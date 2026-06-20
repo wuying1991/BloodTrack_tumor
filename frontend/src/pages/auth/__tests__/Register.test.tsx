@@ -37,15 +37,13 @@ const renderRegister = () =>
 
 const fillForm = async (overrides: Partial<Record<string, string>> = {}) => {
   const values = {
-    firstName: '三',
-    lastName: '张',
+    fullName: '张三',
     email: 'a@b.com',
     password: 'Pass123!',
     confirmPassword: 'Pass123!',
     ...overrides,
   };
-  await userEvent.type(screen.getByLabelText('名字'), values.firstName);
-  await userEvent.type(screen.getByLabelText('姓氏'), values.lastName);
+  await userEvent.type(screen.getByLabelText('姓名'), values.fullName);
   await userEvent.type(screen.getByLabelText('电子邮箱'), values.email);
   await userEvent.type(screen.getByLabelText('密码'), values.password);
   await userEvent.type(
@@ -61,8 +59,7 @@ describe('Register', () => {
 
   it('渲染所有字段', () => {
     renderRegister();
-    expect(screen.getByLabelText('名字')).toBeInTheDocument();
-    expect(screen.getByLabelText('姓氏')).toBeInTheDocument();
+    expect(screen.getByLabelText('姓名')).toBeInTheDocument();
     expect(screen.getByLabelText('电子邮箱')).toBeInTheDocument();
     expect(screen.getByLabelText('密码')).toBeInTheDocument();
     expect(screen.getByLabelText('确认密码')).toBeInTheDocument();
@@ -88,8 +85,7 @@ describe('Register', () => {
         refreshToken: 'r',
         _id: 'u1',
         email: 'a@b.com',
-        firstName: '三',
-        lastName: '张',
+        fullName: '张三',
       },
     });
     renderRegister();
@@ -100,8 +96,7 @@ describe('Register', () => {
       expect(authService.register).toHaveBeenCalledWith({
         email: 'a@b.com',
         password: 'Pass123!',
-        firstName: '三',
-        lastName: '张',
+        fullName: '张三',
       });
     });
     expect(mockLogin).toHaveBeenCalled();

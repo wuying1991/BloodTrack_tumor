@@ -17,8 +17,7 @@ let accessToken: string;
 const testUser = {
   email: 'share-contract@example.com',
   password: 'TestPass123',
-  firstName: 'Share',
-  lastName: 'Contract',
+  fullName: 'Share Contract',
   dateOfBirth: '1990-01-01',
   gender: 'male',
 };
@@ -32,8 +31,7 @@ beforeAll(async () => {
   await User.create({
     email: testUser.email,
     passwordHash,
-    firstName: testUser.firstName,
-    lastName: testUser.lastName,
+    fullName: testUser.fullName,
     dateOfBirth: new Date(testUser.dateOfBirth),
     gender: testUser.gender,
     settings: {

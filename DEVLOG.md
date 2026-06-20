@@ -107,7 +107,7 @@
 | M-P3 | Dashboard 接入提醒列表 (依赖 H-P6) | 0.5天 | ✅ |
 | ~~M-P4~~ | ~~数据共享 (生成只读链接 + 撤销)~~ | 2天 | ✅ |
 | M-P5 | 账户删除 (DELETE /api/auth/account, GDPR) | 0.5天 | ✅ |
-| M-P6 | 姓名字段重构：合并 firstName/lastName 为单一 fullName | 0.5天 | ❌ |
+| ~~M-P6~~ | ~~姓名字段重构：合并 firstName/lastName 为单一 fullName~~ | 0.5天 | ✅ |
 | M-P7 | 化疗周期重新设计：方案(regimen) → 药物(含起止日期) | 2-3天 | ❌ |
 
 > **M-P6 姓名字段重构**（2026-06-19 端到端验证发现）：
@@ -155,6 +155,29 @@
 ---
 
 ## 📅 变更日志
+
+### 2026-06-20（M-P6 姓名字段重构 + 端到端验证修复）
+- **M-P6 姓名字段重构**：User Model 的 `firstName` + `lastName` 合并为单一 `fullName`，消除中文场景下显示顺序不一致（Dashboard 显示「李四」姓+名 vs Layout 顶部「四 李」名+姓）。决策：直接替换旧字段（不保留兼容），注册页两个输入框合并为一个「姓名」框，viewer ownerName 直接用 fullName。
+- **后端改动**：
+  - `User.ts` Model: `firstName/lastName` → `fullName` (required, trim)
+  - `contracts/index.ts`: `AuthUser/RegisterRequest/User` 三处改 fullName
+  - `validationMiddleware.ts`: `validateRegister` / `validateProfileUpdate` 改 fullName 校验
+  - `authController.ts`: register/login/getProfile/updateProfile 四处响应改字段
+  - `publicShareController.ts`: owner 查询 `select('fullName')`，ownerName 直接用 `owner.fullName`（不再拼接）
+- **前端改动**：
+  - `types/index.ts` + `authService.ts`: User/RegisterData/AuthResponseData 改 fullName
+  - `Register.tsx`: 两个输入框（名字/姓氏）合并为一个「姓名」框
+  - `Settings.tsx`: formFirstName/formLastName → formFullName，表单合并
+  - `Layout.tsx`: 顶部用户名 `{user.fullName}`（不再名+姓拼接）
+  - `Dashboard.tsx`: 欢迎语 + 统计卡用 `user.fullName`（不再 lastName+firstName）
+- **测试修复**：8 个后端测试（4 contract + 4 integration）+ 5 个前端测试（Login/Register/Dashboard/ChemoCycles/Settings）的 mockUser 和断言全部改 fullName
+- **质量门禁**: 后端 tsc ✅ / contract:check 4/4 ✅ / 后端 jest 105/105 ✅ / 前端 tsc ✅ / 前端 jest 71/71 ✅
+
+### 2026-06-19（M-P4 端到端验证修复）
+- **User Model dateOfBirth/gender 改可选**：原为 required，但注册页 UI 和校验中间件都标 optional，导致注册必 422。三处对齐。
+- **dev 限流放宽**：全局限流 `NODE_ENV=development` 时 100→2000/15min，避免本地联调撞 429。生产仍 100。
+- **`.prettierrc` 加 `endOfLine: auto`**：Windows `core.autocrlf=true` 让 checkout 出 CRLF，prettier 报全文件错误卡死 dev server。`endOfLine:auto` 接受现有行尾。
+- 新增 M-P6 / M-P7 待办（来自端到端验证产品反馈）。
 
 ### 2026-06-19（M-P4 数据共享只读链接）
 - **后端 Model**: `Share.ts` — `user(ref)/token(64-hex unique)/pinHash(bcrypt nullable)/scope{bloodTests,chemoCycles,analytics}/expiresAt(nullable)`，pre-validate 至少一项 scope；索引 `{token unique}` + `{user, createdAt:-1}`
@@ -282,4 +305,4 @@
 - 第一次进度审查报告
 
 ---
-*最后更新: 2026-06-19*
+*最后更新: 2026-06-20*

@@ -28,8 +28,7 @@ afterAll(async () => {
 const newUser = {
   email: 'integration-test@example.com',
   password: 'Test1234!',
-  firstName: 'Test',
-  lastName: 'User',
+  fullName: 'Test User',
   dateOfBirth: '1995-06-15',
   gender: 'male',
 };
@@ -53,7 +52,7 @@ describe('Auth 全链路集成测试', () => {
       expect(res.body.data).toHaveProperty('accessToken');
       expect(res.body.data).toHaveProperty('refreshToken');
       expect(res.body.data.email).toBe(newUser.email);
-      expect(res.body.data.firstName).toBe(newUser.firstName);
+      expect(res.body.data.fullName).toBe(newUser.fullName);
       expect(res.body.data).not.toHaveProperty('passwordHash');
     });
 
@@ -94,8 +93,7 @@ describe('Auth 全链路集成测试', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.email).toBe(newUser.email);
-      expect(res.body.data.firstName).toBe(newUser.firstName);
-      expect(res.body.data.lastName).toBe(newUser.lastName);
+      expect(res.body.data.fullName).toBe(newUser.fullName);
       expect(res.body.data).not.toHaveProperty('passwordHash');
       expect(res.body.data).not.toHaveProperty('resetPasswordToken');
     });
@@ -149,13 +147,12 @@ describe('Auth 全链路集成测试', () => {
       const res = await request(app)
         .put('/api/auth/profile')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send({ firstName: 'Updated', gender: 'female' });
+        .send({ fullName: 'Updated', gender: 'female' });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.firstName).toBe('Updated');
+      expect(res.body.data.fullName).toBe('Updated');
       expect(res.body.data.gender).toBe('female');
-      expect(res.body.data.lastName).toBe(newUser.lastName);
     });
 
     it('PUT /api/auth/profile - 空body返回400', async () => {
@@ -198,7 +195,7 @@ describe('Auth 全链路集成测试', () => {
         .set('Authorization', `Bearer ${accessToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.firstName).toBe('Updated');
+      expect(res.body.data.fullName).toBe('Updated');
       expect(res.body.data.gender).toBe('female');
       expect(res.body.data.settings.notifications.email).toBe(false);
     });

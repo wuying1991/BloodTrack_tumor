@@ -26,16 +26,14 @@ afterAll(async () => {
 const userA = {
   email: 'share-a@example.com',
   password: 'Test1234!',
-  firstName: 'Share',
-  lastName: 'AlphaUser',
+  fullName: 'Share AlphaUser',
   dateOfBirth: '1990-01-01',
   gender: 'female',
 };
 const userB = {
   email: 'share-b@example.com',
   password: 'Test1234!',
-  firstName: 'Share',
-  lastName: 'BetaUser',
+  fullName: 'Share BetaUser',
   dateOfBirth: '1991-02-02',
   gender: 'male',
 };
@@ -230,7 +228,7 @@ describe('Share 集成测试 (受保护 API)', () => {
     it('GET /:token 返回 owner 姓名 + scope + requiresPin', async () => {
       const res = await request(app).get(`/api/public/shares/${publicToken}`);
       expect(res.status).toBe(200);
-      expect(res.body.data.ownerName).toBe(`${userA.firstName} ${userA.lastName}`);
+      expect(res.body.data.ownerName).toBe(userA.fullName);
       expect(res.body.data.requiresPin).toBe(false);
       expect(res.body.data.scope).toEqual({
         bloodTests: true, chemoCycles: true, analytics: true,
@@ -312,8 +310,7 @@ describe('Share 集成测试 (受保护 API)', () => {
       const tmp = await request(app).post('/api/auth/register').send({
         email: 'share-cascade@example.com',
         password: 'Test1234!',
-        firstName: 'Cascade',
-        lastName: 'User',
+        fullName: 'Cascade User',
         dateOfBirth: '1992-01-01',
         gender: 'male',
       });

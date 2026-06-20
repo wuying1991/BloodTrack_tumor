@@ -24,8 +24,7 @@ jest.mock('../../../context/AuthContext', () => ({
   useAuth: () => ({
     user: {
       _id: 'test-user-id',
-      firstName: '张',
-      lastName: '三',
+      fullName: '张三',
       email: 'test@example.com',
     },
     isAuthenticated: true,

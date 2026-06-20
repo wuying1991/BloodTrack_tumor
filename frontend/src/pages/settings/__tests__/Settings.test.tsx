@@ -14,8 +14,7 @@ const mockRefreshUser = jest.fn().mockResolvedValue(undefined);
 const mockUser = {
   _id: 'u1',
   email: 'a@b.com',
-  firstName: '三',
-  lastName: '张',
+  fullName: '张三',
   gender: 'male',
   dateOfBirth: '1990-01-01T00:00:00.000Z',
   settings: {
@@ -60,8 +59,7 @@ describe('Settings', () => {
     it('用 user 字段预填表单，邮箱只读', () => {
       render(<Settings />);
       expect(screen.getByDisplayValue('a@b.com')).toBeDisabled();
-      expect(screen.getByDisplayValue('三')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('张')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('张三')).toBeInTheDocument();
       expect(screen.getByDisplayValue('1990-01-01')).toBeInTheDocument();
     });
 
@@ -76,8 +74,7 @@ describe('Settings', () => {
       );
       await waitFor(() => {
         expect(authService.updateProfile).toHaveBeenCalledWith({
-          firstName: '三',
-          lastName: '张',
+          fullName: '张三',
           gender: 'male',
           dateOfBirth: '1990-01-01',
         });

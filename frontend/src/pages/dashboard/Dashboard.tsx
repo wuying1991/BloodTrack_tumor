@@ -153,7 +153,7 @@ const Dashboard: React.FC = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <div className="welcome-section">
-          <h1>{user ? `${user.lastName}${user.firstName}，您好` : '仪表板'}</h1>
+          <h1>{user ? `${user.fullName}，您好` : '仪表板'}</h1>
           <p className="welcome-subtitle">欢迎回到化疗血常规追踪器</p>
         </div>
         <div className="header-actions">
@@ -258,7 +258,7 @@ const Dashboard: React.FC = () => {
               <div className="stat-icon">👤</div>
               <div className="stat-content">
                 <span className="stat-value">
-                  {user ? user.lastName + user.firstName : '-'}
+                  {user ? user.fullName : '-'}
                 </span>
                 <span className="stat-label">当前用户</span>
               </div>

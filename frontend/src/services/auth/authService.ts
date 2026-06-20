@@ -9,8 +9,7 @@ export interface TokenPair {
 export interface AuthResponseData {
   _id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   settings?: any;
 }
 
@@ -42,8 +41,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   dateOfBirth?: string;
   gender?: string;
 }
@@ -98,7 +96,7 @@ class AuthService {
 
   async updateProfile(
     fields: Partial<
-      Pick<User, 'firstName' | 'lastName' | 'dateOfBirth' | 'gender'>
+      Pick<User, 'fullName' | 'dateOfBirth' | 'gender'>
     >
   ): Promise<{ success: boolean; data: User }> {
     return apiClient.put('/auth/profile', fields);

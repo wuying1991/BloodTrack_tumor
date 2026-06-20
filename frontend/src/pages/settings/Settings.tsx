@@ -14,8 +14,7 @@ const Settings: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
 
-  const [formFirstName, setFormFirstName] = useState(user?.firstName || '');
-  const [formLastName, setFormLastName] = useState(user?.lastName || '');
+  const [formFullName, setFormFullName] = useState(user?.fullName || '');
   const [formGender, setFormGender] = useState(user?.gender || '');
   const [formDateOfBirth, setFormDateOfBirth] = useState(
     user?.dateOfBirth
@@ -50,8 +49,7 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      setFormFirstName(user.firstName || '');
-      setFormLastName(user.lastName || '');
+      setFormFullName(user.fullName || '');
       setFormGender(user.gender || '');
       setFormDateOfBirth(
         user.dateOfBirth
@@ -82,8 +80,7 @@ const Settings: React.FC = () => {
     setIsSaving(true);
     try {
       await authService.updateProfile({
-        firstName: formFirstName,
-        lastName: formLastName,
+        fullName: formFullName,
         gender: formGender || undefined,
         dateOfBirth: formDateOfBirth || undefined,
       });
@@ -254,25 +251,14 @@ const Settings: React.FC = () => {
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>名字</label>
-                  <input
-                    type="text"
-                    value={formFirstName}
-                    onChange={e => setFormFirstName(e.target.value)}
-                    placeholder="名"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>姓氏</label>
-                  <input
-                    type="text"
-                    value={formLastName}
-                    onChange={e => setFormLastName(e.target.value)}
-                    placeholder="姓"
-                  />
-                </div>
+              <div className="form-group">
+                <label>姓名</label>
+                <input
+                  type="text"
+                  value={formFullName}
+                  onChange={e => setFormFullName(e.target.value)}
+                  placeholder="请输入您的姓名"
+                />
               </div>
 
               <div className="form-row">

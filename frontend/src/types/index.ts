@@ -23,8 +23,7 @@ export interface ApiResponse<T> {
 export interface User {
   _id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   dateOfBirth?: string;
   gender?: string;
   settings: {
@@ -97,8 +96,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
 }
@@ -197,7 +195,7 @@ export type ShareDeleteResponse = ApiResponse<{ message: string }>;
 
 // 公开端
 export interface PublicShareMeta {
-  ownerName: string;        // "<firstName> <lastName>"
+  ownerName: string;        // 分享者 fullName
   scope: ShareScope;
   expiresAt: string | null;
   requiresPin: boolean;

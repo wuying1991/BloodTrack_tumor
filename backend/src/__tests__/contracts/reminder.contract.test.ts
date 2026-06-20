@@ -19,8 +19,7 @@ let testUserId: string;
 const testUser = {
   email: 'reminder-contract@example.com',
   password: 'TestPass123',
-  firstName: 'Reminder',
-  lastName: 'Contract',
+  fullName: 'Reminder Contract',
   dateOfBirth: '1990-01-01',
   gender: 'male',
 };
@@ -35,8 +34,7 @@ beforeAll(async () => {
   const user = await User.create({
     email: testUser.email,
     passwordHash,
-    firstName: testUser.firstName,
-    lastName: testUser.lastName,
+    fullName: testUser.fullName,
     dateOfBirth: new Date(testUser.dateOfBirth),
     gender: testUser.gender,
   });

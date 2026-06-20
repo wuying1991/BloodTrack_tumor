@@ -70,8 +70,7 @@ describe('Login', () => {
           refreshToken: 'refresh-1',
           _id: 'u1',
           email: 'a@b.com',
-          firstName: 'A',
-          lastName: 'B',
+          fullName: 'A B',
         },
       });
       renderLogin();

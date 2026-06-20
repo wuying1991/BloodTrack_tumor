@@ -38,7 +38,7 @@ export async function loadShareWithPin(
     }
   }
 
-  const owner = await User.findById(share.user).select('firstName lastName');
+  const owner = await User.findById(share.user).select('fullName');
   if (!owner) {
     // owner 已被删除（理论上 deleteAccount 会级联清理 share，这里是兜底）
     throw ApiError.notFound('链接不存在 (Share not found)');
@@ -56,7 +56,7 @@ export const getShareMeta = asyncHandler(async (req: Request, res: Response): Pr
   res.json({
     success: true,
     data: {
-      ownerName: `${owner.firstName} ${owner.lastName}`,
+      ownerName: owner.fullName,
       scope: share.scope,
       expiresAt: share.expiresAt,
       requiresPin: !!share.pinHash,

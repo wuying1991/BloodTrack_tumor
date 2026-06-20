@@ -39,8 +39,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
 }
@@ -53,8 +52,7 @@ export interface TokenPair {
 export interface AuthUser {
   _id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   settings?: UserSettings;
 }
 
@@ -81,8 +79,7 @@ export type LogoutResponse = ApiResponse<{ message: string }>;
 export interface User {
   _id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   dateOfBirth?: string;
   gender?: string;
   settings: UserSettings;

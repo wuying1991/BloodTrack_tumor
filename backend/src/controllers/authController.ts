@@ -44,7 +44,7 @@ const generateTokenPair = (id: string) => {
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { email, password, firstName, lastName, dateOfBirth, gender } = req.body;
+  const { email, password, fullName, dateOfBirth, gender } = req.body;
 
   // Check if user exists
   const userExists = await User.findOne({ email });
@@ -61,8 +61,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
   const user = await User.create({
     email,
     passwordHash,
-    firstName,
-    lastName,
+    fullName,
     dateOfBirth,
     gender,
   });
@@ -79,8 +78,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
     data: {
       _id: user._id.toString(),
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      fullName: user.fullName,
       ...tokens,
     },
   });
@@ -106,8 +104,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response): Promi
     data: {
       _id: user._id.toString(),
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      fullName: user.fullName,
       settings: user.settings,
       ...tokens,
     },
@@ -244,8 +241,7 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response): 
     data: {
       _id: user._id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      fullName: user.fullName,
       dateOfBirth: user.dateOfBirth,
       gender: user.gender,
       settings: user.settings,
@@ -260,8 +256,7 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response): 
 // @access  Private
 export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
   const fields: Record<string, unknown> = {};
-  if (req.body.firstName !== undefined) fields.firstName = req.body.firstName;
-  if (req.body.lastName !== undefined) fields.lastName = req.body.lastName;
+  if (req.body.fullName !== undefined) fields.fullName = req.body.fullName;
   if (req.body.dateOfBirth !== undefined) fields.dateOfBirth = req.body.dateOfBirth;
   if (req.body.gender !== undefined) fields.gender = req.body.gender;
 
@@ -284,8 +279,7 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
     data: {
       _id: user._id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      fullName: user.fullName,
       dateOfBirth: user.dateOfBirth,
       gender: user.gender,
       settings: user.settings,

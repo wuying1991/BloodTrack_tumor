@@ -33,8 +33,7 @@ afterAll(async () => {
 const userA = {
   email: 'delete-a@example.com',
   password: 'Test1234!',
-  firstName: 'Del',
-  lastName: 'AlphaUser',
+  fullName: 'Del AlphaUser',
   dateOfBirth: '1990-01-01',
   gender: 'female',
 };
@@ -42,8 +41,7 @@ const userA = {
 const userB = {
   email: 'delete-b@example.com',
   password: 'Test1234!',
-  firstName: 'Del',
-  lastName: 'BetaUser',
+  fullName: 'Del BetaUser',
   dateOfBirth: '1991-02-02',
   gender: 'male',
 };
