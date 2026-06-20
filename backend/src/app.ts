@@ -20,10 +20,10 @@ app.use(helmet());
 // 测试环境跳过限流：避免集成测试 30 个用例打爆 5/min 阈值
 const isTest = process.env.NODE_ENV === 'test';
 
-// 全局限流: 每 IP 每 15 分钟 100 次
+// 全局限流: 每 IP 每 15 分钟 100 次（开发环境放宽到 2000，避免本地联调撞限流）
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: isTest ? 100 : (process.env.NODE_ENV === 'development' ? 2000 : 100),
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => isTest,

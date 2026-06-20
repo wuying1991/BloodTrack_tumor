@@ -23,8 +23,8 @@ const userSchema = new Schema<IUser>(
     passwordHash: { type: String, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    dateOfBirth: { type: Date, required: true },
-    gender: { type: String, required: true },
+    dateOfBirth: { type: Date },
+    gender: { type: String },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
     settings: {

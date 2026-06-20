@@ -107,6 +107,22 @@
 | M-P3 | Dashboard 接入提醒列表 (依赖 H-P6) | 0.5天 | ✅ |
 | ~~M-P4~~ | ~~数据共享 (生成只读链接 + 撤销)~~ | 2天 | ✅ |
 | M-P5 | 账户删除 (DELETE /api/auth/account, GDPR) | 0.5天 | ✅ |
+| M-P6 | 姓名字段重构：合并 firstName/lastName 为单一 fullName | 0.5天 | ❌ |
+| M-P7 | 化疗周期重新设计：方案(regimen) → 药物(含起止日期) | 2-3天 | ❌ |
+
+> **M-P6 姓名字段重构**（2026-06-19 端到端验证发现）：
+> 现状 User 模型拆 `firstName`(名) / `lastName`(姓)，但显示顺序不一致 —— Dashboard 显示「李四」(中式 姓+名)，顶部账户区显示「四 李」(西式 名+姓)。中文场景下拆分姓/名意义不大。
+> 方案：合并为单一 `fullName` 字段。影响面：User Model / contracts / 前端 types / 注册页 / Settings / Dashboard / Layout / viewer ownerName / 相关测试 + 契约校验。需走 brainstorm → spec。
+
+> **M-P7 化疗周期重新设计**（2026-06-19 端到端验证发现）：
+> 现状 ChemoCycle 只有 `startDate/endDate` + 扁平 `medications[]`（名称/剂量/时间表全必填自由文本），不符合实际治疗记录习惯。
+> 目标形态：
+> - 化疗周期 = 一个**方案**（regimen，如「VAC方案」）+ 方案起止日期
+> - 方案下挂多个**药物**，每个药物有独立的**起止日期**（哪天开始用、哪天结束）+ 剂量（**可选**，病人不一定清楚）+ 给药方式
+> - 周期默认规则：开始 = 首日用药，结束 ≈ 第 22 天（21 天间隔，标准化疗周期），但**仅为参考默认**，实际可改
+> - 便捷输入：新建下一周期时，默认以上一周期结束日为起点
+> - 用药时间表从自由文本改为**日期选择**（给药日 multi-select 或起止日期）
+> 影响面：ChemoCycle Model 重构（medications 嵌套结构 + 日期字段）、contracts、前端 ChemoCycles 页面 + 表单、契约校验、相关测试。需走 brainstorm → spec → plan。
 
 ### 🟢 低优先级
 
