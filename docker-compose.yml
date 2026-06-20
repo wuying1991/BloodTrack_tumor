@@ -1,0 +1,46 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: 5000
+      MONGODB_URI: mongodb://mongo:27017/bloodtrack
+      NODE_ENV: production
+      # 生产部署必须改：至少 16 字符的随机串（见 secrets.ts）
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_at_least_16_chars}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_too_at_least_16_chars}
+      # 前端访问地址，用于拼接分享链接的 shareUrl
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: ./frontend
+      # 浏览器访问后端的地址（从用户视角，走宿主机端口）
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000/api}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  mongo_data:

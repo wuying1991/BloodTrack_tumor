@@ -130,7 +130,7 @@
 |----|------|------|------|
 | L-P1 | PWA 离线支持 | 3天 | ❌ |
 | L-P2 | 安全审计日志 (异常登录检测) | 2天 | ❌ |
-| L-P3 | CI/CD + Docker | 3天 | ❌ |
+| ~~L-P3~~ | ~~CI/CD + Docker~~ | 3天 | ✅ |
 | L-P4 | E2E 测试 (Cypress) | 3天 | ❌ |
 | L-P5 | i18n / 国际化 (i18next) | 2天 | ❌ |
 | L-P6 | axios 升级到 1.x (CVE) | 0.1天 | ✅ |
@@ -155,6 +155,21 @@
 ---
 
 ## 📅 变更日志
+
+### 2026-06-20（L-P3 CI/CD + Docker）
+- **GitHub Actions CI** (`.github/workflows/ci.yml`)：push main + PR 触发，两个 job 并行：
+  - backend: `tsc --noEmit` + `npm run contract:check` + `jest`
+  - frontend: `tsc --noEmit` + `npm run lint` + `react-scripts test`
+  - 用 `npm ci` + `actions/setup-node` 的 npm 缓存加速
+- **backend Dockerfile**：多阶段构建（builder 跑 `tsc` 编译到 dist/ → runner 只装生产依赖，非 root 用户运行）
+- **frontend Dockerfile + nginx.conf**：多阶段构建（builder 跑 `npm run build` → nginx:alpine 托管静态文件），nginx 配 SPA fallback（`try_files $uri /index.html`）让 React Router 接管路由 + static 长缓存 + gzip
+- **docker-compose.yml**：mongo + backend + frontend 三服务
+  - mongo:7 带 healthcheck（`mongosh --eval ping`），backend 等 mongo 健康后才启动
+  - backend 注入 `MONGODB_URI=mongodb://mongo:27017/bloodtrack` + `JWT_SECRET` / `FRONTEND_URL` 等环境变量（生产 secret 通过宿主 `.env` 注入，默认值仅占位）
+  - frontend 通过 build arg `REACT_APP_API_URL` 注入后端地址
+  - `mongo_data` volume 持久化数据
+- **DEPLOY.md**：本地 Docker 一键启动 + 生产部署指南（env 配置 / 反向代理 / 架构图）
+- **未本地验证 docker build**：本地未装 Docker Desktop，配置正确性靠语法校验 + CI 实跑；首次 push 到 GitHub 后 CI 会验证 yml
 
 ### 2026-06-20（M-P6 姓名字段重构 + 端到端验证修复）
 - **M-P6 姓名字段重构**：User Model 的 `firstName` + `lastName` 合并为单一 `fullName`，消除中文场景下显示顺序不一致（Dashboard 显示「李四」姓+名 vs Layout 顶部「四 李」名+姓）。决策：直接替换旧字段（不保留兼容），注册页两个输入框合并为一个「姓名」框，viewer ownerName 直接用 fullName。
