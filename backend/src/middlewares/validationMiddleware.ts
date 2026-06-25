@@ -219,35 +219,80 @@ export const validateId = runValidation([
 ]);
 
 // Chemo cycle validation
+const hasMedicationContent = (m: Record<string, unknown> | undefined): boolean => {
+  if (!m) return false;
+  return ['name', 'dosage', 'startDate', 'endDate', 'notes'].some(key => {
+    const value = m[key];
+    return typeof value === 'string' ? value.trim().length > 0 : value !== undefined && value !== null;
+  });
+};
+
+const validateMedicationDateRange = (value: unknown, { req, path }: any) => {
+  const match = path.match(/^medications\.(\d+)\.endDate$/);
+  if (!match || !value) return true;
+  const idx = Number(match[1]);
+  const start = req.body?.medications?.[idx]?.startDate;
+  if (start && new Date(value as string) < new Date(start)) {
+    throw new Error('用药结束日期必须晚于开始日期');
+  }
+  return true;
+};
+
 export const validateChemoCycle = runValidation([
+  body('regimenName')
+    .isString()
+    .trim()
+    .isLength({ min: 1, max: 120 })
+    .withMessage('方案名称必须为 1-120 字符'),
   body('startDate')
     .notEmpty()
     .withMessage('开始日期是必需的 (Start date is required)')
     .isISO8601()
     .withMessage('请输入有效的日期格式'),
   body('endDate')
-    .notEmpty()
-    .withMessage('结束日期是必需的 (End date is required)')
+    .optional()
     .isISO8601()
     .withMessage('请输入有效的日期格式')
     .custom((value, { req }) => {
-      if (new Date(value) < new Date(req.body.startDate)) {
+      if (value && req.body.startDate && new Date(value) < new Date(req.body.startDate)) {
         throw new Error('结束日期必须晚于开始日期');
       }
       return true;
     }),
   body('medications')
-    .isArray({ min: 1 })
-    .withMessage('至少需要一种药物'),
+    .optional()
+    .isArray()
+    .withMessage('药物列表必须为数组'),
+  body('medications.*')
+    .optional()
+    .custom(value => {
+      if (!hasMedicationContent(value)) {
+        throw new Error('药物信息至少需要填写一项');
+      }
+      return true;
+    }),
   body('medications.*.name')
-    .notEmpty()
-    .withMessage('药物名称是必需的'),
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .withMessage('药物名称必须是文本'),
   body('medications.*.dosage')
-    .notEmpty()
-    .withMessage('药物剂量是必需的'),
-  body('medications.*.schedule')
-    .notEmpty()
-    .withMessage('用药时间表是必需的'),
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .withMessage('药物剂量必须是文本'),
+  body('medications.*.startDate')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('请输入有效的用药开始日期'),
+  body('medications.*.endDate')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('请输入有效的用药结束日期')
+    .custom(validateMedicationDateRange),
+  body('medications.*.notes')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage('药物备注最多 1000 字符'),
   body('doctorNotes')
     .optional()
     .isString()
@@ -256,6 +301,12 @@ export const validateChemoCycle = runValidation([
 
 // Update validation - all fields optional
 export const validateChemoCycleUpdate = runValidation([
+  body('regimenName')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 1, max: 120 })
+    .withMessage('方案名称必须为 1-120 字符'),
   body('startDate')
     .optional()
     .isISO8601()
@@ -263,23 +314,47 @@ export const validateChemoCycleUpdate = runValidation([
   body('endDate')
     .optional()
     .isISO8601()
-    .withMessage('请输入有效的日期格式'),
+    .withMessage('请输入有效的日期格式')
+    .custom((value, { req }) => {
+      if (value && req.body.startDate && new Date(value) < new Date(req.body.startDate)) {
+        throw new Error('结束日期必须晚于开始日期');
+      }
+      return true;
+    }),
   body('medications')
     .optional()
-    .isArray({ min: 1 })
-    .withMessage('至少需要一种药物'),
+    .isArray()
+    .withMessage('药物列表必须为数组'),
+  body('medications.*')
+    .optional()
+    .custom(value => {
+      if (!hasMedicationContent(value)) {
+        throw new Error('药物信息至少需要填写一项');
+      }
+      return true;
+    }),
   body('medications.*.name')
-    .optional()
-    .notEmpty()
-    .withMessage('药物名称不能为空'),
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .withMessage('药物名称必须是文本'),
   body('medications.*.dosage')
-    .optional()
-    .notEmpty()
-    .withMessage('药物剂量不能为空'),
-  body('medications.*.schedule')
-    .optional()
-    .notEmpty()
-    .withMessage('用药时间表不能为空'),
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .withMessage('药物剂量必须是文本'),
+  body('medications.*.startDate')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('请输入有效的用药开始日期'),
+  body('medications.*.endDate')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('请输入有效的用药结束日期')
+    .custom(validateMedicationDateRange),
+  body('medications.*.notes')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage('药物备注最多 1000 字符'),
   body('doctorNotes')
     .optional()
     .isString()
