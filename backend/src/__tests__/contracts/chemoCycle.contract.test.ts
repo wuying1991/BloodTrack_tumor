@@ -57,6 +57,7 @@ afterAll(async () => {
 const CHEMO_CYCLE_RESPONSE_SHAPE = {
   _id: 'string',
   user: 'string',
+  regimenName: 'string',
   startDate: 'string',
   endDate: 'string',
   medications: 'object',
@@ -97,11 +98,23 @@ function validateShape(obj: any, shape: Record<string, string>, path = '') {
 }
 
 const validCycleData = {
+  regimenName: 'VAC方案',
   startDate: '2024-03-01',
   endDate: '2024-05-01',
   medications: [
-    { name: '环磷酰胺', dosage: '500mg', schedule: '每3周一次' },
-    { name: '多柔比星', dosage: '50mg', schedule: '每3周一次' },
+    {
+      name: '环磷酰胺',
+      dosage: '500mg',
+      startDate: '2024-03-01',
+      endDate: '2024-03-05',
+      notes: '第1-5天',
+    },
+    {
+      name: '多柔比星',
+      dosage: '50mg',
+      startDate: '2024-03-01',
+      endDate: '2024-03-01',
+    },
   ],
   doctorNotes: '第一期化疗方案',
 };
@@ -124,11 +137,14 @@ describe('ChemoCycle API 契约测试', () => {
 
       expect(typeof data._id).toBe('string');
       expect(typeof data.user).toBe('string');
+      expect(data.regimenName).toBe(validCycleData.regimenName);
       expect(Array.isArray(data.medications)).toBe(true);
       expect(data.medications.length).toBe(2);
       expect(data.medications[0]).toHaveProperty('name');
       expect(data.medications[0]).toHaveProperty('dosage');
-      expect(data.medications[0]).toHaveProperty('schedule');
+      expect(data.medications[0]).toHaveProperty('startDate');
+      expect(data.medications[0]).toHaveProperty('endDate');
+      expect(data.medications[0]).toHaveProperty('notes');
     });
 
     it('缺少必填字段时返回 422', async () => {

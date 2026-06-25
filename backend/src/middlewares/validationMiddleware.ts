@@ -228,7 +228,7 @@ const hasMedicationContent = (m: Record<string, unknown> | undefined): boolean =
 };
 
 const validateMedicationDateRange = (value: unknown, { req, path }: any) => {
-  const match = path.match(/^medications\.(\d+)\.endDate$/);
+  const match = path.match(/^medications(?:\.|\[)(\d+)(?:\]|\.)\.endDate$/) || path.match(/^medications\[(\d+)\]\.endDate$/);
   if (!match || !value) return true;
   const idx = Number(match[1]);
   const start = req.body?.medications?.[idx]?.startDate;

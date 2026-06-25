@@ -72,9 +72,10 @@ describe('DELETE /api/auth/account 集成测试', () => {
       .post('/api/chemo-cycles')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
+        regimenName: '删除测试方案',
         startDate: '2026-01-01',
         endDate: '2026-01-15',
-        medications: [{ name: 'X', dosage: '100mg', schedule: 'D1' }],
+        medications: [{ name: 'X', dosage: '100mg', notes: 'D1' }],
       });
     await request(app)
       .post('/api/reminders')
