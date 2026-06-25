@@ -8,6 +8,7 @@ import './Auth.css';
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -80,15 +81,26 @@ const Login: React.FC = () => {
           </div>
           <div className="form-group">
             <label htmlFor="password">密码</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              placeholder="请输入您的密码"
-              disabled={isLoading}
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                placeholder="请输入您的密码"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(prev => !prev)}
+                disabled={isLoading}
+                aria-label={showPassword ? '隐藏密码' : '显示密码'}
+              >
+                {showPassword ? '隐藏' : '显示'}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

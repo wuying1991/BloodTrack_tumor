@@ -16,6 +16,8 @@ const Register: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -120,32 +122,57 @@ const Register: React.FC = () => {
           </div>
           <div className="form-group">
             <label htmlFor="password">密码</label>
-            <input
-              type="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="请输入密码 (至少6个字符，包含大小写字母和数字)"
-              disabled={isLoading}
-              className={validationErrors.password ? 'input-error' : ''}
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="请输入密码"
+                disabled={isLoading}
+                className={validationErrors.password ? 'input-error' : ''}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(prev => !prev)}
+                disabled={isLoading}
+                aria-label={showPassword ? '隐藏密码' : '显示密码'}
+              >
+                {showPassword ? '隐藏' : '显示'}
+              </button>
+            </div>
+            <p className="password-hint">
+              密码至少 6 位，且必须同时包含大写字母、小写字母和数字。
+            </p>
             {validationErrors.password && (
               <span className="field-error">{validationErrors.password}</span>
             )}
           </div>
           <div className="form-group">
             <label htmlFor="confirmPassword">确认密码</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              placeholder="请再次输入密码"
-              disabled={isLoading}
-              className={validationErrors.confirmPassword ? 'input-error' : ''}
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                placeholder="请再次输入密码"
+                disabled={isLoading}
+                className={validationErrors.confirmPassword ? 'input-error' : ''}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowConfirmPassword(prev => !prev)}
+                disabled={isLoading}
+                aria-label={showConfirmPassword ? '隐藏确认密码' : '显示确认密码'}
+              >
+                {showConfirmPassword ? '隐藏' : '显示'}
+              </button>
+            </div>
             {validationErrors.confirmPassword && (
               <span className="field-error">
                 {validationErrors.confirmPassword}
