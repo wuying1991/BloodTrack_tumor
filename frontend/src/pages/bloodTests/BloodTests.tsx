@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BloodTest } from '../../types';
 import BloodTestForm from '../../components/bloodTest/BloodTestForm';
 import BloodTestList from '../../components/bloodTest/BloodTestList';
-import bloodTestService from '../../services/bloodTest/bloodTestService';
+import bloodTestService, {
+  BloodTestFormData,
+} from '../../services/bloodTest/bloodTestService';
+import chemoCycleService from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
 import './BloodTests.css';
+
+const CYCLE_WARNING_DAYS = 21;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 type ViewMode = 'list' | 'add' | 'edit';
 
 const BloodTests: React.FC = () => {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingTest, setEditingTest] = useState<BloodTest | undefined>(
     undefined
@@ -61,6 +69,48 @@ const BloodTests: React.FC = () => {
     setEditingTest(undefined);
   };
 
+  const beforeBloodTestSubmit = async (
+    data: BloodTestFormData
+  ): Promise<'continue' | 'cancel'> => {
+    // 编辑已有记录时不弹周期提醒，避免干扰用户修正历史数据
+    if (editingTest) return 'continue';
+
+    try {
+      const res = await chemoCycleService.getChemoCycles(1, 100);
+      const cycles = res.data || [];
+      if (cycles.length === 0) {
+        const goAddCycle = window.confirm(
+          '建议先添加化疗周期记录，以便关联血常规数据。\n\n点击“确定”去添加周期；点击“取消”仍然保存血常规。'
+        );
+        if (goAddCycle) {
+          navigate('/chemo-cycles');
+          return 'cancel';
+        }
+        return 'continue';
+      }
+
+      const latest = [...cycles].sort(
+        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      )[0];
+      const testDate = new Date(data.date).getTime();
+      const latestStart = new Date(latest.startDate).getTime();
+      if (testDate - latestStart > CYCLE_WARNING_DAYS * DAY_MS) {
+        const goAddCycle = window.confirm(
+          '距离上一个化疗周期开始已超过 21 天，是否需要添加新的化疗周期？\n\n点击“确定”去添加周期；点击“取消”仍然保存血常规。'
+        );
+        if (goAddCycle) {
+          navigate('/chemo-cycles');
+          return 'cancel';
+        }
+      }
+    } catch {
+      // 周期检查失败不阻止血常规保存
+      return 'continue';
+    }
+
+    return 'continue';
+  };
+
   return (
     <div className="blood-tests-page">
       <div className="page-header">
@@ -96,6 +146,7 @@ const BloodTests: React.FC = () => {
             initialData={editingTest}
             onSubmitSuccess={handleSubmitSuccess}
             onCancel={handleCancel}
+            beforeSubmit={beforeBloodTestSubmit}
           />
         )}
       </div>

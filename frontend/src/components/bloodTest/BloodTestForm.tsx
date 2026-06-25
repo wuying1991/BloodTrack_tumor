@@ -34,12 +34,14 @@ interface BloodTestFormProps {
   initialData?: BloodTest;
   onSubmitSuccess: () => void;
   onCancel?: () => void;
+  beforeSubmit?: (data: BloodTestFormData) => Promise<'continue' | 'cancel'>;
 }
 
 const BloodTestForm: React.FC<BloodTestFormProps> = ({
   initialData,
   onSubmitSuccess,
   onCancel,
+  beforeSubmit,
 }) => {
   const isEditing = !!initialData;
 
@@ -285,18 +287,28 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
 
     setIsSubmitting(true);
 
+    const rawFormData: BloodTestFormData = {
+      date: formData.date.value,
+      wbc: formData.wbc.value,
+      rbc: formData.rbc.value,
+      hgb: formData.hgb.value,
+      plt: formData.plt.value,
+      neu: formData.neu.value,
+      lym: formData.lym.value,
+      notes: formData.notes.value,
+      chemoCycleId: formData.chemoCycleId.value,
+    };
+
     try {
-      const apiData = bloodTestService.convertFormToApiData({
-        date: formData.date.value,
-        wbc: formData.wbc.value,
-        rbc: formData.rbc.value,
-        hgb: formData.hgb.value,
-        plt: formData.plt.value,
-        neu: formData.neu.value,
-        lym: formData.lym.value,
-        notes: formData.notes.value,
-        chemoCycleId: formData.chemoCycleId.value,
-      });
+      if (beforeSubmit) {
+        const decision = await beforeSubmit(rawFormData);
+        if (decision === 'cancel') {
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const apiData = bloodTestService.convertFormToApiData(rawFormData);
 
       if (isEditing && initialData?._id) {
         await bloodTestService.updateBloodTest(initialData._id, apiData);
@@ -460,7 +472,7 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
                 .join('、');
               return (
                 <option key={c._id} value={c._id}>
-                  {start} ~ {end}
+                  {c.regimenName || '未命名方案'}：{start} ~ {end}
                   {drugs ? `（${drugs}）` : ''}
                 </option>
               );
