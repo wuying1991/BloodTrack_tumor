@@ -137,6 +137,48 @@ export type BloodTestResponse = ApiResponse<BloodTest>;
 export type BloodTestDeleteResponse = ApiResponse<{ message: string }>;
 
 // ============================================================
+// 化疗周期 (Chemo Cycle)
+// ============================================================
+
+export interface ChemoMedication {
+  name?: string;
+  dosage?: string;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+  /** legacy only: old records used schedule; normalize to notes when read */
+  schedule?: string;
+}
+
+export interface ChemoCycle {
+  _id: string;
+  user: string;
+  regimenName: string;
+  startDate: string;
+  endDate: string;
+  medications: ChemoMedication[];
+  doctorNotes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ChemoCycleCreateRequest {
+  regimenName: string;
+  startDate: string;
+  endDate?: string;
+  medications?: ChemoMedication[];
+  doctorNotes?: string;
+}
+
+export type ChemoCycleUpdateRequest = Partial<ChemoCycleCreateRequest>;
+
+export type ChemoCycleListResponse = ApiResponse<ChemoCycle[]> & {
+  pagination: PaginationMeta;
+};
+export type ChemoCycleResponse = ApiResponse<ChemoCycle>;
+export type ChemoCycleDeleteResponse = ApiResponse<{ message: string }>;
+
+// ============================================================
 // 提醒 (Reminder)
 // ============================================================
 

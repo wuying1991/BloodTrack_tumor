@@ -102,24 +102,40 @@ export interface RegisterData {
 }
 
 // ============================================================
-// 化疗周期类型 (后端尚未实现，此为前置定义)
-// TODO: 后端实现后移入 contracts/index.ts
+// 化疗周期类型
 // ============================================================
+
+export interface ChemoMedication {
+  name?: string;
+  dosage?: string;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+  /** legacy only: old records used schedule; normalize to notes when read */
+  schedule?: string;
+}
 
 export interface ChemoCycle {
   _id: string;
-  userId: string;
-  startDate: Date;
-  endDate: Date;
-  medications: Array<{
-    name: string;
-    dosage: string;
-    schedule: string;
-  }>;
+  user: string;
+  regimenName: string;
+  startDate: string;
+  endDate: string;
+  medications: ChemoMedication[];
   doctorNotes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export interface ChemoCycleCreateRequest {
+  regimenName: string;
+  startDate: string;
+  endDate?: string;
+  medications?: ChemoMedication[];
+  doctorNotes?: string;
+}
+
+export type ChemoCycleUpdateRequest = Partial<ChemoCycleCreateRequest>;
 
 // ============================================================
 // 提醒类型 (后端尚未实现，此为前置定义)
