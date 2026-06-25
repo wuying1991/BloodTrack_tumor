@@ -1,8 +1,85 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
-import { ChemoCycle } from '../models/ChemoCycle';
+import { ChemoCycle, IChemoCycle, IMedication } from '../models/ChemoCycle';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_CYCLE_DAYS = 21;
+
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * DAY_MS);
+}
+
+function normalizeMedication(
+  medication: Partial<IMedication>,
+  cycleStart: Date,
+  cycleEnd: Date
+) {
+  return {
+    name: medication.name || undefined,
+    dosage: medication.dosage || undefined,
+    startDate: medication.startDate || cycleStart,
+    endDate: medication.endDate || cycleEnd,
+    notes: medication.notes || medication.schedule || undefined,
+  };
+}
+
+function normalizeCycle(cycle: IChemoCycle | Record<string, any>) {
+  const obj = typeof (cycle as IChemoCycle).toObject === 'function'
+    ? (cycle as IChemoCycle).toObject()
+    : cycle;
+  const start = new Date(obj.startDate);
+  const end = new Date(obj.endDate || addDays(start, DEFAULT_CYCLE_DAYS));
+
+  return {
+    ...obj,
+    regimenName: obj.regimenName || '未命名方案',
+    endDate: end,
+    medications: (obj.medications || []).map((m: Partial<IMedication>) =>
+      normalizeMedication(m, start, end)
+    ),
+  };
+}
+
+function hasMedicationContent(m: Partial<IMedication>): boolean {
+  return ['name', 'dosage', 'startDate', 'endDate', 'notes'].some(key => {
+    const value = (m as Record<string, unknown>)[key];
+    return typeof value === 'string'
+      ? value.trim().length > 0
+      : value !== undefined && value !== null;
+  });
+}
+
+function sanitizeMedications(
+  medications: Partial<IMedication>[] | undefined,
+  cycleStart: Date,
+  cycleEnd: Date
+) {
+  if (!Array.isArray(medications)) return [];
+  return medications
+    .filter(hasMedicationContent)
+    .map(m => normalizeMedication(m, cycleStart, cycleEnd));
+}
+
+async function reconcileCycleBoundaries(userId: unknown): Promise<void> {
+  const cycles = await ChemoCycle.find({ user: userId }).sort('startDate');
+
+  for (let i = 0; i < cycles.length; i++) {
+    const cycle = cycles[i];
+    const next = cycles[i + 1];
+    if (next) {
+      const expectedEnd = addDays(next.startDate, -1);
+      if (cycle.endDate.getTime() !== expectedEnd.getTime()) {
+        cycle.endDate = expectedEnd;
+        await cycle.save();
+      }
+    } else if (!cycle.endDate) {
+      cycle.endDate = addDays(cycle.startDate, DEFAULT_CYCLE_DAYS);
+      await cycle.save();
+    }
+  }
+}
 
 // @desc    Get all chemo cycles for logged in user
 // @route   GET /api/chemo-cycles
@@ -23,7 +100,7 @@ export const getChemoCycles = asyncHandler(async (req: AuthRequest, res: Respons
 
   res.json({
     success: true,
-    data: cycles,
+    data: cycles.map(normalizeCycle),
     pagination: {
       page: pageNum,
       limit: limitNum,
@@ -37,19 +114,27 @@ export const getChemoCycles = asyncHandler(async (req: AuthRequest, res: Respons
 // @route   POST /api/chemo-cycles
 // @access  Private
 export const createChemoCycle = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { startDate, endDate, medications, doctorNotes } = req.body;
+  const { regimenName, startDate, endDate, medications, doctorNotes } = req.body;
+  const cycleStart = new Date(startDate);
+  const cycleEnd = endDate
+    ? new Date(endDate)
+    : addDays(cycleStart, DEFAULT_CYCLE_DAYS);
 
   const cycle = await ChemoCycle.create({
     user: req.user?._id,
-    startDate,
-    endDate,
-    medications,
+    regimenName,
+    startDate: cycleStart,
+    endDate: cycleEnd,
+    medications: sanitizeMedications(medications, cycleStart, cycleEnd),
     doctorNotes,
   });
 
+  await reconcileCycleBoundaries(req.user?._id);
+  const refreshed = await ChemoCycle.findById(cycle._id);
+
   res.status(201).json({
     success: true,
-    data: cycle,
+    data: normalizeCycle(refreshed || cycle),
   });
 });
 
@@ -65,7 +150,7 @@ export const getChemoCycleById = asyncHandler(async (req: AuthRequest, res: Resp
 
   res.json({
     success: true,
-    data: cycle,
+    data: normalizeCycle(cycle),
   });
 });
 
@@ -73,9 +158,25 @@ export const getChemoCycleById = asyncHandler(async (req: AuthRequest, res: Resp
 // @route   PUT /api/chemo-cycles/:id
 // @access  Private
 export const updateChemoCycle = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const existing = await ChemoCycle.findOne({ _id: req.params.id, user: req.user?._id });
+
+  if (!existing) {
+    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)');
+  }
+
+  const update: Record<string, unknown> = { ...req.body };
+  const cycleStart = new Date((req.body.startDate || existing.startDate) as string | Date);
+  const cycleEnd = req.body.endDate
+    ? new Date(req.body.endDate)
+    : existing.endDate || addDays(cycleStart, DEFAULT_CYCLE_DAYS);
+
+  if ('medications' in req.body) {
+    update.medications = sanitizeMedications(req.body.medications, cycleStart, cycleEnd);
+  }
+
   const updated = await ChemoCycle.findOneAndUpdate(
     { _id: req.params.id, user: req.user?._id },
-    req.body,
+    update,
     { new: true, runValidators: true }
   );
 
@@ -83,9 +184,12 @@ export const updateChemoCycle = asyncHandler(async (req: AuthRequest, res: Respo
     throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)');
   }
 
+  await reconcileCycleBoundaries(req.user?._id);
+  const refreshed = await ChemoCycle.findById(updated._id);
+
   res.json({
     success: true,
-    data: updated,
+    data: normalizeCycle(refreshed || updated),
   });
 });
 
@@ -98,6 +202,8 @@ export const deleteChemoCycle = asyncHandler(async (req: AuthRequest, res: Respo
   if (result.deletedCount === 0) {
     throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)');
   }
+
+  await reconcileCycleBoundaries(req.user?._id);
 
   res.json({
     success: true,
