@@ -18,6 +18,11 @@ jest.mock('../../../services/chemoCycle/chemoCycleService', () => ({
     convertFormToApiData: jest.fn(),
     convertApiToFormData: jest.fn(),
   },
+  addDaysLocal: (dateInput: string, days: number) => {
+    const d = new Date(`${dateInput}T00:00:00`);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  },
 }));
 
 jest.mock('../../../context/AuthContext', () => ({
@@ -35,11 +40,23 @@ const mockCycles = [
   {
     _id: '1',
     user: 'test-user-id',
+    regimenName: 'VAC方案',
     startDate: '2024-03-01T00:00:00.000Z',
     endDate: '2024-05-01T00:00:00.000Z',
     medications: [
-      { name: '环磷酰胺', dosage: '500mg', schedule: '每3周一次' },
-      { name: '多柔比星', dosage: '50mg', schedule: '每3周一次' },
+      {
+        name: '环磷酰胺',
+        dosage: '500mg',
+        startDate: '2024-03-01T00:00:00.000Z',
+        endDate: '2024-03-05T00:00:00.000Z',
+        notes: '第1-5天',
+      },
+      {
+        name: '多柔比星',
+        dosage: '50mg',
+        startDate: '2024-03-01T00:00:00.000Z',
+        endDate: '2024-03-01T00:00:00.000Z',
+      },
     ],
     doctorNotes: '第一期化疗方案',
     createdAt: '2024-03-01T00:00:00.000Z',
@@ -48,9 +65,17 @@ const mockCycles = [
   {
     _id: '2',
     user: 'test-user-id',
+    regimenName: 'TC方案',
     startDate: '2024-06-01T00:00:00.000Z',
     endDate: '2024-08-01T00:00:00.000Z',
-    medications: [{ name: '紫杉醇', dosage: '175mg', schedule: '每3周一次' }],
+    medications: [
+      {
+        name: '紫杉醇',
+        dosage: '175mg',
+        startDate: '2024-06-01T00:00:00.000Z',
+        endDate: '2024-06-01T00:00:00.000Z',
+      },
+    ],
     createdAt: '2024-06-01T00:00:00.000Z',
     updatedAt: '2024-06-01T00:00:00.000Z',
   },
@@ -183,9 +208,9 @@ describe('ChemoCycles', () => {
 
       fireEvent.click(screen.getByText(/添加周期/));
       await waitFor(() => {
-        expect(screen.getByText(/保存/)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^保存$/ })).toBeInTheDocument();
       });
-      expect(screen.getByPlaceholderText(/药物名称/)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/VAC方案/)).toBeInTheDocument();
     });
 
     it('点击编辑按钮切换到编辑模式', async () => {
@@ -195,6 +220,7 @@ describe('ChemoCycles', () => {
       });
       (chemoCycleService.convertApiToFormData as jest.Mock).mockReturnValueOnce(
         {
+          regimenName: 'VAC方案',
           startDate: '2024-03-01',
           endDate: '2024-05-01',
           medications: mockCycles[0].medications,
@@ -245,14 +271,14 @@ describe('ChemoCycles', () => {
 
       fireEvent.click(screen.getByText(/添加周期/));
       await waitFor(() => {
-        expect(screen.getByText(/添加药物/)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '添加药物' })).toBeInTheDocument();
       });
 
-      const addMedBtns = screen.getAllByText(/添加药物/);
+      const addMedBtns = screen.getAllByRole('button', { name: '添加药物' });
       fireEvent.click(addMedBtns[0]);
       await waitFor(() => {
         const nameInputs = screen.getAllByPlaceholderText(/药物名称/);
-        expect(nameInputs.length).toBe(2);
+        expect(nameInputs.length).toBe(1);
       });
     });
   });

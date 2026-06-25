@@ -4,7 +4,14 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import BloodTests from '../BloodTests';
 import bloodTestService from '../../../services/bloodTest/bloodTestService';
+import chemoCycleService from '../../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../../services/api/apiClient';
+
+const mockNavigate = jest.fn();
+
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+}));
 
 // 把列表/表单子组件桩成轻量假组件，专注测页面级编排
 jest.mock('../../../components/bloodTest/BloodTestList', () => {
@@ -29,12 +36,23 @@ jest.mock('../../../components/bloodTest/BloodTestForm', () => {
   const MockForm = ({
     onSubmitSuccess,
     onCancel,
+    beforeSubmit,
   }: {
     onSubmitSuccess: () => void;
     onCancel: () => void;
+    beforeSubmit?: (data: { date: string }) => Promise<'continue' | 'cancel'>;
   }) => (
     <div data-testid="mock-form">
-      <button onClick={onSubmitSuccess}>表单提交成功</button>
+      <button
+        onClick={async () => {
+          const decision = beforeSubmit
+            ? await beforeSubmit({ date: '2026-07-01' })
+            : 'continue';
+          if (decision === 'continue') onSubmitSuccess();
+        }}
+      >
+        表单提交成功
+      </button>
       <button onClick={onCancel}>表单取消</button>
     </div>
   );
@@ -49,12 +67,28 @@ jest.mock('../../../services/bloodTest/bloodTestService', () => ({
   },
 }));
 
+jest.mock('../../../services/chemoCycle/chemoCycleService', () => ({
+  __esModule: true,
+  default: {
+    getChemoCycles: jest.fn().mockResolvedValue({
+      success: true,
+      data: [{ _id: 'c1', regimenName: 'VAC方案', startDate: '2026-06-20' }],
+      pagination: { page: 1, limit: 100, total: 1, pages: 1 },
+    }),
+  },
+}));
+
 describe('BloodTests page', () => {
   let confirmSpy: jest.SpyInstance;
   let alertSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (chemoCycleService.getChemoCycles as jest.Mock).mockResolvedValue({
+      success: true,
+      data: [{ _id: 'c1', regimenName: 'VAC方案', startDate: '2026-06-20' }],
+      pagination: { page: 1, limit: 100, total: 1, pages: 1 },
+    });
     confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
     alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
   });
@@ -79,6 +113,58 @@ describe('BloodTests page', () => {
     expect(screen.getByTestId('mock-form')).toBeInTheDocument();
     expect(screen.queryByText('+ 添加记录')).not.toBeInTheDocument();
     expect(screen.queryByText('⬇ 导出 CSV')).not.toBeInTheDocument();
+  });
+
+  it('没有化疗周期时保存前提醒，可选择去添加周期并取消保存', async () => {
+    (chemoCycleService.getChemoCycles as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: [],
+      pagination: { page: 1, limit: 100, total: 0, pages: 0 },
+    });
+    confirmSpy.mockReturnValueOnce(true);
+
+    render(<BloodTests />);
+    await userEvent.click(screen.getByText('+ 添加记录'));
+    await userEvent.click(screen.getByText('表单提交成功'));
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('建议先添加化疗周期记录'));
+    });
+    expect(screen.getByTestId('mock-form')).toBeInTheDocument();
+  });
+
+  it('没有化疗周期时选择仍然保存会回到列表', async () => {
+    (chemoCycleService.getChemoCycles as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: [],
+      pagination: { page: 1, limit: 100, total: 0, pages: 0 },
+    });
+    confirmSpy.mockReturnValueOnce(false);
+
+    render(<BloodTests />);
+    await userEvent.click(screen.getByText('+ 添加记录'));
+    await userEvent.click(screen.getByText('表单提交成功'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-list')).toBeInTheDocument();
+    });
+  });
+
+  it('最近周期超过21天时保存前提醒', async () => {
+    (chemoCycleService.getChemoCycles as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: [{ _id: 'old', regimenName: '旧方案', startDate: '2026-05-01' }],
+      pagination: { page: 1, limit: 100, total: 1, pages: 1 },
+    });
+    confirmSpy.mockReturnValueOnce(false);
+
+    render(<BloodTests />);
+    await userEvent.click(screen.getByText('+ 添加记录'));
+    await userEvent.click(screen.getByText('表单提交成功'));
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('超过 21 天'));
+    });
   });
 
   it('表单取消后回到列表视图', async () => {
