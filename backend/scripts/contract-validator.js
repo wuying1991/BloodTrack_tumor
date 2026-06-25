@@ -159,6 +159,49 @@ check('Share 类型定义三处一致 (M-P4)', () => {
 });
 
 // ============================================================
+// 检查 5: ChemoCycle 字段三处一致 (M-P7)
+// ============================================================
+check('ChemoCycle 类型定义三处一致 (M-P7)', () => {
+  const errors = [];
+
+  const modelPath = path.join(ROOT, 'src', 'models', 'ChemoCycle.ts');
+  const modelContent = fs.readFileSync(modelPath, 'utf-8');
+  for (const f of ['regimenName', 'startDate', 'endDate', 'medications', 'notes', 'schedule']) {
+    if (!modelContent.includes(f)) {
+      errors.push(`ChemoCycle Model 缺少字段/兼容项: ${f}`);
+    }
+  }
+  const bannedRequired = ['name: { type: String, required: true', 'dosage: { type: String, required: true', 'schedule: { type: String, required: true'];
+  for (const f of bannedRequired) {
+    if (modelContent.includes(f)) {
+      errors.push(`ChemoCycle Model 仍包含旧必填药物字段: ${f}`);
+    }
+  }
+
+  const valPath = path.join(ROOT, 'src', 'middlewares', 'validationMiddleware.ts');
+  const valContent = fs.readFileSync(valPath, 'utf-8');
+  const valSection = valContent.substring(
+    valContent.indexOf('export const validateChemoCycle ='),
+    valContent.indexOf('export const validateChemoCycleUpdate =')
+  );
+  for (const f of ['regimenName', 'medications.*.startDate', 'medications.*.endDate', 'medications.*.notes']) {
+    if (!valSection.includes(`'${f}'`)) {
+      errors.push(`validateChemoCycle 缺少字段校验: ${f}`);
+    }
+  }
+
+  const typesPath = path.join(ROOT, '..', 'frontend', 'src', 'types', 'index.ts');
+  const typesContent = fs.readFileSync(typesPath, 'utf-8');
+  for (const f of ['regimenName:', 'startDate?:', 'endDate?:', 'notes?:']) {
+    if (!typesContent.includes(f)) {
+      errors.push(`前端 ChemoCycle/ChemoMedication 缺少字段: ${f}`);
+    }
+  }
+
+  return errors;
+});
+
+// ============================================================
 // 输出报告
 // ============================================================
 console.log('========================================');

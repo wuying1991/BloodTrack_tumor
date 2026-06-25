@@ -11,8 +11,8 @@
 | 后端 API 模块 | 7 / 7 | 7 | 100% |
 | 后端基础设施 | 6 / 6 | 6 | 100% |
 | 前端页面 | 11 / 11 | 11 | 100% |
-| 后端测试 | 105 | TBD | — |
-| 前端测试 | 71 | TBD | — |
+| 后端测试 | 113 | TBD | — |
+| 前端测试 | 74 | TBD | — |
 
 **项目总进度**: █████████████████████ 99%
 
@@ -108,7 +108,7 @@
 | ~~M-P4~~ | ~~数据共享 (生成只读链接 + 撤销)~~ | 2天 | ✅ |
 | M-P5 | 账户删除 (DELETE /api/auth/account, GDPR) | 0.5天 | ✅ |
 | ~~M-P6~~ | ~~姓名字段重构：合并 firstName/lastName 为单一 fullName~~ | 0.5天 | ✅ |
-| M-P7 | 化疗周期重新设计：方案(regimen) → 药物(含起止日期) | 2-3天 | ❌ |
+| ~~M-P7~~ | ~~化疗周期重新设计：方案(regimen) → 药物(含起止日期)~~ | 2-3天 | ✅ |
 | M-P8 | AuthContext 启动 refreshToken 超时兜底（避免无限 loading） | 0.3天 | ❌ |
 
 > **M-P8 AuthContext 启动超时兜底**（2026-06-23 Docker 验证发现）：
@@ -151,15 +151,45 @@
 | 后端 TypeScript 编译 | `cd backend && npx tsc --noEmit` | ✅ 通过 |
 | 前端 TypeScript 编译 | `cd frontend && npx tsc --noEmit` | ✅ 通过 |
 | 前端 ESLint | `cd frontend && npm run lint` | ✅ M-P4 新增/改动 0 错误 (旧 prettier CRLF 噪声依旧) |
-| 后端契约测试 | `cd backend && npm run test:contract` | ✅ 33/33 |
-| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 64/64 |
-| 后端全部测试 | `cd backend && npx jest` | ✅ 105/105 |
-| 前端单元测试 | `cd frontend && npm test` | ✅ 71/71 |
-| 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 4/4 |
+| 后端契约测试 | `cd backend && npm run test:contract` | ✅ 34/34 |
+| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 72/72 |
+| 后端全部测试 | `cd backend && npx jest` | ✅ 113/113 |
+| 前端单元测试 | `cd frontend && npm test` | ✅ 74/74 |
+| 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 5/5 |
 
 ---
 
 ## 📅 变更日志
+
+### 2026-06-23（M-P7 化疗周期重新设计）
+- **设计文档 + 实现计划**：新增 `docs/superpowers/specs/2026-06-23-chemo-cycle-redesign-design.md` 与 `docs/superpowers/plans/2026-06-23-chemo-cycle-redesign-implementation.md`，锁定方案名称、药物起止日期、周期边界自动重算、血常规页提醒、旧数据兼容等规则。
+- **数据契约** (`contracts/index.ts` + `frontend/src/types/index.ts`): 新增/更新 `ChemoMedication` 与 `ChemoCycle*` 类型，`ChemoCycle` 增 `regimenName`，药物字段改为 `name?/dosage?/startDate?/endDate?/notes?`，保留 `schedule?` 仅作旧数据兼容。
+- **后端 Model** (`ChemoCycle.ts`):
+  - `regimenName` 必填（默认 `未命名方案` 兼容旧数据）
+  - `medications` 可为空数组
+  - 药物字段全部可选，新增 `startDate/endDate/notes`，保留 legacy `schedule`
+  - 新增 `{ user, startDate }` 索引用于周期边界重算
+- **后端 Validation**: `validateChemoCycle` / `validateChemoCycleUpdate` 改为：方案名称必填；`endDate` 可选且 >= `startDate`；`medications` 可空；药物每项至少填一项信息；药物 `endDate >= startDate`。
+- **后端 Controller** (`chemoCycleController.ts`):
+  - `normalizeCycle`：旧数据缺 `regimenName` 显示为 `未命名方案`；旧 `schedule` 映射到 `notes`
+  - `sanitizeMedications`：过滤空药物行，默认药物起止日期为周期起止日期
+  - `create`：只填 `regimenName + startDate` 可创建；`endDate` 默认 `startDate + 21 天`
+  - `create/update/delete` 后统一 `reconcileCycleBoundaries(userId)`：非最后周期 `endDate = 下一个周期 startDate - 1 天`，最后周期保留自身 endDate
+- **前端 service** (`chemoCycleService.ts`): 新类型 + `addDaysLocal()` + form/api 转换；提交前过滤空药物行；旧 `schedule` 兼容到 `notes`。
+- **前端 ChemoCycles UI**:
+  - 表单新增「方案名称」必填
+  - 周期开始/结束日期，结束日期默认开始 +21 天
+  - 药物列表可为空；添加药物时默认继承周期起止日期；药名/剂量/起止日期/备注均可选
+  - 列表卡片显示方案名、周期边界、药物起止日期/备注；无药物时显示「药物信息：未填写」
+- **BloodTests 保存前提醒**:
+  - `BloodTestForm` 新增 `beforeSubmit` hook
+  - `BloodTests` 保存新增记录前检查化疗周期：无周期或最近周期距血常规日期超过 21 天时 confirm 提醒；用户可选择去 `/chemo-cycles` 或继续保存；编辑历史记录不弹提醒
+- **测试**:
+  - 后端新增 `chemoCycle.integration.test.ts` 8 用例：默认 +21、边界重算、update/startDate、delete、空药物、仅 notes 药物、药物日期错误 422、缺 regimenName 422
+  - ChemoCycle 契约测试更新 response shape（regimenName + 药物日期/notes）
+  - 前端 ChemoCycles/BloodTests 测试更新，新增 3 个 BloodTests 提醒用例
+  - contract-validator 新增第 5 项 `ChemoCycle 类型定义三处一致 (M-P7)`
+- **质量门禁**: 后端 tsc ✅、contract:check 5/5 ✅、后端 jest 113/113 ✅、前端 tsc ✅、前端 jest 74/74 ✅
 
 ### 2026-06-20（L-P3 CI/CD + Docker）
 - **GitHub Actions CI** (`.github/workflows/ci.yml`)：push main + PR 触发，两个 job 并行：
