@@ -109,6 +109,11 @@
 | M-P5 | 账户删除 (DELETE /api/auth/account, GDPR) | 0.5天 | ✅ |
 | ~~M-P6~~ | ~~姓名字段重构：合并 firstName/lastName 为单一 fullName~~ | 0.5天 | ✅ |
 | M-P7 | 化疗周期重新设计：方案(regimen) → 药物(含起止日期) | 2-3天 | ❌ |
+| M-P8 | AuthContext 启动 refreshToken 超时兜底（避免无限 loading） | 0.3天 | ❌ |
+
+> **M-P8 AuthContext 启动超时兜底**（2026-06-23 Docker 验证发现）：
+> 现状 `AuthContext` 启动时若 localStorage 有旧 token 会调 `refreshToken` API 验证；如果网络层挂掉（代理拦截、后端无响应、超时），请求永远 pending，应用永远显示「加载中」，用户体验差且无法自救（只能 F12 清 localStorage）。
+> 方案：给启动期的 token refresh 加 timeout（如 10s），失败则视作未登录、清 token、跳登录页。同时 `apiClient` 的 axios 实例增加 `timeout` 默认值兜底其它请求。需走小型 brainstorm。
 
 > **M-P6 姓名字段重构**（2026-06-19 端到端验证发现）：
 > 现状 User 模型拆 `firstName`(名) / `lastName`(姓)，但显示顺序不一致 —— Dashboard 显示「李四」(中式 姓+名)，顶部账户区显示「四 李」(西式 名+姓)。中文场景下拆分姓/名意义不大。
