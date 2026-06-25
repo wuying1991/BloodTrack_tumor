@@ -6,3 +6,154 @@
   margin: 0 0 1.5rem 0;
   color: #333;
 }
+
+.chemo-cycles-page .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.cycle-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.cycle-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cycle-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.cycle-header h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.cycle-dates {
+  color: #4a5568;
+}
+
+.cycle-date-label {
+  font-weight: 600;
+}
+
+.cycle-date-sep {
+  margin: 0 0.5rem;
+}
+
+.cycle-actions,
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cycle-medications,
+.cycle-notes {
+  margin-top: 1rem;
+}
+
+.med-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.med-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.med-name {
+  font-weight: 600;
+}
+
+.med-dosage,
+.med-schedule,
+.med-notes {
+  color: #4a5568;
+}
+
+.cycle-form {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.form-group small,
+.empty-hint {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.medication-entry {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.med-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr)) auto;
+  gap: 0.5rem;
+}
+
+.input-error {
+  border-color: #d0021b !important;
+}
+
+.field-error,
+.form-error,
+.error-message {
+  color: #d0021b;
+}
+
+.field-error.block {
+  display: block;
+}
+
+@media (max-width: 720px) {
+  .cycle-header,
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .med-row {
+    grid-template-columns: 1fr;
+  }
+}

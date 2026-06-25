@@ -1,14 +1,19 @@
 import apiClient from '../api/apiClient';
 
 export interface ChemoMedication {
-  name: string;
-  dosage: string;
-  schedule: string;
+  name?: string;
+  dosage?: string;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+  /** legacy only: old records used schedule; normalize to notes when read */
+  schedule?: string;
 }
 
 export interface ChemoCycle {
   _id: string;
   user: string;
+  regimenName: string;
   startDate: string;
   endDate: string;
   medications: ChemoMedication[];
@@ -18,6 +23,7 @@ export interface ChemoCycle {
 }
 
 export interface ChemoCycleFormData {
+  regimenName: string;
   startDate: string;
   endDate: string;
   medications: ChemoMedication[];
@@ -52,6 +58,26 @@ export interface DeleteChemoCycleResponse {
   message: string;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function toDateInput(value?: string): string {
+  if (!value) return '';
+  return value.split('T')[0];
+}
+
+function hasMedicationContent(m: ChemoMedication): boolean {
+  return ['name', 'dosage', 'startDate', 'endDate', 'notes'].some(key => {
+    const value = (m as Record<string, unknown>)[key];
+    return typeof value === 'string' ? value.trim().length > 0 : !!value;
+  });
+}
+
+export function addDaysLocal(dateInput: string, days: number): string {
+  if (!dateInput) return '';
+  const date = new Date(`${dateInput}T00:00:00`);
+  return new Date(date.getTime() + days * DAY_MS).toISOString().split('T')[0];
+}
+
 class ChemoCycleService {
   async getChemoCycles(page = 1, limit = 20): Promise<GetChemoCyclesResponse> {
     return apiClient.get<GetChemoCyclesResponse>(
@@ -82,18 +108,34 @@ class ChemoCycleService {
 
   convertFormToApiData(formData: ChemoCycleFormData): Partial<ChemoCycle> {
     return {
+      regimenName: formData.regimenName.trim(),
       startDate: formData.startDate,
-      endDate: formData.endDate,
-      medications: formData.medications.filter(m => m.name),
-      doctorNotes: formData.doctorNotes || undefined,
+      endDate: formData.endDate || undefined,
+      medications: formData.medications
+        .filter(hasMedicationContent)
+        .map(m => ({
+          name: m.name?.trim() || undefined,
+          dosage: m.dosage?.trim() || undefined,
+          startDate: m.startDate || undefined,
+          endDate: m.endDate || undefined,
+          notes: m.notes?.trim() || m.schedule?.trim() || undefined,
+        })),
+      doctorNotes: formData.doctorNotes.trim() || undefined,
     };
   }
 
   convertApiToFormData(chemoCycle: ChemoCycle): ChemoCycleFormData {
     return {
-      startDate: chemoCycle.startDate ? chemoCycle.startDate.split('T')[0] : '',
-      endDate: chemoCycle.endDate ? chemoCycle.endDate.split('T')[0] : '',
-      medications: chemoCycle.medications || [],
+      regimenName: chemoCycle.regimenName || '未命名方案',
+      startDate: toDateInput(chemoCycle.startDate),
+      endDate: toDateInput(chemoCycle.endDate),
+      medications: (chemoCycle.medications || []).map(m => ({
+        name: m.name || '',
+        dosage: m.dosage || '',
+        startDate: toDateInput(m.startDate) || toDateInput(chemoCycle.startDate),
+        endDate: toDateInput(m.endDate) || toDateInput(chemoCycle.endDate),
+        notes: m.notes || m.schedule || '',
+      })),
       doctorNotes: chemoCycle.doctorNotes || '',
     };
   }

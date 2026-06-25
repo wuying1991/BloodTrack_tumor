@@ -3,23 +3,32 @@ import chemoCycleService, {
   ChemoCycle,
   ChemoCycleFormData,
   ChemoMedication,
+  addDaysLocal,
 } from '../../services/chemoCycle/chemoCycleService';
 import './ChemoCycles.css';
 
 type ViewMode = 'list' | 'add' | 'edit';
 
-const emptyMedication = (): ChemoMedication => ({
+const todayInput = (): string => new Date().toISOString().split('T')[0];
+
+const emptyMedication = (startDate = '', endDate = ''): ChemoMedication => ({
   name: '',
   dosage: '',
-  schedule: '',
+  startDate,
+  endDate,
+  notes: '',
 });
 
-const emptyFormData = (): ChemoCycleFormData => ({
-  startDate: '',
-  endDate: '',
-  medications: [emptyMedication()],
-  doctorNotes: '',
-});
+const emptyFormData = (): ChemoCycleFormData => {
+  const startDate = todayInput();
+  return {
+    regimenName: '',
+    startDate,
+    endDate: addDaysLocal(startDate, 21),
+    medications: [],
+    doctorNotes: '',
+  };
+};
 
 const ChemoCycles: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -50,7 +59,8 @@ const ChemoCycles: React.FC = () => {
     fetchCycles();
   }, [fetchCycles]);
 
-  const formatDate = (s: string): string => {
+  const formatDate = (s?: string): string => {
+    if (!s) return '-';
     const d = new Date(s);
     return d.toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -59,10 +69,13 @@ const ChemoCycles: React.FC = () => {
     });
   };
 
+  const hasMedicationContent = (m: ChemoMedication): boolean =>
+    !!(m.name || m.dosage || m.startDate || m.endDate || m.notes);
+
   const validateForm = (): boolean => {
     const errs: Record<string, string> = {};
+    if (!formData.regimenName.trim()) errs.regimenName = '方案名称是必需的';
     if (!formData.startDate) errs.startDate = '开始日期是必需的';
-    if (!formData.endDate) errs.endDate = '结束日期是必需的';
     if (
       formData.startDate &&
       formData.endDate &&
@@ -70,13 +83,15 @@ const ChemoCycles: React.FC = () => {
     ) {
       errs.endDate = '结束日期必须晚于开始日期';
     }
-    const validMeds = formData.medications.filter(m => m.name);
-    if (validMeds.length === 0) errs.medications = '至少需要一种药物';
+
     for (let i = 0; i < formData.medications.length; i++) {
       const m = formData.medications[i];
-      if (m.name && !m.dosage) errs[`dosage_${i}`] = '请输入剂量';
-      if (m.name && !m.schedule) errs[`schedule_${i}`] = '请输入时间表';
+      if (!hasMedicationContent(m)) continue;
+      if (m.startDate && m.endDate && new Date(m.endDate) < new Date(m.startDate)) {
+        errs[`medication_${i}`] = '用药结束日期必须晚于开始日期';
+      }
     }
+
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -142,7 +157,10 @@ const ChemoCycles: React.FC = () => {
   const addMedication = () => {
     setFormData(prev => ({
       ...prev,
-      medications: [...prev.medications, emptyMedication()],
+      medications: [
+        ...prev.medications,
+        emptyMedication(prev.startDate, prev.endDate),
+      ],
     }));
   };
 
@@ -163,6 +181,19 @@ const ChemoCycles: React.FC = () => {
       next[idx] = { ...next[idx], [field]: value };
       return { ...prev, medications: next };
     });
+  };
+
+  const updateStartDate = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      startDate: value,
+      endDate: value ? addDaysLocal(value, 21) : '',
+      medications: prev.medications.map(m => ({
+        ...m,
+        startDate: m.startDate || value,
+        endDate: m.endDate || (value ? addDaysLocal(value, 21) : ''),
+      })),
+    }));
   };
 
   if (isLoading) {
@@ -210,12 +241,14 @@ const ChemoCycles: React.FC = () => {
               {cycles.map(cycle => (
                 <div key={cycle._id} className="cycle-card">
                   <div className="cycle-header">
-                    <div className="cycle-dates">
-                      <span className="cycle-date-label">开始：</span>
-                      {formatDate(cycle.startDate)}
-                      <span className="cycle-date-sep">→</span>
-                      <span className="cycle-date-label">结束：</span>
-                      {formatDate(cycle.endDate)}
+                    <div>
+                      <h3>{cycle.regimenName || '未命名方案'}</h3>
+                      <div className="cycle-dates">
+                        <span className="cycle-date-label">周期：</span>
+                        {formatDate(cycle.startDate)}
+                        <span className="cycle-date-sep">→</span>
+                        {formatDate(cycle.endDate)}
+                      </div>
                     </div>
                     <div className="cycle-actions">
                       <button
@@ -234,16 +267,23 @@ const ChemoCycles: React.FC = () => {
                   </div>
 
                   <div className="cycle-medications">
-                    <h4>药物方案</h4>
-                    <div className="med-list">
-                      {cycle.medications.map((med, idx) => (
-                        <div key={idx} className="med-item">
-                          <span className="med-name">{med.name}</span>
-                          <span className="med-dosage">{med.dosage}</span>
-                          <span className="med-schedule">{med.schedule}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <h4>药物</h4>
+                    {cycle.medications.length === 0 ? (
+                      <p className="empty-hint">药物信息：未填写</p>
+                    ) : (
+                      <div className="med-list">
+                        {cycle.medications.map((med, idx) => (
+                          <div key={idx} className="med-item">
+                            <span className="med-name">{med.name || '未填写药名'}</span>
+                            {med.dosage && <span className="med-dosage">{med.dosage}</span>}
+                            <span className="med-schedule">
+                              {formatDate(med.startDate)} → {formatDate(med.endDate)}
+                            </span>
+                            {med.notes && <span className="med-notes">备注：{med.notes}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {cycle.doctorNotes && (
@@ -266,91 +306,101 @@ const ChemoCycles: React.FC = () => {
           {error && <div className="form-error">{error}</div>}
 
           <div className="form-group">
-            <label>开始日期 *</label>
+            <label>方案名称 *</label>
             <input
-              type="date"
-              value={formData.startDate}
+              type="text"
+              value={formData.regimenName}
               onChange={e =>
-                setFormData(prev => ({ ...prev, startDate: e.target.value }))
+                setFormData(prev => ({ ...prev, regimenName: e.target.value }))
               }
-              className={formErrors.startDate ? 'input-error' : ''}
+              placeholder="例如：VAC方案、CHOP方案、TC方案"
+              className={formErrors.regimenName ? 'input-error' : ''}
             />
-            {formErrors.startDate && (
-              <span className="field-error">{formErrors.startDate}</span>
+            {formErrors.regimenName && (
+              <span className="field-error">{formErrors.regimenName}</span>
             )}
           </div>
 
-          <div className="form-group">
-            <label>结束日期 *</label>
-            <input
-              type="date"
-              value={formData.endDate}
-              onChange={e =>
-                setFormData(prev => ({ ...prev, endDate: e.target.value }))
-              }
-              className={formErrors.endDate ? 'input-error' : ''}
-            />
-            {formErrors.endDate && (
-              <span className="field-error">{formErrors.endDate}</span>
-            )}
+          <div className="form-row">
+            <div className="form-group">
+              <label>周期开始日期 *</label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={e => updateStartDate(e.target.value)}
+                className={formErrors.startDate ? 'input-error' : ''}
+              />
+              {formErrors.startDate && (
+                <span className="field-error">{formErrors.startDate}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label>周期结束日期</label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={e =>
+                  setFormData(prev => ({ ...prev, endDate: e.target.value }))
+                }
+                className={formErrors.endDate ? 'input-error' : ''}
+              />
+              <small>默认开始日期 + 21 天；保存后若有下一个周期，系统会自动修正。</small>
+              {formErrors.endDate && (
+                <span className="field-error">{formErrors.endDate}</span>
+              )}
+            </div>
           </div>
 
           <div className="form-group">
-            <label>药物方案 *</label>
-            {formErrors.medications && (
-              <span className="field-error block">
-                {formErrors.medications}
-              </span>
+            <label>药物（可选）</label>
+            {formData.medications.length === 0 && (
+              <p className="empty-hint">未添加药物。病人不清楚药物细节时可留空。</p>
             )}
             {formData.medications.map((med, idx) => (
               <div key={idx} className="medication-entry">
                 <div className="med-row">
                   <input
                     type="text"
-                    placeholder="药物名称"
-                    value={med.name}
-                    onChange={e =>
-                      updateMedication(idx, 'name', e.target.value)
-                    }
+                    placeholder="药物名称（可选）"
+                    value={med.name || ''}
+                    onChange={e => updateMedication(idx, 'name', e.target.value)}
                   />
                   <input
                     type="text"
-                    placeholder="剂量"
-                    value={med.dosage}
-                    onChange={e =>
-                      updateMedication(idx, 'dosage', e.target.value)
-                    }
-                    className={formErrors[`dosage_${idx}`] ? 'input-error' : ''}
+                    placeholder="剂量（可选）"
+                    value={med.dosage || ''}
+                    onChange={e => updateMedication(idx, 'dosage', e.target.value)}
                   />
                   <input
-                    type="text"
-                    placeholder="用药时间表"
-                    value={med.schedule}
-                    onChange={e =>
-                      updateMedication(idx, 'schedule', e.target.value)
-                    }
-                    className={
-                      formErrors[`schedule_${idx}`] ? 'input-error' : ''
-                    }
+                    type="date"
+                    value={med.startDate || ''}
+                    onChange={e => updateMedication(idx, 'startDate', e.target.value)}
+                    title="用药开始日期"
                   />
-                  {formData.medications.length > 1 && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-danger"
-                      onClick={() => removeMedication(idx)}
-                    >
-                      ✕
-                    </button>
-                  )}
+                  <input
+                    type="date"
+                    value={med.endDate || ''}
+                    onChange={e => updateMedication(idx, 'endDate', e.target.value)}
+                    title="用药结束日期"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger"
+                    onClick={() => removeMedication(idx)}
+                  >
+                    ✕
+                  </button>
                 </div>
-                {formErrors[`dosage_${idx}`] && (
+                <textarea
+                  rows={2}
+                  placeholder="药物备注（可选）"
+                  value={med.notes || ''}
+                  onChange={e => updateMedication(idx, 'notes', e.target.value)}
+                />
+                {formErrors[`medication_${idx}`] && (
                   <span className="field-error">
-                    {formErrors[`dosage_${idx}`]}
-                  </span>
-                )}
-                {formErrors[`schedule_${idx}`] && (
-                  <span className="field-error">
-                    {formErrors[`schedule_${idx}`]}
+                    {formErrors[`medication_${idx}`]}
                   </span>
                 )}
               </div>
