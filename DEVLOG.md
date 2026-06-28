@@ -166,19 +166,10 @@
 - **M-P7 化疗周期页面已可运行**：化疗周期新结构（方案名、周期起止、药物可选起止日期）已经在 Docker 版中验证进入页面；血常规保存前提醒逻辑也已进入构建。
 - **M-P8 生效**：普通窗口 localStorage 留旧 token 时，页面不再永久 loading；`apiClient` timeout + AuthContext finally 兜底已合入。
 - **Auth UX 修复**：注册页新增密码规则提前提示；登录/注册密码框新增显示/隐藏按钮；前端测试 74/74 通过。
-- **已知未解决问题：按钮动作区视觉对齐**：
-  - 用户反馈：按钮实体高度已统一，但按钮在页面中的垂直位置仍不一致。
-  - 受影响位置：
-    1. Dashboard：`添加记录` / `查看全部`
-    2. BloodTests 列表：`导出 CSV` / `+ 添加记录`
-    3. BloodTestForm：`保存记录` / `清空` / `取消`
-    4. ChemoCycles 表单：`保存` / `取消`
-  - 已尝试三轮修复：
-    - `87008cc`：移除 BloodTestForm 局部 `.btn` 覆盖，统一 form/header action 高度
-    - `027c887`：调整全局按钮配色、Dashboard/ChemoCycles action 容器对齐、日期行 helper 文案
-    - `ec7ae7d`：在全局 `.btn` 层强制统一 height/min-height/inline-flex/line-height，并覆盖 action 容器 align-items
-  - 当前结论：问题仍存在，说明不是简单 button height，而是页面布局/父容器/字体基线/缓存/具体 DOM 结构共同导致。下次应使用浏览器 DevTools 或 Playwright screenshot 做**视觉定位**，不要继续盲调 CSS。
-  - 建议后续任务：建立统一 `Button` 组件与 `ActionBar` 组件，逐页替换；同时用截图回归测试验证。
+- **遗留问题——按钮动作区视觉对齐** ~已修复~ ✅：
+  - 根本原因：`Auth.css` 的裸选择器 `.btn-primary` 和 `.submit-button` 没有作用域限定，在 CRA 的全局 CSS bundle 中被注入到所有页面，用 `margin-top: 0.5rem` 和 `padding: 0.75rem` 覆盖了全局按钮规则。
+  - 修复方式 (`df843c1`)：将 Auth.css 的所有裸选择器（`.form-group`、`.form-row`、`.btn-primary`、`.submit-button`、`.error-text`、`.field-error`、`.btn-block`）改为 `.auth-card` 作用域内限定；同时回退 `index.css` 之前为强行对抗而加的 `!important` 暴力覆盖。
+  - 验证：curl Docker 容器实际 serve 的 CSS bundle，确认不再有裸的 `.btn-primary { margin-top: 0.5rem }` 泄漏到全局。
 
 ### 2026-06-23（M-P8 AuthContext 启动兜底）
 - **apiClient timeout**：Axios 实例新增默认 `timeout: 10000`，避免网络层挂起导致请求永远 pending。
