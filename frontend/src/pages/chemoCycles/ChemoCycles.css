@@ -54,6 +54,12 @@
 .form-actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.cycle-form .form-actions .btn,
+.cycle-actions .btn {
+  min-height: 40px;
 }
 
 .cycle-medications,
@@ -97,6 +103,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
+  align-items: start;
 }
 
 .form-group {
