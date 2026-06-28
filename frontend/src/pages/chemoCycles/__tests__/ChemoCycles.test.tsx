@@ -208,7 +208,9 @@ describe('ChemoCycles', () => {
 
       fireEvent.click(screen.getByText(/添加周期/));
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /^保存$/ })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /^保存$/ })
+        ).toBeInTheDocument();
       });
       expect(screen.getByPlaceholderText(/VAC方案/)).toBeInTheDocument();
     });
@@ -271,7 +273,9 @@ describe('ChemoCycles', () => {
 
       fireEvent.click(screen.getByText(/添加周期/));
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '添加药物' })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: '添加药物' })
+        ).toBeInTheDocument();
       });
 
       const addMedBtns = screen.getAllByRole('button', { name: '添加药物' });

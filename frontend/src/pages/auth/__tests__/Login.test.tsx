@@ -89,7 +89,9 @@ describe('Login', () => {
         'refresh-1',
         expect.objectContaining({ _id: 'u1', email: 'a@b.com' })
       );
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {
+        replace: true,
+      });
     });
 
     it('ApiError 时显示后端返回的 message', async () => {

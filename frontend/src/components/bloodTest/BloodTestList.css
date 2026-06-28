@@ -1,8 +1,15 @@
 .blood-test-list {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  transition: var(--transition-normal);
+}
+
+.blood-test-list:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-hover);
 }
 
 /* Loading and error states */
@@ -10,27 +17,32 @@
 .blood-test-list.error,
 .blood-test-list.empty {
   text-align: center;
-  padding: 3rem;
+  padding: 48px;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #4a90e2;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
+  width: 36px;
+  height: 36px;
+  border: 3.5px solid var(--border-color);
+  border-top: 3.5px solid var(--primary-color);
+  border-radius: var(--radius-pill);
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-hint {
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.9rem;
+  margin-top: 6px;
 }
 
 /* List header */
@@ -38,24 +50,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 20px;
 }
 
 .list-header h3 {
   margin: 0;
-  color: #333;
-  font-size: 1.2rem;
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 600;
 }
 
 .record-count {
-  color: #888;
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 /* Table container */
 .table-container {
   overflow-x: auto;
-  margin-bottom: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: 20px;
 }
 
 /* Blood test table */
@@ -63,76 +78,94 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  text-align: left;
 }
 
 .blood-test-table th,
 .blood-test-table td {
-  padding: 0.75rem;
-  text-align: center;
-  border-bottom: 1px solid #eee;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .blood-test-table th {
-  background-color: #f8f9fa;
-  color: #555;
+  background-color: var(--bg-color);
+  color: var(--text-secondary);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .blood-test-table th small {
-  color: #888;
+  color: var(--text-muted);
   font-weight: normal;
+  font-size: 0.8rem;
+  margin-left: 2px;
+}
+
+.blood-test-table tbody tr {
+  transition: var(--transition-fast);
 }
 
 .blood-test-table tbody tr:hover {
-  background-color: #f8f9fa;
+  background-color: var(--primary-light);
 }
 
+/* 异常行采用柔和的水粉红色 */
 .blood-test-table tbody tr.abnormal {
-  background-color: #fff5f5;
+  background-color: var(--error-light);
 }
 
 .blood-test-table tbody tr.abnormal:hover {
-  background-color: #ffe0e0;
+  background-color: hsl(var(--error-h), var(--error-s), 94%);
+}
+
+.blood-test-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* Cell styles */
 .date-cell {
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--text-primary);
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .abnormal-badge {
-  display: inline-block;
-  background-color: #d0021b;
-  color: white;
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  margin-left: 0.5rem;
-  font-weight: normal;
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--error-color);
+  color: #ffffff;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  line-height: 1;
 }
 
 .value-cell {
-  font-family: 'Courier New', monospace;
+  font-family: 'Inter', monospace;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .value-cell.abnormal-value {
-  color: #d0021b;
-  font-weight: 600;
+  color: var(--error-text);
+  font-weight: 700;
 }
 
 .notes-cell {
-  max-width: 150px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .actions-cell {
   white-space: nowrap;
+  text-align: center;
 }
 
 /* Action buttons */
@@ -142,28 +175,31 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: none;
-  border: none;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   padding: 0;
-  margin: 0 0.25rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  vertical-align: middle;
+  margin: 0 4px;
+  font-size: 1rem;
+  transition: var(--transition-fast);
+  color: var(--text-secondary);
 }
 
 .btn-icon:hover {
-  opacity: 1;
+  transform: scale(1.08);
 }
 
 .btn-edit:hover {
-  color: #4a90e2;
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+  color: var(--primary-color);
 }
 
 .btn-delete:hover {
-  color: #d0021b;
+  border-color: var(--error-color);
+  background-color: var(--error-light);
+  color: var(--error-color);
 }
 
 /* Pagination */
@@ -171,103 +207,226 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 0;
-  border-top: 1px solid #eee;
+  gap: 16px;
+  padding: 16px 0 0 0;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-page {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
 }
 
 .btn-page:hover:not(:disabled) {
-  background-color: #f8f9fa;
-  border-color: #4a90e2;
+  background-color: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .btn-page:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .page-info {
-  color: #666;
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 /* Legend */
 .list-legend {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .list-legend p {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .legend-abnormal {
-  background-color: #d0021b;
-  color: white;
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
+  background-color: var(--error-color);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
 }
 
 .legend-arrows {
-  color: #d0021b;
+  color: var(--error-text);
   font-weight: bold;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .blood-test-list {
-    padding: 1rem;
-  }
-
-  .blood-test-table {
-    font-size: 0.8rem;
-  }
-
-  .blood-test-table th,
-  .blood-test-table td {
-    padding: 0.5rem;
-  }
-
-  .notes-cell {
-    max-width: 80px;
-  }
-
-  .btn-icon {
-    font-size: 1rem;
-  }
 }
 
 .cycle-cell {
   font-size: 0.85rem;
-  color: #555;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
 .cycle-label {
-  background: #eef4ff;
-  color: #2c5fb1;
-  padding: 0.15rem 0.5rem;
-  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
   font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(30, 96, 145, 0.1);
 }
 
 .cycle-empty {
-  color: #aaa;
+  color: var(--text-muted);
+}
+
+/* 骨髓抑制分级药丸样式 */
+.grade-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.grade-badge.grade-0 {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid rgba(30, 96, 145, 0.2);
+}
+
+.grade-badge.grade-1 {
+  background-color: #fef9c3; /* 浅黄 */
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.grade-badge.grade-2 {
+  background-color: #ffedd5; /* 浅橙 */
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.grade-badge.grade-3 {
+  background-color: #fee2e2; /* 浅红 */
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.grade-badge.grade-4 {
+  background-color: #f87171; /* 亮红 */
+  color: #ffffff;
+  animation: pulse-danger 2s infinite;
+}
+
+@keyframes pulse-danger {
+  0% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(248, 113, 113, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+  }
+}
+
+/* Responsive (Table to Cards conversion) */
+@media (max-width: 768px) {
+  .blood-test-list {
+    padding: 16px;
+  }
+
+  .table-container {
+    border: none;
+    overflow-x: visible;
+  }
+
+  .blood-test-table,
+  .blood-test-table thead,
+  .blood-test-table tbody,
+  .blood-test-table tr,
+  .blood-test-table td {
+    display: block;
+  }
+
+  .blood-test-table thead {
+    display: none; /* 隐藏表头 */
+  }
+
+  .blood-test-table tbody tr {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
+  }
+
+  .blood-test-table tbody tr.abnormal {
+    border-left: 4px solid var(--error-color);
+  }
+
+  .blood-test-table tbody tr:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-hover);
+  }
+
+  .blood-test-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border-color);
+    text-align: right;
+  }
+
+  .blood-test-table td:last-child {
+    border-bottom: none;
+    justify-content: flex-end;
+    padding-top: 12px;
+  }
+
+  /* 使用 data-label 作为卡片条目的左侧标签 */
+  .blood-test-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    float: left;
+    text-align: left;
+  }
+
+  .date-cell {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .date-value-txt {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .notes-cell {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .actions-cell {
+    gap: 8px;
+  }
 }

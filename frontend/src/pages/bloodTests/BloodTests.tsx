@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { BloodTest } from '../../types';
 import BloodTestForm from '../../components/bloodTest/BloodTestForm';
 import BloodTestList from '../../components/bloodTest/BloodTestList';
@@ -17,10 +17,18 @@ type ViewMode = 'list' | 'add' | 'edit';
 
 const BloodTests: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingTest, setEditingTest] = useState<BloodTest | undefined>(
     undefined
   );
+
+  React.useEffect(() => {
+    if (location.state && (location.state as any).addNew) {
+      setViewMode('add');
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -90,7 +98,8 @@ const BloodTests: React.FC = () => {
       }
 
       const latest = [...cycles].sort(
-        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+        (a, b) =>
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
       )[0];
       const testDate = new Date(data.date).getTime();
       const latestStart = new Date(latest.startDate).getTime();

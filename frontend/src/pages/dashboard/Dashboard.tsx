@@ -159,7 +159,9 @@ const Dashboard: React.FC = () => {
         <div className="header-actions">
           <button
             className="btn btn-primary"
-            onClick={() => navigate('/blood-tests')}
+            onClick={() =>
+              navigate('/blood-tests', { state: { addNew: true } })
+            }
           >
             添加记录
           </button>
@@ -257,9 +259,7 @@ const Dashboard: React.FC = () => {
             <div className="stat-card">
               <div className="stat-icon">👤</div>
               <div className="stat-content">
-                <span className="stat-value">
-                  {user ? user.fullName : '-'}
-                </span>
+                <span className="stat-value">{user ? user.fullName : '-'}</span>
                 <span className="stat-label">当前用户</span>
               </div>
             </div>

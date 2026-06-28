@@ -83,6 +83,8 @@ services/
   api/apiClient.ts     → Axios singleton with interceptors (auto-attach Bearer, 401 → refresh → retry queue)
   auth/authService.ts  → login, register, profile, settings, changePassword, deleteAccount
   bloodTest/, reminder/ → entity-specific API wrappers
+utils/
+  myelosuppression.ts  → calculates ANC myelosuppression grade (0-4) and guidelines
 types/index.ts     → frontend type definitions (mirrors contracts/index.ts)
 ```
 

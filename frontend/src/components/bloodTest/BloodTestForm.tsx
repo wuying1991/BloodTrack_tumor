@@ -7,6 +7,7 @@ import chemoCycleService, {
   ChemoCycle,
 } from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
+import { getMyelosuppressionGrade } from '../../utils/myelosuppression';
 import './BloodTestForm.css';
 
 // Normal ranges for adult reference
@@ -400,6 +401,36 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
       {formLevelWarning && (
         <div className="form-warning">{formLevelWarning}</div>
       )}
+
+      {/* 实时骨髓抑制评级及指南提示 */}
+      {(() => {
+        const neuVal = parseFloat(formData.neu.value);
+        if (!isNaN(neuVal)) {
+          const gradeInfo = getMyelosuppressionGrade(neuVal);
+          if (gradeInfo && gradeInfo.grade > 0) {
+            return (
+              <div className={`myelo-grade-alert ${gradeInfo.className}`}>
+                <div className="alert-header">
+                  <strong>⚠️ 中性粒细胞减少分级：{gradeInfo.label}</strong>
+                  <span className="grade-value">
+                    {neuVal.toFixed(2)} ×10⁹/L
+                  </span>
+                </div>
+                <p className="alert-desc">{gradeInfo.description}</p>
+                <div className="alert-guidelines">
+                  <h5>🛡️ 患者防感染指引：</h5>
+                  <ul>
+                    {gradeInfo.guidelines.map((g, i) => (
+                      <li key={i}>{g}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            );
+          }
+        }
+        return null;
+      })()}
 
       <div className="form-section">
         <h3>基本信息</h3>

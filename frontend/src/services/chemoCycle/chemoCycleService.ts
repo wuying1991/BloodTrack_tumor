@@ -111,15 +111,13 @@ class ChemoCycleService {
       regimenName: formData.regimenName.trim(),
       startDate: formData.startDate,
       endDate: formData.endDate || undefined,
-      medications: formData.medications
-        .filter(hasMedicationContent)
-        .map(m => ({
-          name: m.name?.trim() || undefined,
-          dosage: m.dosage?.trim() || undefined,
-          startDate: m.startDate || undefined,
-          endDate: m.endDate || undefined,
-          notes: m.notes?.trim() || m.schedule?.trim() || undefined,
-        })),
+      medications: formData.medications.filter(hasMedicationContent).map(m => ({
+        name: m.name?.trim() || undefined,
+        dosage: m.dosage?.trim() || undefined,
+        startDate: m.startDate || undefined,
+        endDate: m.endDate || undefined,
+        notes: m.notes?.trim() || m.schedule?.trim() || undefined,
+      })),
       doctorNotes: formData.doctorNotes.trim() || undefined,
     };
   }
@@ -132,7 +130,8 @@ class ChemoCycleService {
       medications: (chemoCycle.medications || []).map(m => ({
         name: m.name || '',
         dosage: m.dosage || '',
-        startDate: toDateInput(m.startDate) || toDateInput(chemoCycle.startDate),
+        startDate:
+          toDateInput(m.startDate) || toDateInput(chemoCycle.startDate),
         endDate: toDateInput(m.endDate) || toDateInput(chemoCycle.endDate),
         notes: m.notes || m.schedule || '',
       })),

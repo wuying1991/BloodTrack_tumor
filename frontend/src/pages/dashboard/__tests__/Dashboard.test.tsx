@@ -262,7 +262,9 @@ describe('Dashboard', () => {
       await waitFor(() => {
         expect(screen.getByText('复查血常规')).toBeInTheDocument();
       });
-      expect(screen.getByText(/天后到期|今天到期|明天到期/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/天后到期|今天到期|明天到期/)
+      ).toBeInTheDocument();
     });
 
     it('提醒接口失败显示错误，不影响主数据', async () => {

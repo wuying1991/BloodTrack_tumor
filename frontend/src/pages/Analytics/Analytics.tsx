@@ -14,6 +14,9 @@ import analyticsService, {
   TrendPoint,
   SummaryData,
 } from '../../services/analytics/analyticsService';
+import chemoCycleService, {
+  ChemoCycle,
+} from '../../services/chemoCycle/chemoCycleService';
 import './Analytics.css';
 
 ChartJS.register(
@@ -66,9 +69,30 @@ const METRICS: Array<{ key: Metric; label: string; unit: string }> = [
   { key: 'plt', label: '血小板', unit: '×10⁹/L' },
 ];
 
+function isDateInNadirWindow(
+  dateStr: string,
+  cycles: ChemoCycle[]
+): { inNadir: boolean; dayOfCycle: number; regimenName: string } {
+  const date = new Date(dateStr).getTime();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  for (const c of cycles) {
+    const start = new Date(c.startDate).getTime();
+    const diffDays = Math.floor((date - start) / DAY_MS) + 1; // 1-based day of cycle
+    if (diffDays >= 7 && diffDays <= 14) {
+      return {
+        inNadir: true,
+        dayOfCycle: diffDays,
+        regimenName: c.regimenName,
+      };
+    }
+  }
+  return { inNadir: false, dayOfCycle: -1, regimenName: '' };
+}
+
 const Analytics: React.FC = () => {
   const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [cycles, setCycles] = useState<ChemoCycle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeMetric, setActiveMetric] = useState<Metric>('wbc');
@@ -81,13 +105,15 @@ const Analytics: React.FC = () => {
       setIsLoading(true);
       setError('');
       try {
-        const [trendsRes, summaryRes] = await Promise.all([
+        const [trendsRes, summaryRes, cyclesRes] = await Promise.all([
           analyticsService.getTrends(range),
           analyticsService.getSummary(),
+          chemoCycleService.getChemoCycles(1, 100).catch(() => null),
         ]);
         if (cancelled) return;
         if (trendsRes.success) setTrends(trendsRes.data);
         if (summaryRes.success) setSummary(summaryRes.data);
+        if (cyclesRes && cyclesRes.success) setCycles(cyclesRes.data);
       } catch {
         if (!cancelled) setError('加载分析数据失败');
       } finally {
@@ -107,13 +133,28 @@ const Analytics: React.FC = () => {
     const labels = trends.map(t => t.date);
     const values = trends.map(t => t[m]);
 
-    // 异常点高亮 —— 数组形式的 pointBackgroundColor / pointRadius
-    const pointColors = values.map(v =>
-      v < range.min || v > range.max ? '#d0021b' : CHART_COLORS[m].border
-    );
-    const pointRadii = values.map(v =>
-      v < range.min || v > range.max ? 6 : 4
-    );
+    const nadirStates = trends.map(t => isDateInNadirWindow(t.date, cycles));
+
+    // 异常点高亮（红色），Nadir 低谷期点高亮（橙色）
+    const pointColors = trends.map((t, idx) => {
+      const v = t[m];
+      const r = NORMAL_RANGES[m];
+      if (v < r.min || v > r.max) return '#d0021b';
+      if (nadirStates[idx].inNadir) return '#f5a623';
+      return CHART_COLORS[m].border;
+    });
+
+    const pointRadii = trends.map((t, idx) => {
+      const v = t[m];
+      const r = NORMAL_RANGES[m];
+      if (v < r.min || v > r.max) return 7;
+      if (nadirStates[idx].inNadir) return 7;
+      return 4;
+    });
+
+    const pointStyles = trends.map((t, idx) => {
+      return nadirStates[idx].inNadir ? 'rectRot' : 'circle';
+    });
 
     return {
       labels,
@@ -125,6 +166,7 @@ const Analytics: React.FC = () => {
           backgroundColor: CHART_COLORS[m].bg,
           tension: 0.3,
           pointRadius: pointRadii,
+          pointStyle: pointStyles,
           pointBackgroundColor: pointColors,
           pointBorderColor: pointColors,
           fill: true,
@@ -153,7 +195,7 @@ const Analytics: React.FC = () => {
         },
       ],
     };
-  }, [trends, activeMetric]);
+  }, [trends, activeMetric, cycles]);
 
   const chartOptions = useMemo(
     () => ({
@@ -166,11 +208,20 @@ const Analytics: React.FC = () => {
             label: (ctx: {
               dataset: { label?: string };
               parsed: { y: number };
+              dataIndex: number;
             }) => {
               const r = NORMAL_RANGES[activeMetric];
               const v = ctx.parsed.y;
+              const idx = ctx.dataIndex;
+              const date = trends[idx]?.date;
+              const nadirInfo = date ? isDateInNadirWindow(date, cycles) : null;
+
               const flag = v < r.min ? '（低）' : v > r.max ? '（高）' : '';
-              return `${ctx.dataset.label}: ${v}${flag}`;
+              let label = `${ctx.dataset.label}: ${v}${flag}`;
+              if (nadirInfo && nadirInfo.inNadir) {
+                label += ` [⚠️ Nadir期 Day ${nadirInfo.dayOfCycle}]`;
+              }
+              return label;
             },
           },
         },
@@ -183,7 +234,7 @@ const Analytics: React.FC = () => {
         },
       },
     }),
-    [activeMetric]
+    [activeMetric, cycles, trends]
   );
 
   const trendIcon = (direction: 'up' | 'down' | 'stable') => {
@@ -315,6 +366,37 @@ const Analytics: React.FC = () => {
             {NORMAL_RANGES[activeMetric].min}–{NORMAL_RANGES[activeMetric].max}
             ），红色实心点表示该次检测超出正常范围。
           </p>
+
+          <div className="nadir-education-card">
+            <h4>💡 化疗科普：什么是骨髓抑制低谷期（Nadir 期）？</h4>
+            <p>
+              在化疗给药后的第 <strong>7 至 14 天</strong>{' '}
+              左右，化疗药物对骨髓造血功能的抑制作用达到顶峰，导致血液中的白细胞、中性粒细胞和血小板数量降至最低谷。这一时期在医学上被称为{' '}
+              <strong>Nadir 期（低谷期）</strong>。
+            </p>
+            <div className="nadir-warning-tips">
+              <h5>🚨 此时您需要特别注意：</h5>
+              <ul>
+                <li>
+                  <strong>防感染</strong>
+                  ：免疫力极度脆弱。外出必戴口罩，避免前往人群密集场所，不接触有感冒症状的人。
+                </li>
+                <li>
+                  <strong>防出血</strong>
+                  ：若血小板偏低，请使用软毛牙刷，避免外伤和磕碰，谨防皮肤淤斑或牙龈出血。
+                </li>
+                <li>
+                  <strong>安全饮食</strong>
+                  ：禁食生冷食物、剩饭菜以及未剥皮水果，餐具可用开水煮沸消毒。
+                </li>
+                <li>
+                  <strong>异常发热</strong>：若腋下体温超过{' '}
+                  <strong>38.0℃</strong>{' '}
+                  或有寒战，请立即前往医院急诊就医，切勿自行服药拖延。
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       )}
     </div>

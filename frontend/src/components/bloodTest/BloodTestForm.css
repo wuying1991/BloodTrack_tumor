@@ -1,96 +1,104 @@
 .blood-test-form {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   max-width: 800px;
   margin: 0 auto;
+  border: 1px solid var(--border-color);
 }
 
 .blood-test-form h2 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #4a90e2;
-  padding-bottom: 0.5rem;
+  margin: 0 0 24px 0;
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  font-weight: 700;
+  border-bottom: 2px solid var(--primary-light);
+  padding-bottom: 12px;
 }
 
 .blood-test-form h3 {
-  margin: 1.5rem 0 1rem 0;
-  color: #555;
-  font-size: 1.1rem;
+  margin: 24px 0 16px 0;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 /* Form sections */
 .form-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 24px;
 }
 
 /* Form rows */
 .form-row {
   display: flex;
-  gap: 1rem;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
 .form-row .form-field {
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
 }
 
 /* Form grid for blood test indicators */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: 16px;
 }
 
 /* Form fields */
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
 .form-field label {
-  font-size: 0.9rem;
-  color: #555;
-  font-weight: 500;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 4px;
 }
 
 .form-field label .required {
-  color: #d0021b;
+  color: var(--error-color);
 }
 
 .form-field label .unit {
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.8rem;
   font-weight: normal;
-  margin-left: 0.25rem;
+  margin-left: 4px;
 }
 
 .form-field input,
+.form-field select,
 .form-field textarea {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: all 0.2s ease;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  transition: var(--transition-fast);
 }
 
 .form-field input:focus,
+.form-field select:focus,
 .form-field textarea:focus {
   outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(30, 96, 145, 0.15);
 }
 
 .form-field input:disabled,
+.form-field select:disabled,
 .form-field textarea:disabled {
-  background-color: #f5f5f5;
+  background-color: var(--bg-color);
+  color: var(--text-secondary);
   cursor: not-allowed;
 }
 
@@ -102,122 +110,118 @@
 /* Error and warning states */
 .form-field.has-error input,
 .form-field.has-error textarea {
-  border-color: #d0021b;
-  background-color: #fff5f5;
+  border-color: var(--error-color);
+  background-color: var(--error-light);
 }
 
 .form-field.has-warning input,
 .form-field.has-warning textarea {
-  border-color: #f5a623;
-  background-color: #fffbf0;
+  border-color: var(--warning-color);
+  background-color: var(--warning-light);
 }
 
 .input-error {
-  border-color: #d0021b !important;
-  background-color: #fff5f5 !important;
+  border-color: var(--error-color) !important;
+  background-color: var(--error-light) !important;
 }
 
 .input-warning {
-  border-color: #f5a623 !important;
-  background-color: #fffbf0 !important;
+  border-color: var(--warning-color) !important;
+  background-color: var(--warning-light) !important;
 }
 
 .error-message {
-  color: #d0021b;
+  color: var(--error-text);
   font-size: 0.8rem;
-  margin-top: 0.25rem;
+  margin-top: 4px;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-}
-
-.error-message::before {
-  content: '⚠';
+  gap: 4px;
 }
 
 .warning-message {
-  color: #f5a623;
+  color: var(--warning-text);
   font-size: 0.8rem;
-  margin-top: 0.25rem;
+  margin-top: 4px;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 4px;
 }
 
 /* Form level messages */
 .form-error {
-  background-color: #fee;
-  color: #d0021b;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+  background-color: var(--error-light);
+  color: var(--error-text);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
   font-size: 0.9rem;
-  border: 1px solid #fcc;
+  border: 1px solid rgba(220, 38, 38, 0.1);
 }
 
 .form-warning {
-  background-color: #fff3cd;
-  color: #856404;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+  background-color: var(--warning-light);
+  color: var(--warning-text);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
   font-size: 0.9rem;
-  border: 1px solid #ffeaa7;
+  border: 1px solid rgba(245, 166, 35, 0.1);
 }
 
 /* Form actions */
 .form-actions {
   display: flex;
-  gap: 1rem;
+  gap: 12px;
   align-items: center;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
 }
 
-/* Buttons use global .btn styles from index.css */
-
 .form-actions .btn {
-  min-height: 40px;
+  min-height: 42px;
 }
 
 /* Reference ranges section */
 .form-reference {
-  margin-top: 2rem;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  border-left: 4px solid #4a90e2;
+  margin-top: 32px;
+  padding: 16px;
+  background-color: var(--bg-color);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--primary-color);
+  border: 1px solid var(--border-color);
 }
 
 .form-reference h4 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 0.9rem;
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 600;
 }
 
 .form-reference ul {
   margin: 0;
-  padding-left: 1.5rem;
+  padding-left: 20px;
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .form-reference li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 4px;
 }
 
 .reference-note {
-  margin: 0.5rem 0 0 0;
+  margin: 10px 0 0 0;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-muted);
   font-style: italic;
 }
 
 /* Responsive design */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .blood-test-form {
-    padding: 1rem;
+    padding: 20px;
   }
 
   .form-grid {
@@ -226,6 +230,7 @@
 
   .form-row {
     flex-direction: column;
+    gap: 0;
   }
 
   .form-row .form-field {
@@ -234,9 +239,101 @@
 
   .form-actions {
     flex-direction: column;
-  }
-
-  .btn {
     width: 100%;
   }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+}
+
+/* 实时骨髓抑制评级警告框 */
+.myelo-grade-alert {
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  border: 1px solid transparent;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.myelo-grade-alert.grade-1 {
+  background-color: #fef9c3;
+  color: #854d0e;
+  border-color: #fde047;
+}
+
+.myelo-grade-alert.grade-2 {
+  background-color: #ffedd5;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.myelo-grade-alert.grade-3 {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.myelo-grade-alert.grade-4 {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 2px solid var(--error-color);
+  box-shadow: var(--shadow-md);
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0% {
+    border-color: var(--error-color);
+  }
+  50% {
+    border-color: transparent;
+  }
+  100% {
+    border-color: var(--error-color);
+  }
+}
+
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 6px;
+}
+
+.alert-header strong {
+  font-size: 1rem;
+}
+
+.grade-value {
+  font-weight: 700;
+  font-family: 'Inter', monospace;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+}
+
+.alert-desc {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.alert-guidelines h5 {
+  margin: 0 0 6px 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.alert-guidelines ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.85rem;
+}
+
+.alert-guidelines li {
+  margin-bottom: 4px;
 }

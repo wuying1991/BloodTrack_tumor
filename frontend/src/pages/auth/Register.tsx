@@ -161,14 +161,18 @@ const Register: React.FC = () => {
                 required
                 placeholder="请再次输入密码"
                 disabled={isLoading}
-                className={validationErrors.confirmPassword ? 'input-error' : ''}
+                className={
+                  validationErrors.confirmPassword ? 'input-error' : ''
+                }
               />
               <button
                 type="button"
                 className="password-toggle"
                 onClick={() => setShowConfirmPassword(prev => !prev)}
                 disabled={isLoading}
-                aria-label={showConfirmPassword ? '隐藏确认密码' : '显示确认密码'}
+                aria-label={
+                  showConfirmPassword ? '隐藏确认密码' : '显示确认密码'
+                }
               >
                 {showConfirmPassword ? '隐藏' : '显示'}
               </button>

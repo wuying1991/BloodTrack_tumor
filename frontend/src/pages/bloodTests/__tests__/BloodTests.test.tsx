@@ -11,6 +11,7 @@ const mockNavigate = jest.fn();
 
 jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ state: null }),
 }));
 
 // 把列表/表单子组件桩成轻量假组件，专注测页面级编排
@@ -128,7 +129,9 @@ describe('BloodTests page', () => {
     await userEvent.click(screen.getByText('表单提交成功'));
 
     await waitFor(() => {
-      expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('建议先添加化疗周期记录'));
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.stringContaining('建议先添加化疗周期记录')
+      );
     });
     expect(screen.getByTestId('mock-form')).toBeInTheDocument();
   });
@@ -163,7 +166,9 @@ describe('BloodTests page', () => {
     await userEvent.click(screen.getByText('表单提交成功'));
 
     await waitFor(() => {
-      expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('超过 21 天'));
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.stringContaining('超过 21 天')
+      );
     });
   });
 

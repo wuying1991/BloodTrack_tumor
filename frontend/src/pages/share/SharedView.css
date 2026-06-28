@@ -1,38 +1,333 @@
 .shared-view {
   max-width: 960px;
-  margin: 0 auto;
-  padding: 24px;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 40px auto;
+  padding: 32px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
 .shared-view-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
+  align-items: center;
+  border-bottom: 2px solid var(--primary-light);
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+}
+
+.shared-view-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0 0 4px 0;
+}
+
+.shared-view-header h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .shared-view-readonly-badge {
-  font-size: 14px;
-  color: #888;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .shared-view-section {
-  margin-top: 24px;
+  margin-top: 32px;
 }
 
 .shared-view-section h2 {
-  border-left: 4px solid #4080ff;
-  padding-left: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-left: 4px solid var(--primary-color);
+  padding-left: 10px;
+  margin: 0 0 16px 0;
+}
+
+/* 列表与表格共享重构样式 */
+.shared-view-section table {
+  width: 100% !important;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  text-align: left;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.shared-view-section th {
+  background-color: var(--bg-color);
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.shared-view-section td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: var(--transition-fast);
+}
+
+.shared-view-section tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.shared-view-section tbody tr:hover td {
+  background-color: var(--primary-light);
+}
+
+/* 异常行柔和样式 */
+.shared-blood-row.is-abnormal td {
+  background-color: var(--error-light);
+  color: var(--error-text) !important;
+  font-weight: 600;
+}
+
+.shared-blood-row.is-abnormal:hover td {
+  background-color: hsl(var(--error-h), var(--error-s), 94%);
+}
+
+/* 化疗周期列表 */
+.shared-view-section ul[style*='listStyle'] {
+  display: grid;
+  gap: 12px;
+}
+
+.shared-view-section ul[style*='listStyle'] > li {
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 16px !important;
+  background-color: var(--bg-color) !important;
+  transition: var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shared-view-section ul[style*='listStyle'] > li:hover {
+  border-color: var(--border-hover) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+.shared-view-section ul[style*='listStyle'] > li strong {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.shared-view-section ul[style*='listStyle'] > li ul {
+  margin-top: 6px;
+  padding-left: 20px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  list-style: disc !important;
+}
+
+.shared-view-section ul[style*='listStyle'] > li ul li {
+  margin-bottom: 4px;
 }
 
 .shared-error-page {
-  max-width: 480px;
-  margin: 80px auto;
+  max-width: 440px;
+  margin: 100px auto;
   text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 32px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
 }
 
-.shared-blood-row.is-abnormal { color: #c33; font-weight: 500; }
+.shared-error-page h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* PIN 密码验证输入 */
+.shared-error-page input[type='text'] {
+  width: 100%;
+  max-width: 240px;
+  padding: 12px;
+  font-size: 1.5rem;
+  letter-spacing: 6px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-family: 'Inter', monospace;
+  outline: none;
+  background-color: var(--bg-color);
+  transition: var(--transition-fast);
+}
+
+.shared-error-page input[type='text']:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(30, 96, 145, 0.15);
+  background-color: var(--card-bg);
+}
+
+.shared-error-page button {
+  width: 100%;
+  max-width: 240px;
+  min-height: 42px;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(30, 96, 145, 0.2);
+  transition: var(--transition-fast);
+}
+
+.shared-error-page button:hover {
+  background-color: var(--primary-hover);
+  box-shadow: 0 6px 14px rgba(30, 96, 145, 0.3);
+}
+
+.shared-error-page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 骨髓抑制分级药丸样式 */
+.grade-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.grade-badge.grade-0 {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid rgba(30, 96, 145, 0.2);
+}
+
+.grade-badge.grade-1 {
+  background-color: #fef9c3; /* 浅黄 */
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.grade-badge.grade-2 {
+  background-color: #ffedd5; /* 浅橙 */
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.grade-badge.grade-3 {
+  background-color: #fee2e2; /* 浅红 */
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.grade-badge.grade-4 {
+  background-color: #f87171; /* 亮红 */
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .shared-view {
+    margin: 20px 12px;
+    padding: 20px;
+  }
+
+  .shared-view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  /* 移动端表格向卡片列表转化 */
+  .shared-view-section table,
+  .shared-view-section thead,
+  .shared-view-section tbody,
+  .shared-view-section tr,
+  .shared-view-section td {
+    display: block;
+  }
+
+  .shared-view-section thead {
+    display: none; /* 隐藏表头 */
+  }
+
+  .shared-view-section table {
+    border: none;
+  }
+
+  .shared-view-section tbody tr {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    box-shadow: var(--shadow-sm);
+    background-color: var(--card-bg) !important;
+  }
+
+  .shared-view-section tbody tr.shared-blood-row.is-abnormal td {
+    background-color: transparent !important;
+  }
+
+  .shared-view-section tbody tr.shared-blood-row.is-abnormal {
+    border-left: 4px solid var(--error-color);
+    background-color: var(--error-light) !important;
+  }
+
+  .shared-view-section td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border-color);
+    text-align: right;
+  }
+
+  .shared-view-section td:last-child {
+    border-bottom: none;
+  }
+
+  /* 使用 data-label 作为卡片条目的左侧标签 */
+  .shared-view-section td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    float: left;
+    text-align: left;
+  }
+}

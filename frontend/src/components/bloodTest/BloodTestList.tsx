@@ -5,6 +5,7 @@ import chemoCycleService, {
   ChemoCycle,
 } from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
+import { getMyelosuppressionGrade } from '../../utils/myelosuppression';
 import './BloodTestList.css';
 
 interface BloodTestListProps {
@@ -180,13 +181,34 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
           <tbody>
             {bloodTests.map(test => (
               <tr key={test._id} className={test.isAbnormal ? 'abnormal' : ''}>
-                <td className="date-cell">
-                  {formatDate(test.date)}
-                  {test.isAbnormal && (
-                    <span className="abnormal-badge">异常</span>
-                  )}
+                <td className="date-cell" data-label="日期">
+                  <span className="date-value-txt">
+                    {formatDate(test.date)}
+                  </span>
+                  <div
+                    className="badge-container"
+                    style={{ display: 'inline-flex', gap: 4, marginLeft: 6 }}
+                  >
+                    {test.isAbnormal && (
+                      <span className="abnormal-badge">异常</span>
+                    )}
+                    {(() => {
+                      const gradeInfo = getMyelosuppressionGrade(test.neu);
+                      if (gradeInfo && gradeInfo.grade > 0) {
+                        return (
+                          <span
+                            className={`grade-badge ${gradeInfo.className}`}
+                          >
+                            {gradeInfo.grade}级抑制
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                 </td>
                 <td
+                  data-label="白细胞(WBC)"
                   className={`value-cell ${
                     getAbnormalIndicator(test.wbc, 4.0, 10.0)
                       ? 'abnormal-value'
@@ -197,6 +219,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
                   {getAbnormalIndicator(test.wbc, 4.0, 10.0)}
                 </td>
                 <td
+                  data-label="红细胞(RBC)"
                   className={`value-cell ${
                     getAbnormalIndicator(test.rbc, 3.5, 5.8)
                       ? 'abnormal-value'
@@ -207,6 +230,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
                   {getAbnormalIndicator(test.rbc, 3.5, 5.8)}
                 </td>
                 <td
+                  data-label="血红蛋白(HGB)"
                   className={`value-cell ${
                     getAbnormalIndicator(test.hgb, 110, 165)
                       ? 'abnormal-value'
@@ -217,6 +241,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
                   {getAbnormalIndicator(test.hgb, 110, 165)}
                 </td>
                 <td
+                  data-label="血小板(PLT)"
                   className={`value-cell ${
                     getAbnormalIndicator(test.plt, 100, 300)
                       ? 'abnormal-value'
@@ -226,17 +251,21 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
                   {renderValue(test.plt, '')}
                   {getAbnormalIndicator(test.plt, 100, 300)}
                 </td>
-                <td className="cycle-cell">
+                <td className="cycle-cell" data-label="关联周期">
                   {renderCycleLabel(test.chemoCycleId)}
                 </td>
-                <td className="notes-cell" title={test.notes || ''}>
+                <td
+                  className="notes-cell"
+                  title={test.notes || ''}
+                  data-label="备注"
+                >
                   {test.notes
                     ? test.notes.length > 20
                       ? `${test.notes.substring(0, 20)}...`
                       : test.notes
                     : '-'}
                 </td>
-                <td className="actions-cell">
+                <td className="actions-cell" data-label="操作">
                   <button
                     className="btn-icon btn-edit"
                     onClick={() => onEdit(test)}

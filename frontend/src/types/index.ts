@@ -200,7 +200,7 @@ export interface ShareCreateResponseData {
   scope: ShareScope;
   expiresAt: string | null;
   hasPin: boolean;
-  token: string;       // 64-char hex，仅本次返回
+  token: string; // 64-char hex，仅本次返回
   shareUrl: string;
   createdAt: string;
 }
@@ -211,7 +211,7 @@ export type ShareDeleteResponse = ApiResponse<{ message: string }>;
 
 // 公开端
 export interface PublicShareMeta {
-  ownerName: string;        // 分享者 fullName
+  ownerName: string; // 分享者 fullName
   scope: ShareScope;
   expiresAt: string | null;
   requiresPin: boolean;

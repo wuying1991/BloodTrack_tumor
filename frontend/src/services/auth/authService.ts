@@ -95,9 +95,7 @@ class AuthService {
   }
 
   async updateProfile(
-    fields: Partial<
-      Pick<User, 'fullName' | 'dateOfBirth' | 'gender'>
-    >
+    fields: Partial<Pick<User, 'fullName' | 'dateOfBirth' | 'gender'>>
   ): Promise<{ success: boolean; data: User }> {
     return apiClient.put('/auth/profile', fields);
   }
@@ -117,9 +115,7 @@ class AuthService {
     return apiClient.put('/auth/change-password', payload);
   }
 
-  async deleteAccount(
-    password: string
-  ): Promise<{
+  async deleteAccount(password: string): Promise<{
     success: boolean;
     message: string;
     data: { bloodTests: number; chemoCycles: number; reminders: number };

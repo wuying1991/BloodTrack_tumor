@@ -50,7 +50,10 @@ const ChemoCycles: React.FC = () => {
         setCycles(response.data);
       }
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : '加载失败，请检查网络连接后重试';
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : '加载失败，请检查网络连接后重试';
       setError(message);
     } finally {
       setIsLoading(false);
@@ -89,7 +92,11 @@ const ChemoCycles: React.FC = () => {
     for (let i = 0; i < formData.medications.length; i++) {
       const m = formData.medications[i];
       if (!hasMedicationContent(m)) continue;
-      if (m.startDate && m.endDate && new Date(m.endDate) < new Date(m.startDate)) {
+      if (
+        m.startDate &&
+        m.endDate &&
+        new Date(m.endDate) < new Date(m.startDate)
+      ) {
         errs[`medication_${i}`] = '用药结束日期必须晚于开始日期';
       }
     }
@@ -276,12 +283,21 @@ const ChemoCycles: React.FC = () => {
                       <div className="med-list">
                         {cycle.medications.map((med, idx) => (
                           <div key={idx} className="med-item">
-                            <span className="med-name">{med.name || '未填写药名'}</span>
-                            {med.dosage && <span className="med-dosage">{med.dosage}</span>}
-                            <span className="med-schedule">
-                              {formatDate(med.startDate)} → {formatDate(med.endDate)}
+                            <span className="med-name">
+                              {med.name || '未填写药名'}
                             </span>
-                            {med.notes && <span className="med-notes">备注：{med.notes}</span>}
+                            {med.dosage && (
+                              <span className="med-dosage">{med.dosage}</span>
+                            )}
+                            <span className="med-schedule">
+                              {formatDate(med.startDate)} →{' '}
+                              {formatDate(med.endDate)}
+                            </span>
+                            {med.notes && (
+                              <span className="med-notes">
+                                备注：{med.notes}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -348,7 +364,9 @@ const ChemoCycles: React.FC = () => {
                 }
                 className={formErrors.endDate ? 'input-error' : ''}
               />
-              <small>默认开始日期 + 21 天；保存后若有下一个周期，系统会自动修正。</small>
+              <small>
+                默认开始日期 + 21 天；保存后若有下一个周期，系统会自动修正。
+              </small>
               {formErrors.endDate && (
                 <span className="field-error">{formErrors.endDate}</span>
               )}
@@ -358,7 +376,9 @@ const ChemoCycles: React.FC = () => {
           <div className="form-group">
             <label>药物（可选）</label>
             {formData.medications.length === 0 && (
-              <p className="empty-hint">未添加药物。病人不清楚药物细节时可留空。</p>
+              <p className="empty-hint">
+                未添加药物。病人不清楚药物细节时可留空。
+              </p>
             )}
             {formData.medications.map((med, idx) => (
               <div key={idx} className="medication-entry">
@@ -367,24 +387,32 @@ const ChemoCycles: React.FC = () => {
                     type="text"
                     placeholder="药物名称（可选）"
                     value={med.name || ''}
-                    onChange={e => updateMedication(idx, 'name', e.target.value)}
+                    onChange={e =>
+                      updateMedication(idx, 'name', e.target.value)
+                    }
                   />
                   <input
                     type="text"
                     placeholder="剂量（可选）"
                     value={med.dosage || ''}
-                    onChange={e => updateMedication(idx, 'dosage', e.target.value)}
+                    onChange={e =>
+                      updateMedication(idx, 'dosage', e.target.value)
+                    }
                   />
                   <input
                     type="date"
                     value={med.startDate || ''}
-                    onChange={e => updateMedication(idx, 'startDate', e.target.value)}
+                    onChange={e =>
+                      updateMedication(idx, 'startDate', e.target.value)
+                    }
                     title="用药开始日期"
                   />
                   <input
                     type="date"
                     value={med.endDate || ''}
-                    onChange={e => updateMedication(idx, 'endDate', e.target.value)}
+                    onChange={e =>
+                      updateMedication(idx, 'endDate', e.target.value)
+                    }
                     title="用药结束日期"
                   />
                   <button
