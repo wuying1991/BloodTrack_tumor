@@ -45,28 +45,26 @@ code {
 }
 
 .btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  padding: 0 20px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
-  line-height: 1 !important;
+  line-height: 1;
   text-decoration: none;
   transition: all 0.2s ease;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .btn-sm {
-  height: 32px !important;
-  min-height: 32px !important;
-  padding: 0 12px !important;
+  min-height: 32px;
+  padding: 0 12px;
   font-size: 13px;
 }
 
@@ -75,16 +73,7 @@ code {
 .form-actions,
 .cycle-actions {
   display: flex;
-  align-items: center !important;
-}
-
-.header-actions > .btn,
-.page-header-actions > .btn,
-.form-actions > .btn,
-.cycle-actions > .btn {
-  flex: 0 0 auto;
-  height: 40px !important;
-  min-height: 40px !important;
+  align-items: center;
 }
 
 .btn:disabled {
