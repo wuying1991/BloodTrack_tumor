@@ -41,13 +41,31 @@ code {
 }
 
 .btn {
-  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
   transition: all 0.2s ease;
+  vertical-align: middle;
+}
+
+.btn-sm {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-primary {
@@ -66,6 +84,15 @@ code {
 
 .btn-secondary:hover {
   background-color: #3DD5B0;
+}
+
+.btn-danger {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #a80016;
 }
 
 .card {

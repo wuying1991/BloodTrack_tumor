@@ -5,6 +5,7 @@ import chemoCycleService, {
   ChemoMedication,
   addDaysLocal,
 } from '../../services/chemoCycle/chemoCycleService';
+import { ApiError } from '../../services/api/apiClient';
 import './ChemoCycles.css';
 
 type ViewMode = 'list' | 'add' | 'edit';
@@ -48,8 +49,9 @@ const ChemoCycles: React.FC = () => {
       if (response.success) {
         setCycles(response.data);
       }
-    } catch {
-      setError('加载失败，请检查网络连接后重试');
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : '加载失败，请检查网络连接后重试';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
