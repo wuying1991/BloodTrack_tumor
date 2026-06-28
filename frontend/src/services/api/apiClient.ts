@@ -9,6 +9,7 @@ import authService from '../auth/authService';
 // API base URL - should be configured via environment variables
 const API_BASE_URL =
   process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const REQUEST_TIMEOUT_MS = 10000;
 
 /**
  * Custom API Error
@@ -37,6 +38,7 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
+      timeout: REQUEST_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
       },

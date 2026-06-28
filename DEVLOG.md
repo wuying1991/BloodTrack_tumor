@@ -109,7 +109,7 @@
 | M-P5 | 账户删除 (DELETE /api/auth/account, GDPR) | 0.5天 | ✅ |
 | ~~M-P6~~ | ~~姓名字段重构：合并 firstName/lastName 为单一 fullName~~ | 0.5天 | ✅ |
 | ~~M-P7~~ | ~~化疗周期重新设计：方案(regimen) → 药物(含起止日期)~~ | 2-3天 | ✅ |
-| M-P8 | AuthContext 启动 refreshToken 超时兜底（避免无限 loading） | 0.3天 | ❌ |
+| ~~M-P8~~ | ~~AuthContext 启动 refreshToken 超时兜底（避免无限 loading）~~ | 0.3天 | ✅ |
 
 > **M-P8 AuthContext 启动超时兜底**（2026-06-23 Docker 验证发现）：
 > 现状 `AuthContext` 启动时若 localStorage 有旧 token 会调 `refreshToken` API 验证；如果网络层挂掉（代理拦截、后端无响应、超时），请求永远 pending，应用永远显示「加载中」，用户体验差且无法自救（只能 F12 清 localStorage）。
@@ -160,6 +160,12 @@
 ---
 
 ## 📅 变更日志
+
+### 2026-06-23（M-P8 AuthContext 启动兜底）
+- **apiClient timeout**：Axios 实例新增默认 `timeout: 10000`，避免网络层挂起导致请求永远 pending。
+- **AuthContext 初始化兜底**：`initAuth()` 加 `try/catch/finally`，无论 token refresh 成功、失败还是异常，最终都会 `setIsLoading(false)`；异常时 `performLogout()` 清理 localStorage，避免页面永久停留在「加载中」。
+- **触发场景**：Docker 验证时普通窗口 localStorage 留旧 token，refresh 请求被代理/网络卡住，隐身窗口正常；本修复使普通窗口也能自动恢复到未登录状态。
+- **验证**：frontend tsc ✅、frontend jest 74/74 ✅
 
 ### 2026-06-23（M-P7 化疗周期重新设计）
 - **设计文档 + 实现计划**：新增 `docs/superpowers/specs/2026-06-23-chemo-cycle-redesign-design.md` 与 `docs/superpowers/plans/2026-06-23-chemo-cycle-redesign-implementation.md`，锁定方案名称、药物起止日期、周期边界自动重算、血常规页提醒、旧数据兼容等规则。

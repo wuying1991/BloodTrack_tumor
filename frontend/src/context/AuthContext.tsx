@@ -210,43 +210,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const storedUser = localStorage.getItem('user');
       const tokenExpiry = localStorage.getItem('tokenExpiry');
 
-      if (storedAccessToken && storedRefreshToken && storedUser) {
-        // Check if token is still valid
-        if (tokenExpiry) {
-          const expiryTime = parseInt(tokenExpiry, 10);
-          const now = Date.now();
+      try {
+        if (storedAccessToken && storedRefreshToken && storedUser) {
+          // Check if token is still valid
+          if (tokenExpiry) {
+            const expiryTime = parseInt(tokenExpiry, 10);
+            const now = Date.now();
 
-          if (expiryTime > now) {
-            // Token is still valid
-            setAccessToken(storedAccessToken);
-            setRefreshToken(storedRefreshToken);
-            setUser(JSON.parse(storedUser));
-            setupTokenRefresh();
-            updateActivity();
-          } else if (expiryTime + 7 * 24 * 60 * 60 * 1000 > now) {
-            // Refresh token might still be valid (7 day expiry), try to refresh
+            if (expiryTime > now) {
+              // Token is still valid
+              setAccessToken(storedAccessToken);
+              setRefreshToken(storedRefreshToken);
+              setUser(JSON.parse(storedUser));
+              setupTokenRefresh();
+              updateActivity();
+            } else if (expiryTime + 7 * 24 * 60 * 60 * 1000 > now) {
+              // Refresh token might still be valid (7 day expiry), try to refresh
+              const refreshed = await refreshAccessToken();
+              if (refreshed) {
+                setUser(JSON.parse(storedUser));
+                setupTokenRefresh();
+                updateActivity();
+              }
+            } else {
+              // Both tokens expired
+              performLogout();
+            }
+          } else {
+            // No expiry info, try to refresh
             const refreshed = await refreshAccessToken();
             if (refreshed) {
               setUser(JSON.parse(storedUser));
               setupTokenRefresh();
               updateActivity();
             }
-          } else {
-            // Both tokens expired
-            performLogout();
-          }
-        } else {
-          // No expiry info, try to refresh
-          const refreshed = await refreshAccessToken();
-          if (refreshed) {
-            setUser(JSON.parse(storedUser));
-            setupTokenRefresh();
-            updateActivity();
           }
         }
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        performLogout();
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     initAuth();
