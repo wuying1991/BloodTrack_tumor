@@ -7,6 +7,35 @@
   color: #333;
 }
 
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.header-actions .btn {
+  min-height: 40px;
+}
+
+.welcome-section h1 {
+  margin-bottom: 0.25rem;
+}
+
+.welcome-subtitle {
+  margin: 0;
+  color: #6b7280;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

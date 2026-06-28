@@ -169,6 +169,7 @@
 .form-actions {
   display: flex;
   gap: 1rem;
+  align-items: center;
   margin-top: 2rem;
   padding-top: 1rem;
   border-top: 1px solid #eee;

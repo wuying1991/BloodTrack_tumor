@@ -332,6 +332,7 @@ const ChemoCycles: React.FC = () => {
                 onChange={e => updateStartDate(e.target.value)}
                 className={formErrors.startDate ? 'input-error' : ''}
               />
+              <small>填写本周期首日用药日期。</small>
               {formErrors.startDate && (
                 <span className="field-error">{formErrors.startDate}</span>
               )}
