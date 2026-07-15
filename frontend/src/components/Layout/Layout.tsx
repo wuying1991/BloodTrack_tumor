@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import OfflineIndicator from '../common/OfflineIndicator';
 import './Layout.css';
 
 const Layout: React.FC = () => {
