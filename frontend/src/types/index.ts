@@ -219,3 +219,33 @@ export interface PublicShareMeta {
 
 export type PublicShareMetaResponse = ApiResponse<PublicShareMeta>;
 export type PublicSharePinVerifyResponse = ApiResponse<{ message: string }>;
+
+// ============================================================
+// 安全审计日志 (Audit Log) - L-P2
+// ============================================================
+
+export type AuditAction =
+  | 'login'
+  | 'logout'
+  | 'register'
+  | 'refresh_token'
+  | 'forgot_password'
+  | 'reset_password'
+  | 'change_password'
+  | 'delete_account'
+  | 'share_create'
+  | 'share_revoke';
+
+export type AuditAnomalyType = 'new_ip' | 'brute_force';
+
+export interface AuditLogEntry {
+  _id: string;
+  action: AuditAction;
+  success: boolean;
+  ip: string;
+  userAgent: string;
+  detail?: string;
+  isAnomaly: boolean;
+  anomalyType?: AuditAnomalyType;
+  createdAt: string;
+}

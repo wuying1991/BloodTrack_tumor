@@ -11,6 +11,7 @@ import {
   updateSettings,
   changePassword,
   deleteAccount,
+  getAuditLogs,
 } from '../controllers/authController';
 import {
   validateRegister,
@@ -40,5 +41,6 @@ router.put('/settings', protect, validateSettingsUpdate, updateSettings);
 router.put('/change-password', protect, validateChangePassword, changePassword);
 router.delete('/account', protect, validateDeleteAccount, deleteAccount);
 router.post('/logout', protect, logoutUser);
+router.get('/audit-logs', protect, getAuditLogs);
 
 export default router;

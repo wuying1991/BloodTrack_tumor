@@ -467,3 +467,18 @@ export const deleteAccount = asyncHandler(
     });
   }
 );
+
+// @desc    Get current user's audit logs (security log)
+// @route   GET /api/auth/audit-logs
+// @access  Private
+export const getAuditLogs = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const logs = await AuditLog.find({ user: req.user?._id })
+    .sort('-createdAt')
+    .limit(50)
+    .select('-user -__v');
+
+  res.json({
+    success: true,
+    data: logs,
+  });
+});
