@@ -5,6 +5,7 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { Share, IShare } from '../models/Share';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { recordAuditEvent } from '../utils/auditLogger';
 
 const MAX_ACTIVE_SHARES = 50;
 
@@ -83,6 +84,8 @@ export const createShare = asyncHandler(
         shareUrl: buildShareUrl(token),
       },
     });
+
+    await recordAuditEvent({ user: req.user?._id, action: 'share_create', success: true, req });
   }
 );
 
@@ -117,5 +120,7 @@ export const deleteShare = asyncHandler(
       success: true,
       message: '分享已撤销 (Share revoked)',
     });
+
+    await recordAuditEvent({ user: req.user?._id, action: 'share_revoke', success: true, req });
   }
 );

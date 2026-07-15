@@ -4,11 +4,13 @@ import { BloodTest } from '../models/BloodTest';
 import { ChemoCycle } from '../models/ChemoCycle';
 import { Reminder } from '../models/Reminder';
 import { Share } from '../models/Share';
+import { AuditLog } from '../models/AuditLog';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { recordAuditEvent } from '../utils/auditLogger';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { secrets } from '../config/secrets';
 
@@ -50,6 +52,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
   const userExists = await User.findOne({ email });
 
   if (userExists) {
+    await recordAuditEvent({ user: null, action: 'register', success: false, req, detail: `邮箱已注册: ${email}` });
     throw ApiError.conflict('用户已存在 (User already exists)');
   }
 
@@ -70,6 +73,8 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
     throw ApiError.badRequest('无效的用户数据 (Invalid user data)');
   }
 
+  await recordAuditEvent({ user: user._id, action: 'register', success: true, req });
+
   // Generate tokens
   const tokens = generateTokenPair(user._id.toString());
 
@@ -89,12 +94,58 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
 // @access  Public
 export const loginUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
+  const clientIp = req.ip || '';
 
   const user = await User.findOne({ email });
 
   if (!user || !(await user.comparePassword(password))) {
+    // 记录登录失败
+    await recordAuditEvent({
+      user: user?._id ?? null,
+      action: 'login',
+      success: false,
+      req,
+      detail: user ? '密码错误' : `邮箱不存在: ${email}`,
+    });
+
+    // 暴力破解检测：同一 IP 15 分钟内 5 次登录失败
+    const recentFails = await AuditLog.countDocuments({
+      ip: clientIp,
+      action: 'login',
+      success: false,
+      createdAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) },
+    });
+    if (recentFails >= 5) {
+      await recordAuditEvent({
+        user: user?._id ?? null,
+        action: 'login',
+        success: false,
+        req,
+        detail: `检测到暴力破解尝试: ${clientIp} 15 分钟内 ${recentFails} 次失败`,
+        isAnomaly: true,
+        anomalyType: 'brute_force',
+      });
+    }
+
     throw ApiError.unauthorized('邮箱或密码错误 (Invalid email or password)');
   }
+
+  // 新 IP 检测
+  const isNewIp = !user.knownIps.includes(clientIp);
+  if (isNewIp) {
+    user.knownIps.push(clientIp);
+    await user.save();
+  }
+
+  await recordAuditEvent({
+    user: user._id,
+    action: 'login',
+    success: true,
+    req,
+    detail: isNewIp ? `新 IP 登录: ${clientIp}` : undefined,
+    isAnomaly: isNewIp,
+    anomalyType: isNewIp ? 'new_ip' : undefined,
+  });
 
   // Generate tokens
   const tokens = generateTokenPair(user._id.toString());
@@ -137,11 +188,14 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response): Pr
     // Generate new token pair
     const tokens = generateTokenPair(user._id.toString());
 
+    await recordAuditEvent({ user: user._id, action: 'refresh_token', success: true, req });
+
     res.json({
       success: true,
       data: tokens,
     });
   } catch (error) {
+    await recordAuditEvent({ user: null, action: 'refresh_token', success: false, req });
     if (error instanceof jwt.TokenExpiredError) {
       throw ApiError.unauthorized('刷新令牌已过期，请重新登录 (Refresh token expired, please login again)');
     }
@@ -153,8 +207,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response): Pr
 // @route   POST /api/auth/logout
 // @access  Private
 export const logoutUser = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  // In a more advanced implementation, you might want to blacklist the tokens
-  // For now, we just return success and let the client remove the tokens
+  await recordAuditEvent({ user: req.user?._id, action: 'logout', success: true, req });
   res.json({
     success: true,
     message: '已成功登出 (Logged out successfully)',
@@ -169,6 +222,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response): 
 
   const user = await User.findOne({ email });
   if (!user) {
+    await recordAuditEvent({ user: null, action: 'forgot_password', success: false, req, detail: `邮箱不存在: ${email}` });
     throw ApiError.notFound('该邮箱未注册 (Email not found)');
   }
 
@@ -179,6 +233,8 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response): 
   user.resetPasswordToken = hashedToken;
   user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   await user.save();
+
+  await recordAuditEvent({ user: user._id, action: 'forgot_password', success: true, req });
 
   // In production, send email here. For dev, return token in response.
   const isDev = process.env.NODE_ENV !== 'production';
@@ -211,6 +267,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response): P
   }
 
   if (!matchedUser) {
+    await recordAuditEvent({ user: null, action: 'reset_password', success: false, req, detail: '无效或过期的重置令牌' });
     throw ApiError.badRequest('无效或已过期的重置令牌 (Invalid or expired reset token)');
   }
 
@@ -219,6 +276,8 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response): P
   matchedUser.resetPasswordToken = undefined;
   matchedUser.resetPasswordExpires = undefined;
   await matchedUser.save();
+
+  await recordAuditEvent({ user: matchedUser._id, action: 'reset_password', success: true, req });
 
   res.json({
     success: true,
@@ -338,12 +397,14 @@ export const changePassword = asyncHandler(async (req: AuthRequest, res: Respons
 
   const isMatch = await user.comparePassword(currentPassword);
   if (!isMatch) {
+    await recordAuditEvent({ user: user._id, action: 'change_password', success: false, req, detail: '当前密码不正确' });
     throw ApiError.unauthorized('当前密码不正确 (Current password is incorrect)');
   }
 
   // 防止新旧密码相同
   const isSame = await user.comparePassword(newPassword);
   if (isSame) {
+    await recordAuditEvent({ user: user._id, action: 'change_password', success: false, req, detail: '新密码与当前密码相同' });
     throw ApiError.badRequest('新密码不能与当前密码相同 (New password must differ from current)');
   }
 
@@ -353,6 +414,8 @@ export const changePassword = asyncHandler(async (req: AuthRequest, res: Respons
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();
+
+  await recordAuditEvent({ user: user._id, action: 'change_password', success: true, req });
 
   res.json({
     success: true,
@@ -378,6 +441,9 @@ export const deleteAccount = asyncHandler(
     if (!isMatch) {
       throw ApiError.unauthorized('密码不正确 (Password is incorrect)');
     }
+
+    // 删除前记录审计日志（删除后 user 不存在了）
+    await recordAuditEvent({ user: userId, action: 'delete_account', success: true, req });
 
     // 级联删除该用户的所有数据 (Mongoose 不支持事务时尽力而为：先数据后用户)
     const [bloodTestsRes, chemoCyclesRes, remindersRes, sharesRes] = await Promise.all([
