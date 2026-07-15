@@ -9,6 +9,7 @@ export interface IUser extends Document {
   gender: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  knownIps: string[];
   settings: {
     notifications: { email: boolean; push: boolean };
     dataSharing: { enabled: boolean; sharedWith: string[] };
@@ -25,6 +26,7 @@ const userSchema = new Schema<IUser>(
     gender: { type: String },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
+    knownIps: { type: [String], default: [] },
     settings: {
       notifications: {
         email: { type: Boolean, default: true },
