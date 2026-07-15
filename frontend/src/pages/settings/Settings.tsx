@@ -3,12 +3,13 @@ import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth/authService';
 import { ApiError } from '../../services/api/apiClient';
 import SharesSection from './components/SharesSection';
+import AuditLogSection from './components/AuditLogSection';
 import './Settings.css';
 
 const Settings: React.FC = () => {
   const { user, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'notifications' | 'data'
+    'profile' | 'notifications' | 'data' | 'security'
   >('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -233,6 +234,12 @@ const Settings: React.FC = () => {
             onClick={() => setActiveTab('data')}
           >
             🔒 数据与隐私
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'security' ? 'active' : ''}`}
+            onClick={() => setActiveTab('security')}
+          >
+            🛡️ 安全日志
           </button>
         </nav>
 
@@ -547,6 +554,12 @@ const Settings: React.FC = () => {
               </div>
 
               <SharesSection sharingEnabled={dataSharing.enabled} />
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="settings-section">
+              <AuditLogSection />
             </div>
           )}
         </div>
