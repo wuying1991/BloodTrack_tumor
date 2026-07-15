@@ -11,7 +11,7 @@
 | 后端 API 模块 | 7 / 7 | 7 | 100% |
 | 后端基础设施 | 6 / 6 | 6 | 100% |
 | 前端页面 | 11 / 11 | 11 | 100% |
-| 后端测试 | 113 | TBD | — |
+| 后端测试 | 122 | TBD | — |
 | 前端测试 | 74 | TBD | — |
 
 **项目总进度**: █████████████████████ 99%
@@ -134,7 +134,7 @@
 | ID | 功能 | 预估 | 状态 |
 |----|------|------|------|
 | L-P1 | PWA 离线支持 | 3天 | ❌ |
-| L-P2 | 安全审计日志 (异常登录检测) | 2天 | ❌ |
+| ~~L-P2~~ | ~~安全审计日志 (异常登录检测)~~ | 2天 | ✅ |
 | ~~L-P3~~ | ~~CI/CD + Docker~~ | 3天 | ✅ |
 | L-P4 | E2E 测试 (Cypress) | 3天 | ❌ |
 | L-P5 | i18n / 国际化 (i18next) | 2天 | ❌ |
@@ -153,13 +153,24 @@
 | 前端 ESLint | `cd frontend && npm run lint` | ✅ M-P4 新增/改动 0 错误 (旧 prettier CRLF 噪声依旧) |
 | 后端契约测试 | `cd backend && npm run test:contract` | ✅ 34/34 |
 | 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 72/72 |
-| 后端全部测试 | `cd backend && npx jest` | ✅ 113/113 |
+| 后端全部测试 | `cd backend && npx jest` | ✅ 122/122 |
 | 前端单元测试 | `cd frontend && npm test` | ✅ 74/74 |
 | 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 5/5 |
 
 ---
 
 ## 📅 变更日志
+
+### 2026-07-15（L-P2 安全审计日志 + 异常登录检测）
+- **AuditLog Model**: `user/action/success/ip/userAgent/detail/isAnomaly/anomalyType`，TTL 索引 90 天自动清理；`{user,createdAt}` + `{ip,action,createdAt}` 复合索引
+- **User.knownIps**: 新增 `knownIps: string[]` 跟踪用户历史登录 IP，首次登录自动标记新 IP
+- **auditLogger helper**: `recordAuditEvent()` 从 req 提取 ip/userAgent，try/catch 不阻断业务
+- **10 处埋点**: login(含新IP/暴力破解检测)/logout/register/refresh_token/forgot_password/reset_password/change_password/delete_account/share_create/share_revoke
+- **异常检测**: 新 IP 登录 -> `isAnomaly=true, anomalyType=new_ip`；同一 IP 15 分钟内 5 次失败 -> `anomalyType=brute_force`
+- **GET /api/auth/audit-logs**: 返回当前用户最近 50 条审计日志，按 createdAt 降序，不含 user 字段
+- **前端**: Settings 新增第 4 个 tab「🛡️ 安全日志」+ `AuditLogSection` 组件，时间线列表展示，异常事件红底高亮 + ⚠️ + 红色 badge
+- **测试**: 后端集成测试 9 用例（登录日志/新IP/旧IP/暴力破解/change-password/share/GET端点/401），全后端 122/122，前端 74/74
+
 
 ### 2026-06-28（UI 视觉深度重构 + 三大核心产品功能演进完成）
 - **UI 视觉与交互体验深度重构**：
