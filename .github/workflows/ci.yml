@@ -64,3 +64,40 @@ jobs:
 
       - name: Tests
         run: CI=true npx react-scripts test --watchAll=false
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install E2E dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # run.sh builds the full Docker stack (rate limiting disabled), waits for health,
+      # runs Playwright, and tears down. Run from repo root so it can resolve docker-compose.yml.
+      - name: Run E2E suite
+        working-directory: .
+        run: bash e2e/run.sh
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14

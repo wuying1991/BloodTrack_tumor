@@ -87,12 +87,16 @@ class ApiClient {
           this.isRefreshing = true;
           originalRequest._retry = true;
 
-          try {
-            const refreshToken = localStorage.getItem('refreshToken');
-            if (!refreshToken) {
-              throw new Error('No refresh token available');
-            }
+          const refreshToken = localStorage.getItem('refreshToken');
+          // No refresh token -> user isn't authenticated (e.g. wrong password on the
+          // login page). This 401 is a real error, not an expired session: surface the
+          // original error so the caller (Login form) can show it. Don't redirect.
+          if (!refreshToken) {
+            this.isRefreshing = false;
+            return this.handleError(error);
+          }
 
+          try {
             const response = await authService.refreshToken(refreshToken);
 
             if (response.success && response.data) {

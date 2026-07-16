@@ -13,6 +13,7 @@
 | 前端页面 | 11 / 11 | 11 | 100% |
 | 后端测试 | 122 | 122 | ✅ 全绿 |
 | 前端测试 | 77 | 77 | ✅ 全绿 |
+| E2E 测试 | 12 | 12 | ✅ 全绿 (Playwright) |
 
 **项目总进度**: █████████████████████ 99%
 
@@ -136,7 +137,7 @@
 | ~~L-P1~~ | ~~PWA 离线支持~~ | 3天 | ✅ |
 | ~~L-P2~~ | ~~安全审计日志 (异常登录检测)~~ | 2天 | ✅ |
 | ~~L-P3~~ | ~~CI/CD + Docker~~ | 3天 | ✅ |
-| L-P4 | E2E 测试 (Cypress) | 3天 | ❌ |
+| ~~L-P4~~ | ~~E2E 测试 (Playwright，原 Cypress)~~ | 3天 | ✅ |
 | L-P5 | i18n / 国际化 (i18next) | 2天 | ❌ |
 | L-P6 | axios 升级到 1.x (CVE) | 0.1天 | ✅ |
 | L-P7 | JWT secret fallback 启动校验 (生产环境强制 env) | 0.1天 | ✅ |
@@ -160,6 +161,16 @@
 ---
 
 ## 📅 变更日志
+
+### 2026-07-16（L-P4 E2E 测试 - Playwright）
+- **工具决策**：DEVLOG 原写 Cypress，实际改用 **Playwright**。理由：本会话已用 Playwright + 系统 Edge 验证 PWA 离线（`setOffline`/`fromServiceWorker` 对 PWA 应用更合适），零额外浏览器依赖。已回写待办表 L-P4 行。
+- **结构**：新建顶层 `e2e/` 包（独立 `package.json`/`tsconfig`，与前端 CRA / 后端 jest 解耦）。`playwright.config.ts`（baseURL :3000、chromium、workers 1、60s 超时、html+list 报告）；`helpers/api.ts`（注册/建血常规/建分享/开数据共享，唯一邮箱隔离）；`fixtures/auth.ts`（`authenticatedPage` fixture：API 注册 + 注入 4 个 localStorage key 实现确定性登录，`beforeEach` 屏蔽 Google Fonts）；`run.sh`（建栈+等健康+跑测试+拆栈）。
+- **12 个用例**：auth（注册/登录/错密码/登出 4）、blood-tests CRUD（增/异常标记/改/删 4）、share（viewer 无 PIN 跨 fresh context / Settings UI 创建 2）、offline（离线 reload 缓存回源+指示器 / 断网指示器 2）。全链路 `run.sh` 实跑 16.3s 全绿。
+- **顺带修一个应用 bug**：E2E 发现错密码登录时 `apiClient` 的 401 拦截器把所有 401 当「token 过期」处理 -> 无 refreshToken（未登录态）时重定向 `/login?expired=1` 显示「会话已过期」而非「邮箱或密码错误」。修复：无 refreshToken 时直接抛原始错误给调用方（Login 表单显示正确错误），不重定向。前端 tsc ✅、jest 77/77 ✅。
+- **E2E 基础设施**：后端 `app.ts` 加 `RATE_LIMIT_DISABLED` env 开关（E2E 单 IP 高并发+CI 重试会打爆 100/15min 全局限流）；`e2e/docker-compose.e2e.yml` override 设置该开关；`run.sh` 用 `docker compose -f docker-compose.yml -f e2e/docker-compose.e2e.yml up --build`。`fixtures/auth.ts` beforeEach 屏蔽 Google Fonts（跨源、慢网络下挂起拖慢 page load 事件）。
+- **CI**：`.github/workflows/ci.yml` 加 `e2e` job（`npm ci` + `playwright install --with-deps chromium` + `bash e2e/run.sh` + 失败上传 `playwright-report` artifact）。GitHub runner 自带 Docker、Docker Hub 可达。
+- **质量门禁**：E2E 12/12 ✅、后端 tsc ✅ + jest 122/122 ✅、前端 tsc ✅ + jest 77/77 ✅ + lint 0 错误、e2e tsc ✅。
+- **未做**：未在真实 GitHub Actions 跑过 e2e job（本机无 push 权限验证），配置语法靠本地 `run.sh` 实跑验证；首次 push 后 CI 会实跑。
 
 ### 2026-07-16（L-P1 PWA 离线支持收尾）
 - **Service Worker** (`public/sw.js`)：自定义 SW，零额外依赖。install 缓存 app shell（`/`、`/index.html`、`/manifest.json`）+ `skipWaiting`；activate 清旧缓存 + `clients.claim`；fetch 分流——同源 GET 才处理，`/api/` 走 network-first（失败回退缓存，成功响应 clone 入缓存），静态资源走 cache-first 回退网络。

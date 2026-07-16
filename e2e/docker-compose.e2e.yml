@@ -1,0 +1,8 @@
+# E2E override: disable rate limiting. Playwright drives high API volume from one IP
+# (all tests share the host IP behind nginx) plus retries, which would blow past the
+# 100/15min global and 5/min auth limits. Applied via:
+#   docker compose -f docker-compose.yml -f e2e/docker-compose.e2e.yml up -d --build
+services:
+  backend:
+    environment:
+      RATE_LIMIT_DISABLED: "true"
