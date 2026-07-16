@@ -2,8 +2,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# 后端地址通过构建参数注入；默认指向同 compose 网络的 backend:5000
-ARG REACT_APP_API_URL=http://localhost:5000/api
+# 后端地址通过构建参数注入；同源相对路径 /api，由本镜像 nginx 反代到 backend:5000
+ARG REACT_APP_API_URL=/api
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 COPY package*.json ./

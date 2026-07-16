@@ -33,9 +33,9 @@ services:
   frontend:
     build:
       context: ./frontend
-      # 浏览器访问后端的地址（从用户视角，走宿主机端口）
+      # 同源相对路径：经本容器 nginx /api 反代到 backend:5000，使 SW 可缓存 API GET（离线查看）
       args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000/api}
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
     restart: unless-stopped
     depends_on:
       - backend

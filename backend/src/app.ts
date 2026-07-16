@@ -14,6 +14,10 @@ import { errorHandler, notFoundHandler } from './middlewares/errorMiddleware';
 
 const app: Application = express();
 
+// 生产环境运行在反向代理(nginx)后：信任 1 跳，使 req.ip 取真实客户端 IP
+// （全局/登录限流按 IP 计数、审计日志新 IP 检测都依赖此）。dev/test 直连后端不信任。
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
+
 // Security middleware
 app.use(helmet());
 
