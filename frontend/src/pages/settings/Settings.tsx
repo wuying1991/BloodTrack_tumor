@@ -236,7 +236,9 @@ const Settings: React.FC = () => {
             🔒 数据与隐私
           </button>
           <button
-            className={`settings-tab ${activeTab === 'security' ? 'active' : ''}`}
+            className={`settings-tab ${
+              activeTab === 'security' ? 'active' : ''
+            }`}
             onClick={() => setActiveTab('security')}
           >
             🛡️ 安全日志

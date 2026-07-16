@@ -116,9 +116,10 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
 - `display` 保持 `standalone`
 - `theme_color` 和 `background_color` 与当前配色一致
 
-由于没有设计图标源文件，使用一个简单的纯色圆角方块占位图标（用 HTML canvas 生成或手写 SVG -> 转不了 PNG，直接用一个最小 PNG）。
+由于没有设计图标源文件，原计划使用纯色占位 PNG（`public/logo192.png` 和 `public/logo512.png`）。
 
-> 实际方案：用 `public/logo192.png` 和 `public/logo512.png` 占位（纯色方块），用户后续替换成真实 logo。
+> **实际实现（2026-07-16 决策）**：改用单一 `public/icon.svg`（`sizes: "any"` + `purpose: "any maskable"`），manifest 中以 SVG 替代 PNG 192/512。理由：现代 Chrome 接受 SVG 图标即可满足可安装性，零额外二进制文件，且用户后续会替换为真实 logo。
+> **已知取舍**：iOS Safari 对 SVG 图标支持较弱，Lighthouse PWA「可安装」审计倾向要求 PNG 192+512；若后续需要 iOS 安装或 Lighthouse 满分，再补两张占位 PNG。
 
 ---
 

@@ -62,7 +62,8 @@ const AuditLogSection: React.FC = () => {
     <section>
       <h3>安全日志</h3>
       <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>
-        以下是您账户最近的安全操作记录。异常事件（如新 IP 登录、暴力破解尝试）会高亮显示。
+        以下是您账户最近的安全操作记录。异常事件（如新 IP
+        登录、暴力破解尝试）会高亮显示。
       </p>
 
       {loading && <p>加载中…</p>}
@@ -73,8 +74,10 @@ const AuditLogSection: React.FC = () => {
       )}
 
       {!loading && logs.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {logs.map((log) => (
+        <div
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+        >
+          {logs.map(log => (
             <div
               key={log._id}
               style={{
@@ -85,14 +88,23 @@ const AuditLogSection: React.FC = () => {
                 borderRadius: '6px',
                 border: '1px solid #e5e7eb',
                 background: log.isAnomaly ? '#fff5f5' : '#f8fafc',
-                borderLeft: log.isAnomaly ? '3px solid #dc2626' : '3px solid #cbd5e1',
+                borderLeft: log.isAnomaly
+                  ? '3px solid #dc2626'
+                  : '3px solid #cbd5e1',
               }}
             >
               <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>
                 {log.isAnomaly ? '⚠️' : log.success ? '✅' : '❌'}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
                   <strong>{ACTION_LABELS[log.action] || log.action}</strong>
                   <span style={{ color: '#666', fontSize: '0.85rem' }}>
                     {formatTime(log.createdAt)}
@@ -111,11 +123,23 @@ const AuditLogSection: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                <div
+                  style={{
+                    color: '#666',
+                    fontSize: '0.85rem',
+                    marginTop: '0.2rem',
+                  }}
+                >
                   IP: {log.ip || '-'} · 浏览器: {shortenUA(log.userAgent)}
                 </div>
                 {log.detail && (
-                  <div style={{ color: '#555', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                  <div
+                    style={{
+                      color: '#555',
+                      fontSize: '0.85rem',
+                      marginTop: '0.2rem',
+                    }}
+                  >
                     {log.detail}
                   </div>
                 )}

@@ -13,6 +13,7 @@ const Layout: React.FC = () => {
 
   return (
     <div className="layout">
+      <OfflineIndicator />
       <header className="layout-header">
         <div className="header-content">
           <div className="header-logo">

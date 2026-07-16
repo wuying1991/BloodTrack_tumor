@@ -11,8 +11,8 @@
 | 后端 API 模块 | 7 / 7 | 7 | 100% |
 | 后端基础设施 | 6 / 6 | 6 | 100% |
 | 前端页面 | 11 / 11 | 11 | 100% |
-| 后端测试 | 122 | TBD | — |
-| 前端测试 | 74 | TBD | — |
+| 后端测试 | 122 | 122 | ✅ 全绿 |
+| 前端测试 | 77 | 77 | ✅ 全绿 |
 
 **项目总进度**: █████████████████████ 99%
 
@@ -133,7 +133,7 @@
 
 | ID | 功能 | 预估 | 状态 |
 |----|------|------|------|
-| L-P1 | PWA 离线支持 | 3天 | 🔧 进行中 |
+| ~~L-P1~~ | ~~PWA 离线支持~~ | 3天 | ✅ |
 | ~~L-P2~~ | ~~安全审计日志 (异常登录检测)~~ | 2天 | ✅ |
 | ~~L-P3~~ | ~~CI/CD + Docker~~ | 3天 | ✅ |
 | L-P4 | E2E 测试 (Cypress) | 3天 | ❌ |
@@ -154,12 +154,24 @@
 | 后端契约测试 | `cd backend && npm run test:contract` | ✅ 34/34 |
 | 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 72/72 |
 | 后端全部测试 | `cd backend && npx jest` | ✅ 122/122 |
-| 前端单元测试 | `cd frontend && npm test` | ✅ 74/74 |
+| 前端单元测试 | `cd frontend && npm test` | ✅ 77/77 |
 | 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 5/5 |
 
 ---
 
 ## 📅 变更日志
+
+### 2026-07-16（L-P1 PWA 离线支持收尾）
+- **Service Worker** (`public/sw.js`)：自定义 SW，零额外依赖。install 缓存 app shell（`/`、`/index.html`、`/manifest.json`）+ `skipWaiting`；activate 清旧缓存 + `clients.claim`；fetch 分流——同源 GET 才处理，`/api/` 走 network-first（失败回退缓存，成功响应 clone 入缓存），静态资源走 cache-first 回退网络。
+- **SW 注册** (`src/index.tsx`)：仅 `production` 注册（CRA dev server HMR 与 SW 冲突），`load` 事件后 `navigator.serviceWorker.register('/sw.js')`。
+- **Manifest** (`public/manifest.json`)：`start_url: /`、`display: standalone`、`theme_color: #2563eb`、`background_color: #f8f9fa`；图标用单一 `icon.svg`（`sizes: "any"` + `purpose: "any maskable"`）。
+  - **偏离 spec §4**：原计划放 `logo192.png` / `logo512.png` 占位 PNG，实际改用 SVG。理由：现代 Chrome 接受 SVG 即可满足可安装性，零二进制文件，用户后续会换真 logo。取舍：iOS Safari 对 SVG 图标支持弱、Lighthouse PWA 可安装审计倾向 PNG 192+512，后续如需再补。已回写 spec §4。
+- **离线指示器** (`components/common/OfflineIndicator.tsx`)：监听 `window` 的 `online`/`offline` 事件，断网时顶部黄色提示条「⚠️ 您当前处于离线状态，仅可查看已缓存的数据」。
+  - **修复既存 bug**：PWA 提交 (`390971b`) 只在 `Layout.tsx` 加了 `import OfflineIndicator`，**从未在 JSX 渲染 `<OfflineIndicator />`**，导致组件不生效且 lint 报 `no-unused-vars`。本次在 `<div className="layout">` 内、`<header>` 之前补上渲染（spec §5.2）。
+- **测试**：新增 `OfflineIndicator.test.tsx` 3 用例（联网不渲染 / 断网渲染提示 / 恢复联网后消失），dispatchEvent 用 `act()` 包裹确保状态 flush。
+- **顺手修既存 lint**：`npm run lint:fix` 修掉 `AuditLogSection.tsx` / `Settings.tsx` / `index.tsx` 的 prettier 格式错误（长行未折行 + `arrowParens`），lint 从 10 errors 降到 0 errors（剩 15 个既存 `no-explicit-any` 警告，exit 0）。
+- **质量门禁**：前端 tsc ✅ / lint 0 错误 / jest 77/77（74+3）✅；后端 tsc ✅ / jest 122/122 ✅。
+- **未做**：Docker 手动验证（spec §6 五步：登录浏览触发缓存 -> SW 注册 -> Offline 刷新 -> 离线提示条）。本机未装 Docker/WSL，待装 Docker Desktop 后补；自动化测试已覆盖组件逻辑。
 
 ### 2026-07-15（L-P2 安全审计日志 + 异常登录检测）
 - **AuditLog Model**: `user/action/success/ip/userAgent/detail/isAnomaly/anomalyType`，TTL 索引 90 天自动清理；`{user,createdAt}` + `{ip,action,createdAt}` 复合索引
@@ -403,4 +415,4 @@
 - 第一次进度审查报告
 
 ---
-*最后更新: 2026-06-28*
+*最后更新: 2026-07-16*
