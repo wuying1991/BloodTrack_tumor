@@ -33,6 +33,8 @@
   "cycleSelectHint": "Select \"Auto-match by date\" to automatically associate based on the test date.",
   "saveRecord": "Save Record",
   "updateRecord": "Update Record",
+  "saveFailed": "Save failed, please try again",
+  "updateFailed": "Update failed, please try again",
   "saving": "Saving...",
   "updating": "Updating...",
   "clear": "Clear",

@@ -33,6 +33,8 @@
   "cycleSelectHint": "选择\"自动按日期匹配\"后，系统会根据检测日期落入哪个周期自动关联。",
   "saveRecord": "保存记录",
   "updateRecord": "更新记录",
+  "saveFailed": "保存失败，请重试",
+  "updateFailed": "更新失败，请重试",
   "saving": "保存中...",
   "updating": "更新中...",
   "clear": "清空",
