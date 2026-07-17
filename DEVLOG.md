@@ -172,6 +172,14 @@
 - **关键踩坑**：① i18next v25 类型需 TS 5+（降级 v22）；② jsdom navigator.language=en-US 误判（setupTests 强制 zh-CN）；③ react-i18next 命名空间 suspense 干扰 useEffect 时序（`useSuspense:false` + 声明 ns）；④ t() 返回类型含 null（useT 类型收敛）；⑤ Write 重写大文件易漏 useEffect（已补回）。
 - **未完成（5 命名空间待抽取）**：bloodTest（BloodTestForm/List/BloodTests + myelosuppression 耦合，19 测试选择器）、settings（Settings + SharesSection + CreateShareDialog + AuditLogSection，5 选择器）、share（SharedView + 6 子组件）、myelosuppression（util 重构为 gradeKey + 3 调用方）、audit（AuditLogSection detailCode 渲染）。这 5 命名空间未抽取的页面在 en-US 下仍显示中文（zh-CN 不受影响）。医学内容 en-US 待母语临床复核。
 - **质量门禁**：backend tsc ✅ + 6/6 contracts ✅ + 122/122 jest ✅；frontend tsc ✅ + 77/77 jest ✅ + lint 0 错误。分支 `feat/L-P5-i18n`，每个 phase/sub-chunk 单独 commit 全绿。
+### 2026-07-17 续（L-P5 i18n - 新增 3 命名空间）
+- **合并 feat/L-P5-i18n 到 main**：14 个 commit 零冲突合并，含 L-P1 Docker nginx 修复 + L-P4 Playwright E2E + L-P5 i18n 基础设施。
+- **share 命名空间** (Phase 4h): 31 键，重构 SharedView/ShareNotFound/ShareExpired/PinPrompt/SharedAnalytics/SharedBloodTestList/SharedChemoCycleList (7 文件)。
+- **settings 命名空间** (Phase 4i): 75 键，重构 Settings.tsx (65+ 处) + AuditLogSection.tsx。
+- **bloodTests 命名空间** (Phase 4j): 60+ 键，重构 BloodTests.tsx + BloodTestList.tsx。BloodTestForm.tsx (588 行) 待完成。
+- **进度**: 10/11 命名空间完成。剩余 BloodTestForm.tsx + SharesSection/CreateShareDialog 小组件。
+- **验证**: frontend tsc ✅ + 77/77 jest ✅。已推送 main。
+
 
 ### 2026-07-16（L-P4 E2E 测试 - Playwright）
 - **工具决策**：DEVLOG 原写 Cypress，实际改用 **Playwright**。理由：本会话已用 Playwright + 系统 Edge 验证 PWA 离线（`setOffline`/`fromServiceWorker` 对 PWA 应用更合适），零额外浏览器依赖。已回写待办表 L-P4 行。
