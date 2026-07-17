@@ -17,15 +17,21 @@ const REQUEST_TIMEOUT_MS = 10000;
 export class ApiError extends Error {
   public statusCode: number;
   public errors?: Record<string, string>;
+  public errorCodes?: Record<string, string>;
+  public code?: string;
 
   constructor(
     statusCode: number,
     message: string,
-    errors?: Record<string, string>
+    errors?: Record<string, string>,
+    code?: string,
+    errorCodes?: Record<string, string>
   ) {
     super(message);
     this.statusCode = statusCode;
     this.errors = errors;
+    this.code = code;
+    this.errorCodes = errorCodes;
     this.name = 'ApiError';
   }
 }
@@ -185,7 +191,7 @@ class ApiClient {
           console.error(`Error ${status}:`, message);
       }
 
-      throw new ApiError(status, message, errors);
+      throw new ApiError(status, message, errors, data?.code, data?.errorCodes);
     } else if (error.request) {
       // Network error
       console.error('Network Error:', error.message);
