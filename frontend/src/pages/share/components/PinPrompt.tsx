@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useT } from '../../../i18n/useT';
 
 interface Props {
   onSubmit: (pin: string) => Promise<void>;
 }
 
 const PinPrompt: React.FC<Props> = ({ onSubmit }) => {
+  const t = useT('share');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -12,7 +14,7 @@ const PinPrompt: React.FC<Props> = ({ onSubmit }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{4,6}$/.test(pin)) {
-      setError('请输入 4–6 位数字 PIN');
+      setError(t('pinFormatError'));
       return;
     }
     setSubmitting(true);
@@ -21,9 +23,9 @@ const PinPrompt: React.FC<Props> = ({ onSubmit }) => {
       await onSubmit(pin);
     } catch (err: any) {
       if (err?.statusCode === 429) {
-        setError('尝试过多，请稍后再试');
+        setError(t('pinTooMany'));
       } else {
-        setError('密码错误');
+        setError(t('pinWrong'));
       }
     } finally {
       setSubmitting(false);
@@ -32,7 +34,7 @@ const PinPrompt: React.FC<Props> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit} className="shared-error-page">
-      <h2>请输入访问密码</h2>
+      <h2>{t('pinTitle')}</h2>
       <input
         type="text"
         value={pin}
@@ -44,7 +46,7 @@ const PinPrompt: React.FC<Props> = ({ onSubmit }) => {
       />
       {error && <p style={{ color: '#c33' }}>{error}</p>}
       <button type="submit" disabled={submitting}>
-        {submitting ? '验证中…' : '查看'}
+        {submitting ? t('pinVerifying') : t('pinSubmit')}
       </button>
     </form>
   );

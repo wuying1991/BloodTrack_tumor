@@ -1,10 +1,14 @@
 import React from 'react';
+import { useT } from '../../i18n/useT';
 
-const ShareExpired: React.FC = () => (
-  <div className="shared-error-page">
-    <h1>链接已过期</h1>
-    <p>这个分享链接已超过有效期。请联系分享者获取新链接。</p>
-  </div>
-);
+const ShareExpired: React.FC = () => {
+  const t = useT('share');
+  return (
+    <div className="shared-error-page">
+      <h1>{t('expiredTitle')}</h1>
+      <p>{t('expiredDesc')}</p>
+    </div>
+  );
+};
 
 export default ShareExpired;

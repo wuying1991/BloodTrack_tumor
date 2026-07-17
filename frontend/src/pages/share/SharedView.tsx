@@ -7,6 +7,7 @@ import publicShareService, {
   PublicAnalytics,
 } from '../../services/share/publicShareService';
 import { PublicApiError } from '../../services/share/publicApiClient';
+import { useT } from '../../i18n/useT';
 import PinPrompt from './components/PinPrompt';
 import SharedBloodTestList from './components/SharedBloodTestList';
 import SharedChemoCycleList from './components/SharedChemoCycleList';
@@ -16,6 +17,7 @@ import './SharedView.css';
 type Phase = 'loading' | 'meta-error' | 'pin' | 'data';
 
 const SharedView: React.FC = () => {
+  const t = useT('share');
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('loading');
@@ -56,14 +58,13 @@ const SharedView: React.FC = () => {
         await Promise.all(calls);
       } catch (err) {
         setDataError(
-          err instanceof PublicApiError ? err.message : '加载数据失败'
+          err instanceof PublicApiError ? err.message : t('loadFailed')
         );
       } finally {
-        // 无论成功失败都进入 data phase, 让 header / dataError / 已加载的 section 都能渲染
         setPhase('data');
       }
     },
-    [token]
+    [token, t]
   );
 
   useEffect(() => {
@@ -74,7 +75,6 @@ const SharedView: React.FC = () => {
         const m = res.data;
         setMeta(m);
         if (m.requiresPin) {
-          // 检查 sessionStorage 是否已有该 token 的 PIN
           const cached = sessionStorage.getItem(`share-pin-${token}`);
           if (cached) {
             setPin(cached);
@@ -106,56 +106,56 @@ const SharedView: React.FC = () => {
   };
 
   if (phase === 'loading')
-    return <div className="shared-error-page">加载中…</div>;
+    return <div className="shared-error-page">{t('loading')}</div>;
   if (phase === 'meta-error')
     return (
       <div className="shared-error-page">
-        加载失败，请刷新页面或联系分享者。
+        {t('loadFailed')}
       </div>
     );
   if (phase === 'pin') return <PinPrompt onSubmit={handlePinSubmit} />;
   if (!meta) return null;
 
   const expiryLabel = meta.expiresAt
-    ? `链接将于 ${new Date(meta.expiresAt).toLocaleString('zh-CN')} 过期`
-    : '链接长期有效';
+    ? t('expiresOn', { date: new Date(meta.expiresAt).toLocaleString('zh-CN') })
+    : t('neverExpires');
 
   return (
     <div className="shared-view">
       <header className="shared-view-header">
         <div>
-          <h1>化疗血常规追踪器</h1>
-          <h2>{meta.ownerName} 的健康数据</h2>
+          <h1>{t('appTitle')}</h1>
+          <h2>{t('ownerData', { name: meta.ownerName })}</h2>
         </div>
-        <span className="shared-view-readonly-badge">🔒 只读视图</span>
+        <span className="shared-view-readonly-badge">{t('readOnlyBadge')}</span>
       </header>
 
       {dataError && <p style={{ color: '#c33' }}>{dataError}</p>}
 
       {meta.scope.analytics && analytics && (
         <section className="shared-view-section">
-          <h2>趋势分析</h2>
+          <h2>{t('sectionAnalytics')}</h2>
           <SharedAnalytics data={analytics} />
         </section>
       )}
 
       {meta.scope.chemoCycles && chemoCycles && (
         <section className="shared-view-section">
-          <h2>化疗周期</h2>
+          <h2>{t('sectionChemoCycles')}</h2>
           <SharedChemoCycleList cycles={chemoCycles} />
         </section>
       )}
 
       {meta.scope.bloodTests && bloodTests && (
         <section className="shared-view-section">
-          <h2>血常规记录</h2>
+          <h2>{t('sectionBloodTests')}</h2>
           <SharedBloodTestList tests={bloodTests} />
         </section>
       )}
 
       <footer style={{ marginTop: 32, textAlign: 'center', color: '#888' }}>
         <p>{expiryLabel}</p>
-        <p>Powered by 化疗血常规追踪器</p>
+        <p>{t('poweredBy')}</p>
       </footer>
     </div>
   );

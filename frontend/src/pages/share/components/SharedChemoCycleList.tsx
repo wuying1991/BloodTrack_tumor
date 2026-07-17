@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PublicChemoCycle } from '../../../services/share/publicShareService';
+import { useT } from '../../../i18n/useT';
 
 interface Props {
   cycles: PublicChemoCycle[];
@@ -10,7 +11,8 @@ function fmtDate(iso: string) {
 }
 
 const SharedChemoCycleList: React.FC<Props> = ({ cycles }) => {
-  if (cycles.length === 0) return <p>还没有化疗周期记录。</p>;
+  const t = useT('share');
+  if (cycles.length === 0) return <p>{t('noChemoCycles')}</p>;
   return (
     <ul style={{ listStyle: 'none', padding: 0 }}>
       {cycles.map(c => (
@@ -24,10 +26,10 @@ const SharedChemoCycleList: React.FC<Props> = ({ cycles }) => {
           }}
         >
           <div>
-            <strong>{fmtDate(c.startDate)}</strong> → {fmtDate(c.endDate)}
+            <strong>{fmtDate(c.startDate)}</strong> {'->'} {fmtDate(c.endDate)}
           </div>
           <div>
-            药物:
+            {t('medications')}
             <ul>
               {c.medications.map((m, i) => (
                 <li key={i}>
@@ -36,7 +38,7 @@ const SharedChemoCycleList: React.FC<Props> = ({ cycles }) => {
               ))}
             </ul>
           </div>
-          {c.doctorNotes && <div>医生备注: {c.doctorNotes}</div>}
+          {c.doctorNotes && <div>{t('doctorNotes')} {c.doctorNotes}</div>}
         </li>
       ))}
     </ul>
