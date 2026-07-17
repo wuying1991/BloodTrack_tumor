@@ -48,6 +48,7 @@ void i18next.use(initReactI18next).init({
     'share',
     'myelosuppression',
     'audit',
+    'biochem',
   ],
   defaultNS: 'common',
   react: { useSuspense: false },

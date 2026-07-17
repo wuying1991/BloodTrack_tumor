@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "仪表板",
     "bloodTests": "血常规记录",
+    "biochemTests": "生化检查",
     "chemoCycles": "化疗周期",
     "analytics": "数据分析",
     "reminders": "提醒管理",

@@ -252,3 +252,76 @@ export interface AuditLogEntry {
   anomalyType?: AuditAnomalyType;
   createdAt: string;
 }
+
+// ============================================================
+// 生化全套 (Biochem Test) - 肝肾功能 + 电解质
+// ============================================================
+
+export interface BiochemTest {
+  _id: string;
+  user: string;
+  date: string;
+  alt?: number;
+  ast?: number;
+  ahr?: number;
+  tbil?: number;
+  dbil?: number;
+  ibil?: number;
+  tp?: number;
+  alb?: number;
+  glo?: number;
+  ag?: number;
+  ggt?: number;
+  alp?: number;
+  che?: number;
+  tba?: number;
+  pa?: number;
+  bun?: number;
+  cr?: number;
+  ua?: number;
+  egfr?: number;
+  k?: number;
+  na?: number;
+  cl?: number;
+  ca?: number;
+  p?: number;
+  ldh?: number;
+  notes?: string;
+  isAbnormal?: boolean;
+  chemoCycleId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BiochemTestCreateRequest {
+  date: string;
+  alt?: number;
+  ast?: number;
+  ahr?: number;
+  tbil?: number;
+  dbil?: number;
+  ibil?: number;
+  tp?: number;
+  alb?: number;
+  glo?: number;
+  ag?: number;
+  ggt?: number;
+  alp?: number;
+  che?: number;
+  tba?: number;
+  pa?: number;
+  bun?: number;
+  cr?: number;
+  ua?: number;
+  egfr?: number;
+  k?: number;
+  na?: number;
+  cl?: number;
+  ca?: number;
+  p?: number;
+  ldh?: number;
+  notes?: string;
+  chemoCycleId?: string | null;
+}
+
+export type BiochemTestUpdateRequest = Partial<BiochemTestCreateRequest>;

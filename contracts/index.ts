@@ -332,3 +332,114 @@ export interface AuditLogEntry {
 }
 
 export type AuditLogListResponse = ApiResponse<AuditLogEntry[]>;
+
+// ============================================================
+// 生化全套 (Biochem Test) - 肝肾功能 + 电解质
+// ============================================================
+
+export interface BiochemTest {
+  _id: string;
+  user: string;
+  date: string;
+  // 肝功能
+  alt?: number;   // 谷丙转氨酶
+  ast?: number;   // 谷草转氨酶
+  ahr?: number;   // AST/ALT 比值
+  tbil?: number;  // 总胆红素
+  dbil?: number;  // 直接胆红素
+  ibil?: number;  // 间接胆红素
+  tp?: number;    // 总蛋白
+  alb?: number;   // 白蛋白
+  glo?: number;   // 球蛋白
+  ag?: number;    // 白球比
+  ggt?: number;   // γ-谷氨酰转肽酶
+  alp?: number;   // 碱性磷酸酶
+  che?: number;   // 胆碱酯酶
+  tba?: number;   // 总胆汁酸
+  pa?: number;    // 前白蛋白
+  // 肾功能
+  bun?: number;   // 尿素氮
+  cr?: number;    // 肌酐
+  ua?: number;    // 尿酸
+  egfr?: number;  // 估算肾小球滤过率
+  // 电解质
+  k?: number;     // 钾
+  na?: number;    // 钠
+  cl?: number;    // 氯
+  ca?: number;    // 钙
+  p?: number;     // 磷
+  // 其他
+  ldh?: number;   // 乳酸脱氢酶
+  notes?: string;
+  isAbnormal: boolean;
+  chemoCycleId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BiochemTestCreateRequest {
+  date: string;
+  alt?: number;
+  ast?: number;
+  ahr?: number;
+  tbil?: number;
+  dbil?: number;
+  ibil?: number;
+  tp?: number;
+  alb?: number;
+  glo?: number;
+  ag?: number;
+  ggt?: number;
+  alp?: number;
+  che?: number;
+  tba?: number;
+  pa?: number;
+  bun?: number;
+  cr?: number;
+  ua?: number;
+  egfr?: number;
+  k?: number;
+  na?: number;
+  cl?: number;
+  ca?: number;
+  p?: number;
+  ldh?: number;
+  notes?: string;
+  chemoCycleId?: string | null;
+}
+
+export type BiochemTestUpdateRequest = Partial<BiochemTestCreateRequest>;
+
+export type BiochemTestListResponse = ApiResponse<BiochemTest[]> & {
+  pagination: PaginationMeta;
+};
+export type BiochemTestResponse = ApiResponse<BiochemTest>;
+export type BiochemTestDeleteResponse = ApiResponse<{ message: string }>;
+
+export const BIOCHEM_TEST_NORMAL_RANGES: Record<string, NormalRange> = {
+  alt:   { min: 7,    max: 40,    unit: 'U/L',      name: '谷丙转氨酶 (ALT)' },
+  ast:   { min: 13,   max: 35,    unit: 'U/L',      name: '谷草转氨酶 (AST)' },
+  ahr:   { min: 0.5,  max: 2.0,   unit: '',          name: 'AST/ALT 比值' },
+  tbil:  { min: 3.4,  max: 20.5,  unit: 'μmol/L', name: '总胆红素 (TBIL)' },
+  dbil:  { min: 0,    max: 6.8,   unit: 'μmol/L', name: '直接胆红素 (DBIL)' },
+  ibil:  { min: 1.7,  max: 13.7,  unit: 'μmol/L', name: '间接胆红素 (IBIL)' },
+  tp:    { min: 65,   max: 85,    unit: 'g/L',      name: '总蛋白 (TP)' },
+  alb:   { min: 35,   max: 50,    unit: 'g/L',      name: '白蛋白 (ALB)' },
+  glo:   { min: 20,   max: 40,    unit: 'g/L',      name: '球蛋白 (GLO)' },
+  ag:    { min: 1.2,  max: 2.0,   unit: '',          name: '白球比 (A/G)' },
+  ggt:   { min: 7,    max: 45,    unit: 'U/L',      name: 'γ-谷氨酰转肽酶 (GGT)' },
+  alp:   { min: 40,   max: 150,   unit: 'U/L',      name: '碱性磷酸酶 (ALP)' },
+  che:   { min: 4000, max: 12000, unit: 'U/L',      name: '胆碱酯酶 (CHE)' },
+  tba:   { min: 0,    max: 10,    unit: 'μmol/L', name: '总胆汁酸 (TBA)' },
+  pa:    { min: 200,  max: 400,   unit: 'mg/L',     name: '前白蛋白 (PA)' },
+  bun:   { min: 2.9,  max: 7.5,   unit: 'mmol/L',   name: '尿素氮 (BUN)' },
+  cr:    { min: 44,   max: 133,   unit: 'μmol/L', name: '肌酐 (Cr)' },
+  ua:    { min: 149,  max: 416,   unit: 'μmol/L', name: '尿酸 (UA)' },
+  egfr:  { min: 90,   max: 999,   unit: 'mL/min',   name: '估算肾小球滤过率 (eGFR)' },
+  k:     { min: 3.5,  max: 5.5,   unit: 'mmol/L',   name: '钾 (K)' },
+  na:    { min: 135,  max: 145,   unit: 'mmol/L',   name: '钠 (Na)' },
+  cl:    { min: 95,   max: 105,   unit: 'mmol/L',   name: '氯 (Cl)' },
+  ca:    { min: 2.1,  max: 2.6,   unit: 'mmol/L',   name: '钙 (Ca)' },
+  p:     { min: 0.8,  max: 1.6,   unit: 'mmol/L',   name: '磷 (P)' },
+  ldh:   { min: 120,  max: 250,   unit: 'U/L',      name: '乳酸脱氢酶 (LDH)' },
+};

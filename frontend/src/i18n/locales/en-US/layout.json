@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "bloodTests": "Blood Tests",
+    "biochemTests": "Biochemistry",
     "chemoCycles": "Chemo Cycles",
     "analytics": "Analytics",
     "reminders": "Reminders",

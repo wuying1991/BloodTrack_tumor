@@ -657,3 +657,68 @@ export const validateShareCreate = runValidation([
 });
 
 export default validate;
+
+// ============================================================
+// BiochemTest validation (生化全套 - 肝肾功能)
+// ============================================================
+
+const BIOCHEM_NUMERIC_FIELDS = [
+  'alt', 'ast', 'ahr', 'tbil', 'dbil', 'ibil', 'tp', 'alb', 'glo', 'ag',
+  'ggt', 'alp', 'che', 'tba', 'pa',
+  'bun', 'cr', 'ua', 'egfr',
+  'k', 'na', 'cl', 'ca', 'p',
+  'ldh',
+];
+
+export const validateBiochemTest = runValidation([
+  body('date')
+    .notEmpty()
+    .withMessage('检测日期是必需的 (Test date is required)')
+    .isISO8601()
+    .withMessage('请输入有效的日期格式'),
+  ...BIOCHEM_NUMERIC_FIELDS.map(field =>
+    body(field)
+      .optional({ nullable: true, checkFalsy: true })
+      .isFloat({ min: 0 })
+      .withMessage(`${field} 必须为正数`)
+  ),
+  body('notes')
+    .optional()
+    .isString()
+    .withMessage('备注必须是文本'),
+  body('chemoCycleId')
+    .optional({ nullable: true })
+    .custom(value => {
+      if (value === null || value === '') return true;
+      if (typeof value !== 'string' || !/^[a-f\d]{24}$/i.test(value)) {
+        throw new Error('无效的化疗周期ID (Invalid chemo cycle id)');
+      }
+      return true;
+    }),
+]);
+
+export const validateBiochemTestUpdate = runValidation([
+  body('date')
+    .optional()
+    .isISO8601()
+    .withMessage('请输入有效的日期格式'),
+  ...BIOCHEM_NUMERIC_FIELDS.map(field =>
+    body(field)
+      .optional({ nullable: true, checkFalsy: true })
+      .isFloat({ min: 0 })
+      .withMessage(`${field} 必须为正数`)
+  ),
+  body('notes')
+    .optional()
+    .isString()
+    .withMessage('备注必须是文本'),
+  body('chemoCycleId')
+    .optional({ nullable: true })
+    .custom(value => {
+      if (value === null || value === '') return true;
+      if (typeof value !== 'string' || !/^[a-f\d]{24}$/i.test(value)) {
+        throw new Error('无效的化疗周期ID (Invalid chemo cycle id)');
+      }
+      return true;
+    }),
+]);

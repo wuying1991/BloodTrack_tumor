@@ -9,5 +9,6 @@ import analytics from './analytics.json';
 import share from './share.json';
 import settings from './settings.json';
 import bloodTests from './bloodTests.json';
+import biochem from './biochem.json';
 
-export default { common, errors, layout, auth, dashboard, chemoCycle, reminders, analytics, share, settings, bloodTests };
+export default { common, errors, layout, auth, dashboard, chemoCycle, reminders, analytics, share, settings, bloodTests, biochem };

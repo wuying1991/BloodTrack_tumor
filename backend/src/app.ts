@@ -5,6 +5,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 import authRoutes from './routes/authRoutes';
 import bloodTestRoutes from './routes/bloodTestRoutes';
+import biochemTestRoutes from './routes/biochemTestRoutes';
 import chemoCycleRoutes from './routes/chemoCycleRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import reminderRoutes from './routes/reminderRoutes';
@@ -99,6 +100,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/blood-tests', bloodTestRoutes);
+app.use('/api/biochem-tests', biochemTestRoutes);
 app.use('/api/chemo-cycles', chemoCycleRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reminders', reminderRoutes);

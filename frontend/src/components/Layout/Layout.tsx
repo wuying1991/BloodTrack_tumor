@@ -87,6 +87,23 @@ const Layout: React.FC = () => {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/biochem-tests" className="nav-link">
+                <svg
+                  className="nav-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 2h6l1 7a4 4 0 0 1-8 0z" />
+                  <path d="M9 2v6M15 2v6M12 15v7" />
+                </svg>
+                <span>{t('layout:nav.biochemTests')}</span>
+              </NavLink>
+            </li>
+            <li>
               <NavLink to="/chemo-cycles" className="nav-link">
                 <svg
                   className="nav-icon"

@@ -13,6 +13,7 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import BloodTests from './pages/bloodTests/BloodTests';
+import BiochemTests from './pages/biochemTests/BiochemTests';
 import ChemoCycles from './pages/chemoCycles/ChemoCycles';
 import Analytics from './pages/Analytics/Analytics';
 import Reminders from './pages/reminders/Reminders';
@@ -69,6 +70,7 @@ function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="blood-tests" element={<BloodTests />} />
+              <Route path="biochem-tests" element={<BiochemTests />} />
               <Route path="chemo-cycles" element={<ChemoCycles />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="reminders" element={<Reminders />} />
