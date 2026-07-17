@@ -8,9 +8,9 @@
 
 | 维度 | 完成 | 总数 | 占比 |
 |------|------|------|------|
-| 后端 API 模块 | 7 / 7 | 7 | 100% |
+| 后端 API 模块 | 8 / 8 | 8 | 100% |
 | 后端基础设施 | 6 / 6 | 6 | 100% |
-| 前端页面 | 11 / 11 | 11 | 100% |
+| 前端页面 | 12 / 12 | 12 | 100% |
 | 后端测试 | 122 | 122 | ✅ 全绿 |
 | 前端测试 | 77 | 77 | ✅ 全绿 |
 | E2E 测试 | 12 | 12 | ✅ 全绿 (Playwright) |
@@ -161,6 +161,27 @@
 ---
 
 ## 📅 变更日志
+
+### 2026-07-18（生化全套模块 - 肝肾功能 + 电解质）
+- **新功能**：独立的生化检查模块，25 项指标（肝功能 15 项 + 肾功能 4 项 + 电解质 5 项 + LDH）
+- **后端**:
+  - `BiochemTest` Model: 25 个可选 Number 字段 + pre-save hook 检测异常（遍历 BIOCHEM_TEST_NORMAL_RANGES）
+  - `biochemTestController`: CRUD + chemoCycleId 自动按 date 关联 + CSV 导出（31 列）
+  - `biochemTestRoutes`: protect + `/export` 在 `/:id` 之前
+  - `validateBiochemTest/Update`: 25 个字段 optional isFloat(min:0) + chemoCycleId optional
+  - `app.ts`: `/api/biochem-tests` 挂载
+  - `authController`: deleteAccount 级联删除 BiochemTest
+  - updateBiochemTest 改用 findById+save 模式触发 pre-save hook 重算 isAbnormal
+- **前端**:
+  - `biochemService`: CRUD + form/api 转换 + CSV 导出
+  - `BiochemTests` 页面: list/add/edit + 导出 + 信息卡片
+  - `BiochemForm`: 4 区段（基本/肝功能/肾功能/电解质）25 项可选输入 + 化疗周期关联
+  - `BiochemList`: 摘要表格（8 项关键指标 ALT/AST/TBIL/ALB/Cr/BUN/K/Na）+ 异常标记 + 分页
+  - 侧边栏「生化检查」导航（烧瓶 SVG 图标）
+  - i18n: biochem.json (zh-CN + en-US) 60+ 翻译键 + layout nav 键
+- **测试**: 后端集成测试 11 用例（CRUD/异常检测/eGFR/跨用户隔离/CSV导出/401），全后端 133/133
+- **contract-validator**: 第 7 项 BiochemTest 字段三处对齐校验
+- **门禁**: backend tsc ✅ / contract 7/7 ✅ / jest 133/133 ✅; frontend tsc ✅ / jest 77/77 ✅
 
 ### 2026-07-17（L-P5 i18n 国际化 - 进行中）
 - **设计文档 + 计划**：`docs/superpowers/specs/2026-07-17-i18n-design.md` + `plans/2026-07-17-i18n-implementation.md`。决策：zh-CN（默认）+ en-US；前端 i18n + 后端 error code（非 Accept-Language）。

@@ -244,6 +244,49 @@ check('UserSettings.language 四处一致 (L-P5)', () => {
 });
 
 // ============================================================
+// 检查 7: BiochemTest 字段三处一致 (生化全套)
+// ============================================================
+check('BiochemTest 类型定义三处一致 (生化全套)', () => {
+  const errors = [];
+
+  // 7a. 后端 BiochemTest Model
+  const modelPath = path.join(ROOT, 'src', 'models', 'BiochemTest.ts');
+  if (!fs.existsSync(modelPath)) {
+    errors.push('找不到 backend/src/models/BiochemTest.ts');
+  } else {
+    const content = fs.readFileSync(modelPath, 'utf-8');
+    for (const f of ['alt', 'ast', 'tbil', 'alb', 'cr', 'bun', 'k', 'na', 'ldh', 'isAbnormal', 'chemoCycleId']) {
+      if (!content.includes(f)) errors.push(`BiochemTest Model 缺少字段: ${f}`);
+    }
+  }
+
+  // 7b. 后端 validation
+  const valPath = path.join(ROOT, 'src', 'middlewares', 'validationMiddleware.ts');
+  const valContent = fs.readFileSync(valPath, 'utf-8');
+  const valSection = valContent.substring(valContent.indexOf('export const validateBiochemTest ='));
+  if (!valSection || valSection.length < 50) {
+    errors.push('validationMiddleware.ts 找不到 validateBiochemTest');
+  } else {
+    for (const f of ['date', 'alt', 'cr', 'k', 'ldh', 'notes', 'chemoCycleId']) {
+      if (!valSection.includes(`'${f}'`)) {
+        errors.push(`validateBiochemTest 缺少字段校验: ${f}`);
+      }
+    }
+  }
+
+  // 7c. 前端 types/index.ts
+  const typesPath = path.join(ROOT, '..', 'frontend', 'src', 'types', 'index.ts');
+  const typesContent = fs.readFileSync(typesPath, 'utf-8');
+  for (const f of ['BiochemTest', 'alt?:', 'cr?:', 'k?:', 'isAbnormal']) {
+    if (!typesContent.includes(f)) {
+      errors.push(`前端 types/index.ts 缺少 BiochemTest 相关定义: ${f}`);
+    }
+  }
+
+  return errors;
+});
+
+// ============================================================
 // 输出报告
 // ============================================================
 console.log('========================================');

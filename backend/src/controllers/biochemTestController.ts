@@ -94,35 +94,49 @@ export const getBiochemTestById = asyncHandler(async (req: AuthRequest, res: Res
 // @route   PUT /api/biochem-tests/:id
 // @access  Private
 export const updateBiochemTest = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const existing = await BiochemTest.findOne({ _id: req.params.id, user: req.user?._id });
+
+  if (!existing) {
+    throw ApiError.notFound('生化检查未找到 (Biochem test not found)');
+  }
+
   const update = { ...req.body };
   delete update.user;
 
   if (update.date) {
-    update.date = new Date(update.date);
+    existing.date = new Date(update.date);
   }
 
-  if (update.chemoCycleId !== undefined && update.chemoCycleId !== null) {
-    // 如果显式传了 chemoCycleId，直接用
-  } else if (update.date && !update.chemoCycleId) {
-    update.chemoCycleId = await autoAssociateCycle(
+  if (update.chemoCycleId !== undefined) {
+    existing.chemoCycleId = update.chemoCycleId === 'none' ? null : update.chemoCycleId;
+  } else if (update.date) {
+    existing.chemoCycleId = await autoAssociateCycle(
       String(req.user?._id ?? ''),
       new Date(update.date)
-    );
+    ) as any;
   }
 
-  const updated = await BiochemTest.findOneAndUpdate(
-    { _id: req.params.id, user: req.user?._id },
-    update,
-    { new: true, runValidators: true }
-  );
-
-  if (!updated) {
-    throw ApiError.notFound('生化检查未找到 (Biochem test not found)');
+  // 更新所有数值字段
+  const numericFields = [
+    'alt', 'ast', 'ahr', 'tbil', 'dbil', 'ibil', 'tp', 'alb', 'glo', 'ag',
+    'ggt', 'alp', 'che', 'tba', 'pa', 'bun', 'cr', 'ua', 'egfr',
+    'k', 'na', 'cl', 'ca', 'p', 'ldh',
+  ];
+  for (const field of numericFields) {
+    if (update[field] !== undefined) {
+      (existing as any)[field] = update[field] === null ? undefined : update[field];
+    }
   }
+
+  if (update.notes !== undefined) {
+    existing.notes = update.notes;
+  }
+
+  await existing.save(); // 触发 pre-save hook 重新计算 isAbnormal
 
   res.json({
     success: true,
-    data: updated,
+    data: existing,
   });
 });
 
