@@ -34,6 +34,13 @@ void i18next.use(initReactI18next).init({
   },
   lng: detectLanguage(),
   fallbackLng: 'zh-CN',
+  ns: [
+    'common', 'errors', 'layout', 'auth', 'dashboard',
+    'bloodTest', 'chemoCycle', 'analytics', 'reminders',
+    'settings', 'share', 'myelosuppression', 'audit',
+  ],
+  defaultNS: 'common',
+  react: { useSuspense: false },
   initImmediate: false, // 同步初始化，测试渲染必需
   interpolation: { escapeValue: false },
 });

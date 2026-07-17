@@ -6,6 +6,7 @@ import reminderService, {
   Reminder,
 } from '../../services/reminder/reminderService';
 import { useAuth } from '../../context/AuthContext';
+import { useT } from '../../i18n/useT';
 import './Dashboard.css';
 
 interface DashboardStats {
@@ -16,6 +17,7 @@ interface DashboardStats {
 }
 
 const Dashboard: React.FC = () => {
+  const t = useT('dashboard');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
@@ -63,7 +65,7 @@ const Dashboard: React.FC = () => {
           recentTests: tests.slice(0, 5),
         });
       } else if (bloodResult.status === 'rejected') {
-        setError('加载失败，请检查网络连接后重试');
+        setError(t('loadFailed'));
       }
 
       if (
@@ -72,11 +74,12 @@ const Dashboard: React.FC = () => {
       ) {
         setUpcomingReminders(reminderResult.value.data);
       } else if (reminderResult.status === 'rejected') {
-        setRemindersError('提醒加载失败');
+        setRemindersError(t('remindersLoadFailed'));
       }
     } finally {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -108,10 +111,10 @@ const Dashboard: React.FC = () => {
     const now = Date.now();
     const dayMs = 86400000;
     const diff = Math.round((due - now) / dayMs);
-    if (diff < 0) return `已过期 ${-diff} 天`;
-    if (diff === 0) return '今天到期';
-    if (diff === 1) return '明天到期';
-    return `${diff} 天后到期`;
+    if (diff < 0) return t('dueOverdue', { n: -diff });
+    if (diff === 0) return t('dueToday');
+    if (diff === 1) return t('dueTomorrow');
+    return t('dueInDays', { n: diff });
   };
 
   const formatValue = (value: number | undefined): string => {
@@ -133,7 +136,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="dashboard loading">
         <div className="spinner" />
-        <p>加载中...</p>
+        <p>{t('loading')}</p>
       </div>
     );
   }
@@ -143,7 +146,7 @@ const Dashboard: React.FC = () => {
       <div className="dashboard error">
         <div className="error-message">{error}</div>
         <button className="btn btn-secondary" onClick={fetchDashboardData}>
-          重试
+          {t('retry')}
         </button>
       </div>
     );
@@ -153,8 +156,8 @@ const Dashboard: React.FC = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <div className="welcome-section">
-          <h1>{user ? `${user.fullName}，您好` : '仪表板'}</h1>
-          <p className="welcome-subtitle">欢迎回到化疗血常规追踪器</p>
+          <h1>{user ? t('greeting', { name: user.fullName }) : t('titleFallback')}</h1>
+          <p className="welcome-subtitle">{t('welcomeSubtitle')}</p>
         </div>
         <div className="header-actions">
           <button
@@ -163,31 +166,31 @@ const Dashboard: React.FC = () => {
               navigate('/blood-tests', { state: { addNew: true } })
             }
           >
-            添加记录
+            {t('addRecord')}
           </button>
           <button
             className="btn btn-secondary"
             onClick={() => navigate('/blood-tests')}
           >
-            查看全部
+            {t('viewAll')}
           </button>
         </div>
       </div>
 
       <div className="upcoming-section">
         <div className="section-header">
-          <h3>即将到期的提醒（7 天内）</h3>
+          <h3>{t('upcomingTitle')}</h3>
           <button
             className="btn btn-sm btn-secondary"
             onClick={() => navigate('/reminders')}
           >
-            管理提醒
+            {t('manageReminders')}
           </button>
         </div>
         {remindersError ? (
           <div className="upcoming-error">{remindersError}</div>
         ) : upcomingReminders.length === 0 ? (
-          <div className="upcoming-empty">未来 7 天暂无待办提醒</div>
+          <div className="upcoming-empty">{t('upcomingEmpty')}</div>
         ) : (
           <ul className="upcoming-list">
             {upcomingReminders.map(r => {
@@ -221,13 +224,13 @@ const Dashboard: React.FC = () => {
       {stats.totalTests === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📋</div>
-          <h3>暂无血常规数据</h3>
-          <p>开始记录您的第一次血常规检查，追踪化疗期间的健康变化</p>
+          <h3>{t('emptyTitle')}</h3>
+          <p>{t('emptyDesc')}</p>
           <button
             className="btn btn-primary"
             onClick={() => navigate('/blood-tests')}
           >
-            添加记录
+            {t('addRecord')}
           </button>
         </div>
       ) : (
@@ -237,7 +240,7 @@ const Dashboard: React.FC = () => {
               <div className="stat-icon">📊</div>
               <div className="stat-content">
                 <span className="stat-value">{stats.totalTests}</span>
-                <span className="stat-label">总记录数</span>
+                <span className="stat-label">{t('statTotal')}</span>
               </div>
             </div>
             <div className="stat-card">
@@ -246,38 +249,38 @@ const Dashboard: React.FC = () => {
                 <span className="stat-value">
                   {stats.latestTestDate || '-'}
                 </span>
-                <span className="stat-label">最近检查</span>
+                <span className="stat-label">{t('statLatest')}</span>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">⚠️</div>
               <div className="stat-content">
                 <span className="stat-value">{stats.abnormalCount}</span>
-                <span className="stat-label">异常指标记录</span>
+                <span className="stat-label">{t('statAbnormal')}</span>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">👤</div>
               <div className="stat-content">
                 <span className="stat-value">{user ? user.fullName : '-'}</span>
-                <span className="stat-label">当前用户</span>
+                <span className="stat-label">{t('statUser')}</span>
               </div>
             </div>
           </div>
 
           <div className="recent-section">
-            <h3>最近记录</h3>
+            <h3>{t('recentTitle')}</h3>
             <div className="recent-table-wrapper">
               <table className="recent-table">
                 <thead>
                   <tr>
-                    <th>日期</th>
+                    <th>{t('colDate')}</th>
                     <th>WBC</th>
                     <th>RBC</th>
                     <th>HGB</th>
                     <th>PLT</th>
-                    <th>状态</th>
-                    <th>备注</th>
+                    <th>{t('colStatus')}</th>
+                    <th>{t('colNotes')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -301,9 +304,9 @@ const Dashboard: React.FC = () => {
                       </td>
                       <td>
                         {test.isAbnormal ? (
-                          <span className="badge badge-abnormal">异常</span>
+                          <span className="badge badge-abnormal">{t('badgeAbnormal')}</span>
                         ) : (
-                          <span className="badge badge-normal">正常</span>
+                          <span className="badge badge-normal">{t('badgeNormal')}</span>
                         )}
                       </td>
                       <td className="notes-cell">{test.notes || '-'}</td>
