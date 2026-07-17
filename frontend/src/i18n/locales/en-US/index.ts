@@ -7,5 +7,6 @@ import chemoCycle from './chemoCycle.json';
 import reminders from './reminders.json';
 import analytics from './analytics.json';
 import share from './share.json';
+import settings from './settings.json';
 
-export default { common, errors, layout, auth, dashboard, chemoCycle, reminders, analytics, share };
+export default { common, errors, layout, auth, dashboard, chemoCycle, reminders, analytics, share, settings };
