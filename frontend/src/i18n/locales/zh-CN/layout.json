@@ -1,0 +1,11 @@
+{
+  "nav": {
+    "dashboard": "仪表板",
+    "bloodTests": "血常规记录",
+    "chemoCycles": "化疗周期",
+    "analytics": "数据分析",
+    "reminders": "提醒管理",
+    "settings": "设置"
+  },
+  "offline": "⚠️ 您当前处于离线状态，仅可查看已缓存的数据"
+}

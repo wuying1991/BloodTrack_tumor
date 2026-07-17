@@ -1,10 +1,12 @@
 import React from 'react';
 import { Outlet, NavLink, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import OfflineIndicator from '../common/OfflineIndicator';
 import './Layout.css';
 
 const Layout: React.FC = () => {
+  const { t } = useTranslation(['common', 'layout']);
   const { isAuthenticated, user, logout } = useAuth();
 
   if (!isAuthenticated) {
@@ -29,7 +31,7 @@ const Layout: React.FC = () => {
               <path d="M12 2C12 2 6 9 6 14A6 6 0 0 0 18 14C18 9 12 2 12 2Z" />
               <path d="M12 11v6M9 14h6" />
             </svg>
-            <h1 className="app-title">化疗血常规追踪器</h1>
+            <h1 className="app-title">{t('common:appTitle')}</h1>
           </div>
           <div className="user-info">
             <span className="user-avatar">
@@ -37,7 +39,7 @@ const Layout: React.FC = () => {
             </span>
             <span className="user-name">{user?.fullName}</span>
             <button onClick={logout} className="logout-button">
-              登出
+              {t('common:logout')}
             </button>
           </div>
         </div>
@@ -62,7 +64,7 @@ const Layout: React.FC = () => {
                   <rect x="14" y="12" width="7" height="9" />
                   <rect x="3" y="16" width="7" height="5" />
                 </svg>
-                <span>仪表板</span>
+                <span>{t('layout:nav.dashboard')}</span>
               </NavLink>
             </li>
             <li>
@@ -79,7 +81,7 @@ const Layout: React.FC = () => {
                   <path d="M12 2C12 2 6 9 6 14A6 6 0 0 0 18 14C18 9 12 2 12 2Z" />
                   <path d="M12 10v5M9.5 12.5h5" />
                 </svg>
-                <span>血常规记录</span>
+                <span>{t('layout:nav.bloodTests')}</span>
               </NavLink>
             </li>
             <li>
@@ -96,7 +98,7 @@ const Layout: React.FC = () => {
                   <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" />
                   <path d="m8.5 8.5 7 7" />
                 </svg>
-                <span>化疗周期</span>
+                <span>{t('layout:nav.chemoCycles')}</span>
               </NavLink>
             </li>
             <li>
@@ -113,7 +115,7 @@ const Layout: React.FC = () => {
                   <path d="M3 3v18h18" />
                   <path d="m18.7 8-5.1 5.2-2.8-2.7L7 14.3" />
                 </svg>
-                <span>数据分析</span>
+                <span>{t('layout:nav.analytics')}</span>
               </NavLink>
             </li>
             <li>
@@ -130,7 +132,7 @@ const Layout: React.FC = () => {
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                <span>提醒管理</span>
+                <span>{t('layout:nav.reminders')}</span>
               </NavLink>
             </li>
             <li>
@@ -147,7 +149,7 @@ const Layout: React.FC = () => {
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
-                <span>设置</span>
+                <span>{t('layout:nav.settings')}</span>
               </NavLink>
             </li>
           </ul>

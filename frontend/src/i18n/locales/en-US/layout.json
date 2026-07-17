@@ -1,0 +1,11 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "bloodTests": "Blood Tests",
+    "chemoCycles": "Chemo Cycles",
+    "analytics": "Analytics",
+    "reminders": "Reminders",
+    "settings": "Settings"
+  },
+  "offline": "⚠️ You are offline. Only cached data is available."
+}
