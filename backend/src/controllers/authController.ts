@@ -52,8 +52,12 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
   const userExists = await User.findOne({ email });
 
   if (userExists) {
-    await recordAuditEvent({ user: null, action: 'register', success: false, req, detail: `邮箱已注册: ${email}` });
-    throw ApiError.conflict('用户已存在 (User already exists)');
+    await recordAuditEvent({
+      user: null, action: 'register', success: false, req,
+      detail: `邮箱已注册: ${email}`,
+      detailCode: 'EMAIL_ALREADY_REGISTERED', detailParams: { email },
+    });
+    throw ApiError.conflict('用户已存在 (User already exists)', 'AUTH_USER_EXISTS');
   }
 
   // Hash password
@@ -70,7 +74,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
   });
 
   if (!user) {
-    throw ApiError.badRequest('无效的用户数据 (Invalid user data)');
+    throw ApiError.badRequest('无效的用户数据 (Invalid user data)', undefined, 'AUTH_INVALID_USER_DATA');
   }
 
   await recordAuditEvent({ user: user._id, action: 'register', success: true, req });
@@ -106,6 +110,8 @@ export const loginUser = asyncHandler(async (req: Request, res: Response): Promi
       success: false,
       req,
       detail: user ? '密码错误' : `邮箱不存在: ${email}`,
+      detailCode: user ? 'PASSWORD_INCORRECT' : 'EMAIL_NOT_FOUND',
+      detailParams: user ? undefined : { email },
     });
 
     // 暴力破解检测：同一 IP 15 分钟内 5 次登录失败
@@ -122,12 +128,13 @@ export const loginUser = asyncHandler(async (req: Request, res: Response): Promi
         success: false,
         req,
         detail: `检测到暴力破解尝试: ${clientIp} 15 分钟内 ${recentFails} 次失败`,
+        detailCode: 'BRUTE_FORCE_DETECTED', detailParams: { ip: clientIp, count: recentFails },
         isAnomaly: true,
         anomalyType: 'brute_force',
       });
     }
 
-    throw ApiError.unauthorized('邮箱或密码错误 (Invalid email or password)');
+    throw ApiError.unauthorized('邮箱或密码错误 (Invalid email or password)', 'AUTH_INVALID_CREDENTIALS');
   }
 
   // 新 IP 检测
@@ -143,6 +150,8 @@ export const loginUser = asyncHandler(async (req: Request, res: Response): Promi
     success: true,
     req,
     detail: isNewIp ? `新 IP 登录: ${clientIp}` : undefined,
+    detailCode: isNewIp ? 'NEW_IP_LOGIN' : undefined,
+    detailParams: isNewIp ? { ip: clientIp } : undefined,
     isAnomaly: isNewIp,
     anomalyType: isNewIp ? 'new_ip' : undefined,
   });
@@ -169,20 +178,20 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response): Pr
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
-    throw ApiError.badRequest('刷新令牌是必需的 (Refresh token is required)');
+    throw ApiError.badRequest('刷新令牌是必需的 (Refresh token is required)', undefined, 'AUTH_REFRESH_TOKEN_REQUIRED');
   }
 
   try {
     const decoded = jwt.verify(refreshToken, secrets.jwtRefresh) as { id: string; type: string };
 
     if (decoded.type !== 'refresh') {
-      throw ApiError.unauthorized('无效的刷新令牌 (Invalid refresh token)');
+      throw ApiError.unauthorized('无效的刷新令牌 (Invalid refresh token)', 'AUTH_INVALID_REFRESH_TOKEN');
     }
 
     // Check if user still exists
     const user = await User.findById(decoded.id);
     if (!user) {
-      throw ApiError.unauthorized('用户不存在 (User not found)');
+      throw ApiError.unauthorized('用户不存在 (User not found)', 'AUTH_USER_NOT_FOUND');
     }
 
     // Generate new token pair
@@ -197,9 +206,9 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response): Pr
   } catch (error) {
     await recordAuditEvent({ user: null, action: 'refresh_token', success: false, req });
     if (error instanceof jwt.TokenExpiredError) {
-      throw ApiError.unauthorized('刷新令牌已过期，请重新登录 (Refresh token expired, please login again)');
+      throw ApiError.unauthorized('刷新令牌已过期，请重新登录 (Refresh token expired, please login again)', 'AUTH_REFRESH_TOKEN_EXPIRED');
     }
-    throw ApiError.unauthorized('无效的刷新令牌 (Invalid refresh token)');
+    throw ApiError.unauthorized('无效的刷新令牌 (Invalid refresh token)', 'AUTH_INVALID_REFRESH_TOKEN');
   }
 });
 
@@ -222,8 +231,12 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response): 
 
   const user = await User.findOne({ email });
   if (!user) {
-    await recordAuditEvent({ user: null, action: 'forgot_password', success: false, req, detail: `邮箱不存在: ${email}` });
-    throw ApiError.notFound('该邮箱未注册 (Email not found)');
+    await recordAuditEvent({
+      user: null, action: 'forgot_password', success: false, req,
+      detail: `邮箱不存在: ${email}`,
+      detailCode: 'EMAIL_NOT_FOUND', detailParams: { email },
+    });
+    throw ApiError.notFound('该邮箱未注册 (Email not found)', 'AUTH_EMAIL_NOT_REGISTERED');
   }
 
   const resetToken = crypto.randomBytes(32).toString('hex');
@@ -267,8 +280,12 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response): P
   }
 
   if (!matchedUser) {
-    await recordAuditEvent({ user: null, action: 'reset_password', success: false, req, detail: '无效或过期的重置令牌' });
-    throw ApiError.badRequest('无效或已过期的重置令牌 (Invalid or expired reset token)');
+    await recordAuditEvent({
+      user: null, action: 'reset_password', success: false, req,
+      detail: '无效或过期的重置令牌',
+      detailCode: 'RESET_TOKEN_INVALID',
+    });
+    throw ApiError.badRequest('无效或已过期的重置令牌 (Invalid or expired reset token)', undefined, 'AUTH_INVALID_RESET_TOKEN');
   }
 
   const pwSalt = await bcrypt.genSalt(10);
@@ -292,7 +309,7 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response): 
   const user = await User.findById(req.user?._id).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
 
   if (!user) {
-    throw ApiError.notFound('用户未找到 (User not found)');
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
   }
 
   res.json({
@@ -320,7 +337,7 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
   if (req.body.gender !== undefined) fields.gender = req.body.gender;
 
   if (Object.keys(fields).length === 0) {
-    throw ApiError.badRequest('至少需要提供一个要更新的字段');
+    throw ApiError.badRequest('至少需要提供一个要更新的字段', undefined, 'AUTH_NO_UPDATE_FIELDS');
   }
 
   const user = await User.findByIdAndUpdate(
@@ -330,7 +347,7 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
   ).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
 
   if (!user) {
-    throw ApiError.notFound('用户未找到 (User not found)');
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
   }
 
   res.json({
@@ -352,7 +369,7 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
 // @route   PUT /api/auth/settings
 // @access  Private
 export const updateSettings = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { notifications, dataSharing } = req.body;
+  const { notifications, dataSharing, language } = req.body;
 
   const updateFields: Record<string, unknown> = {};
   if (notifications) {
@@ -363,9 +380,10 @@ export const updateSettings = asyncHandler(async (req: AuthRequest, res: Respons
     if (dataSharing.enabled !== undefined) updateFields['settings.dataSharing.enabled'] = dataSharing.enabled;
     if (dataSharing.sharedWith !== undefined) updateFields['settings.dataSharing.sharedWith'] = dataSharing.sharedWith;
   }
+  if (language !== undefined) updateFields['settings.language'] = language;
 
   if (Object.keys(updateFields).length === 0) {
-    throw ApiError.badRequest('至少需要提供一个设置项');
+    throw ApiError.badRequest('至少需要提供一个设置项', undefined, 'AUTH_NO_UPDATE_FIELDS');
   }
 
   const user = await User.findByIdAndUpdate(
@@ -375,7 +393,7 @@ export const updateSettings = asyncHandler(async (req: AuthRequest, res: Respons
   ).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
 
   if (!user) {
-    throw ApiError.notFound('用户未找到 (User not found)');
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
   }
 
   res.json({
@@ -392,20 +410,26 @@ export const changePassword = asyncHandler(async (req: AuthRequest, res: Respons
 
   const user = await User.findById(req.user?._id);
   if (!user) {
-    throw ApiError.notFound('用户未找到 (User not found)');
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
   }
 
   const isMatch = await user.comparePassword(currentPassword);
   if (!isMatch) {
-    await recordAuditEvent({ user: user._id, action: 'change_password', success: false, req, detail: '当前密码不正确' });
-    throw ApiError.unauthorized('当前密码不正确 (Current password is incorrect)');
+    await recordAuditEvent({
+      user: user._id, action: 'change_password', success: false, req,
+      detail: '当前密码不正确', detailCode: 'PASSWORD_INCORRECT',
+    });
+    throw ApiError.unauthorized('当前密码不正确 (Current password is incorrect)', 'AUTH_PASSWORD_INCORRECT');
   }
 
   // 防止新旧密码相同
   const isSame = await user.comparePassword(newPassword);
   if (isSame) {
-    await recordAuditEvent({ user: user._id, action: 'change_password', success: false, req, detail: '新密码与当前密码相同' });
-    throw ApiError.badRequest('新密码不能与当前密码相同 (New password must differ from current)');
+    await recordAuditEvent({
+      user: user._id, action: 'change_password', success: false, req,
+      detail: '新密码与当前密码相同', detailCode: 'PASSWORD_SAME_AS_CURRENT',
+    });
+    throw ApiError.badRequest('新密码不能与当前密码相同 (New password must differ from current)', undefined, 'AUTH_PASSWORD_SAME_AS_CURRENT');
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -433,13 +457,13 @@ export const deleteAccount = asyncHandler(
 
     const user = await User.findById(userId);
     if (!user) {
-      throw ApiError.notFound('用户未找到 (User not found)');
+      throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
     }
 
     // 二次密码验证 - 防止误删 / token 被盗后远程销户
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      throw ApiError.unauthorized('密码不正确 (Password is incorrect)');
+      throw ApiError.unauthorized('密码不正确 (Password is incorrect)', 'AUTH_PASSWORD_INCORRECT');
     }
 
     // 删除前记录审计日志（删除后 user 不存在了）

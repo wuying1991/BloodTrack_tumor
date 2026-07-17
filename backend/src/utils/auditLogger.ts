@@ -7,6 +7,8 @@ interface RecordAuditParams {
   success: boolean;
   req: Request;
   detail?: string;
+  detailCode?: string;
+  detailParams?: Record<string, unknown>;
   isAnomaly?: boolean;
   anomalyType?: 'new_ip' | 'brute_force';
 }
@@ -26,6 +28,8 @@ export async function recordAuditEvent(params: RecordAuditParams): Promise<void>
       ip,
       userAgent,
       detail: params.detail,
+      detailCode: params.detailCode,
+      detailParams: params.detailParams,
       isAnomaly: params.isAnomaly ?? false,
       anomalyType: params.anomalyType,
     });

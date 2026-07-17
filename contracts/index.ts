@@ -23,6 +23,8 @@ export interface ApiErrorResponse {
   success: false;
   message: string;
   errors?: Record<string, string>;
+  errorCodes?: Record<string, string>;
+  code?: string;
   statusCode: number;
   stack?: string;
 }
@@ -322,6 +324,8 @@ export interface AuditLogEntry {
   ip: string;
   userAgent: string;
   detail?: string;
+  detailCode?: string;
+  detailParams?: Record<string, unknown>;
   isAnomaly: boolean;
   anomalyType?: AuditAnomalyType;
   createdAt: string;

@@ -8,6 +8,8 @@ interface ErrorResponse {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
+  errorCodes?: Record<string, string>;
+  code?: string;
   stack?: string;
   statusCode: number;
 }
@@ -33,7 +35,7 @@ export const errorHandler = (
   // Mongoose bad ObjectId
   if (error.name === 'CastError') {
     const message = '资源未找到 (Resource not found)';
-    error = ApiError.notFound(message);
+    error = ApiError.notFound(message, 'MONGOSE_CAST');
     statusCode = 404;
   }
 
@@ -41,7 +43,7 @@ export const errorHandler = (
   if ((error as any).code === 11000) {
     const field = Object.keys((error as any).keyValue)[0];
     const message = `${field} 已被使用 (${field} is already taken)`;
-    error = ApiError.conflict(message);
+    error = ApiError.conflict(message, 'MONGOSE_DUPLICATE');
     statusCode = 409;
   }
 
@@ -52,20 +54,20 @@ export const errorHandler = (
       errors[val.path] = val.message;
     });
     const message = '数据验证失败 (Data validation failed)';
-    error = ApiError.validation(message, errors);
+    error = ApiError.validation(message, errors, undefined, 'MONGOSE_VALIDATION');
     statusCode = 422;
   }
 
   // JWT errors
   if (error.name === 'JsonWebTokenError') {
     const message = '无效的认证令牌 (Invalid authentication token)';
-    error = ApiError.unauthorized(message);
+    error = ApiError.unauthorized(message, 'JWT_INVALID');
     statusCode = 401;
   }
 
   if (error.name === 'TokenExpiredError') {
     const message = '认证令牌已过期 (Authentication token has expired)';
-    error = ApiError.unauthorized(message);
+    error = ApiError.unauthorized(message, 'JWT_EXPIRED');
     statusCode = 401;
   }
 
@@ -76,9 +78,11 @@ export const errorHandler = (
     statusCode,
   };
 
-  // Add validation errors if present
-  if (error instanceof ApiError && error.errors) {
-    response.errors = error.errors;
+  // Add validation errors + code if present (ApiError)
+  if (error instanceof ApiError) {
+    if (error.errors) response.errors = error.errors;
+    if (error.errorCodes) response.errorCodes = error.errorCodes;
+    if (error.code) response.code = error.code;
   }
 
   // Add stack trace in development mode
@@ -99,7 +103,7 @@ export const errorHandler = (
  * Handles requests to undefined routes
  */
 export const notFoundHandler = (req: Request, res: Response, next: NextFunction): void => {
-  const error = ApiError.notFound(`找不到路径: ${req.originalUrl} (Route not found)`);
+  const error = ApiError.notFound(`找不到路径: ${req.originalUrl} (Route not found)`, 'ROUTE_NOT_FOUND');
   next(error);
 };
 

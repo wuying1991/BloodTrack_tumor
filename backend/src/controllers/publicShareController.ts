@@ -20,28 +20,28 @@ export async function loadShareWithPin(
   const { token } = req.params;
   const share = await Share.findOne({ token });
   if (!share) {
-    throw ApiError.notFound('链接不存在 (Share not found)');
+    throw ApiError.notFound('链接不存在 (Share not found)', 'SHARE_NOT_FOUND');
   }
 
   if (share.expiresAt && share.expiresAt.getTime() < Date.now()) {
-    throw ApiError.gone('链接已过期 (Share expired)');
+    throw ApiError.gone('链接已过期 (Share expired)', 'SHARE_EXPIRED');
   }
 
   if (checkPin && share.pinHash) {
     const headerPin = req.header('X-Share-Pin');
     if (!headerPin) {
-      throw ApiError.unauthorized('请输入访问密码 (PIN required)');
+      throw ApiError.unauthorized('请输入访问密码 (PIN required)', 'SHARE_PIN_REQUIRED');
     }
     const ok = await bcrypt.compare(headerPin, share.pinHash);
     if (!ok) {
-      throw ApiError.unauthorized('密码错误 (Wrong PIN)');
+      throw ApiError.unauthorized('密码错误 (Wrong PIN)', 'SHARE_WRONG_PIN');
     }
   }
 
   const owner = await User.findById(share.user).select('fullName');
   if (!owner) {
     // owner 已被删除（理论上 deleteAccount 会级联清理 share，这里是兜底）
-    throw ApiError.notFound('链接不存在 (Share not found)');
+    throw ApiError.notFound('链接不存在 (Share not found)', 'SHARE_NOT_FOUND');
   }
 
   return { share, owner };
@@ -107,7 +107,7 @@ function buildDateFilter(range: unknown): { date?: { $gte: Date } } {
 export const getSharedBloodTests = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { share } = await loadShareWithPin(req);
   if (!share.scope.bloodTests) {
-    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)');
+    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)', 'SHARE_RESOURCE_NOT_IN_SCOPE');
   }
   const tests = await BloodTest.find({ user: share.user }).sort('-date').lean();
   res.json({ success: true, data: tests });
@@ -119,7 +119,7 @@ export const getSharedBloodTests = asyncHandler(async (req: Request, res: Respon
 export const getSharedChemoCycles = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { share } = await loadShareWithPin(req);
   if (!share.scope.chemoCycles) {
-    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)');
+    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)', 'SHARE_RESOURCE_NOT_IN_SCOPE');
   }
   const cycles = await ChemoCycle.find({ user: share.user }).sort('-startDate').lean();
   res.json({ success: true, data: cycles });
@@ -131,7 +131,7 @@ export const getSharedChemoCycles = asyncHandler(async (req: Request, res: Respo
 export const getSharedAnalytics = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { share } = await loadShareWithPin(req);
   if (!share.scope.analytics) {
-    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)');
+    throw ApiError.forbidden('该资源未在此分享中开启 (Resource not in scope)', 'SHARE_RESOURCE_NOT_IN_SCOPE');
   }
 
   const dateFilter = buildDateFilter(req.query.range);

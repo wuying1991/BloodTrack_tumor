@@ -19,7 +19,7 @@ const EXPIRES_IN_MS: Record<string, number> = {
 function expiresInToDate(expiresIn: string): Date | null {
   if (expiresIn === 'never') return null;
   const ms = EXPIRES_IN_MS[expiresIn];
-  if (!ms) throw ApiError.badRequest('无效的有效期 (Invalid expiresIn)');
+  if (!ms) throw ApiError.badRequest('无效的有效期 (Invalid expiresIn)', undefined, 'SHARE_INVALID_EXPIRES_IN');
   return new Date(Date.now() + ms);
 }
 
@@ -47,14 +47,15 @@ export const createShare = asyncHandler(
 
     // 业务前置 1: 总开关
     if (!req.user?.settings?.dataSharing?.enabled) {
-      throw ApiError.forbidden('请先在设置→数据中开启数据共享 (Enable data sharing first)');
+      throw ApiError.forbidden('请先在设置→数据中开启数据共享 (Enable data sharing first)', 'SHARE_NOT_ENABLED');
     }
 
     // 业务前置 2: 软上限
     const count = await Share.countDocuments({ user: userId });
     if (count >= MAX_ACTIVE_SHARES) {
       throw ApiError.conflict(
-        `每个用户最多 ${MAX_ACTIVE_SHARES} 条活跃分享链接 (Max ${MAX_ACTIVE_SHARES} active shares per user)`
+        `每个用户最多 ${MAX_ACTIVE_SHARES} 条活跃分享链接 (Max ${MAX_ACTIVE_SHARES} active shares per user)`,
+        'SHARE_LIMIT_EXCEEDED'
       );
     }
 
@@ -113,7 +114,7 @@ export const deleteShare = asyncHandler(
     });
 
     if (!result) {
-      throw ApiError.notFound('分享未找到 (Share not found)');
+      throw ApiError.notFound('分享未找到 (Share not found)', 'SHARE_NOT_FOUND');
     }
 
     res.json({

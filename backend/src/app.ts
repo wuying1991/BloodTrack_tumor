@@ -34,7 +34,7 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: skipRateLimit,
-  message: { success: false, message: '请求过于频繁，请稍后重试 (Too many requests, please try again later)' },
+  message: { success: false, code: 'RATE_LIMIT_GLOBAL', message: '请求过于频繁，请稍后重试 (Too many requests, please try again later)' },
 });
 
 // 敏感端点限流: 撞库/暴力破解防护，每 IP 每分钟 5 次
@@ -45,7 +45,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: true, // 成功登录不计入，避免正常用户被锁
   skip: skipRateLimit,
-  message: { success: false, message: '尝试次数过多，请稍后再试 (Too many attempts, please try again later)' },
+  message: { success: false, code: 'RATE_LIMIT_AUTH', message: '尝试次数过多，请稍后再试 (Too many attempts, please try again later)' },
 });
 
 // 公开 share API 限流: 30 次/分钟/IP（meta + verify + 3 资源 = 5 个请求/次访问，余量充足）
@@ -55,7 +55,7 @@ const publicShareLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: skipRateLimit,
-  message: { success: false, message: '请求过于频繁 (Too many requests)' },
+  message: { success: false, code: 'RATE_LIMIT_SHARE', message: '请求过于频繁 (Too many requests)' },
 });
 
 // PIN verify 端点单独限流: 5 次/分钟/IP+token, 跳过成功
@@ -67,7 +67,7 @@ const pinVerifyLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? '')}:${req.params?.token ?? 'no-token'}`,
   skip: skipRateLimit,
-  message: { success: false, message: '尝试过多，请稍后再试 (Too many attempts)' },
+  message: { success: false, code: 'RATE_LIMIT_PIN', message: '尝试过多，请稍后再试 (Too many attempts)' },
 });
 
 app.use('/api/', limiter);
