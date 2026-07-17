@@ -8,5 +8,6 @@ import reminders from './reminders.json';
 import analytics from './analytics.json';
 import share from './share.json';
 import settings from './settings.json';
+import bloodTests from './bloodTests.json';
 
-export default { common, errors, layout, auth, dashboard, chemoCycle, reminders, analytics, share, settings };
+export default { common, errors, layout, auth, dashboard, chemoCycle, reminders, analytics, share, settings, bloodTests };

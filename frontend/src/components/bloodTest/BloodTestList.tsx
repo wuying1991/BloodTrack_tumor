@@ -6,6 +6,7 @@ import chemoCycleService, {
 } from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
 import { getMyelosuppressionGrade } from '../../utils/myelosuppression';
+import { useT } from '../../i18n/useT';
 import './BloodTestList.css';
 
 interface BloodTestListProps {
@@ -19,6 +20,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
   onDelete,
   refreshTrigger,
 }) => {
+  const t = useT(['bloodTests', 'common']);
   const [bloodTests, setBloodTests] = useState<BloodTest[]>([]);
   const [cycleMap, setCycleMap] = useState<Record<string, ChemoCycle>>({});
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError('加载血常规记录失败');
+        setError(t('common:networkError'));
       }
     } finally {
       setLoading(false);
@@ -93,9 +95,9 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
   };
 
   const renderCycleLabel = (cycleId?: string | null) => {
-    if (!cycleId) return <span className="cycle-empty">—</span>;
+    if (!cycleId) return <span className="cycle-empty">-</span>;
     const c = cycleMap[cycleId];
-    if (!c) return <span className="cycle-empty">已关联（已删除？）</span>;
+    if (!c) return <span className="cycle-empty">{t('noCycle')}</span>;
     const start = new Date(c.startDate).toLocaleDateString('zh-CN');
     const end = new Date(c.endDate).toLocaleDateString('zh-CN');
     const drugs = (c.medications || [])
@@ -113,7 +115,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
     return (
       <div className="blood-test-list loading">
         <div className="spinner"></div>
-        <p>加载中...</p>
+        <p>{t('common:loading')}</p>
       </div>
     );
   }
@@ -126,7 +128,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
           className="btn btn-secondary"
           onClick={() => fetchBloodTests(pagination.page)}
         >
-          重试
+          {t('common:retry')}
         </button>
       </div>
     );
@@ -135,8 +137,8 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
   if (bloodTests.length === 0) {
     return (
       <div className="blood-test-list empty">
-        <p>暂无血常规记录</p>
-        <p className="empty-hint">点击上方的"添加记录"按钮创建您的第一条记录</p>
+        <p>{t('emptyState')}</p>
+        <p className="empty-hint">{t('emptyHint')}</p>
       </div>
     );
   }
@@ -144,62 +146,37 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
   return (
     <div className="blood-test-list">
       <div className="list-header">
-        <h3>血常规记录列表</h3>
-        <span className="record-count">共 {pagination.total} 条记录</span>
+        <h3>{t('pageTitle')}</h3>
+        <span className="record-count">{t('recordCount', { total: pagination.total })}</span>
       </div>
 
       <div className="table-container">
         <table className="blood-test-table">
           <thead>
             <tr>
-              <th>日期</th>
-              <th>
-                白细胞
-                <br />
-                <small>(×10⁹/L)</small>
-              </th>
-              <th>
-                红细胞
-                <br />
-                <small>(×10¹²/L)</small>
-              </th>
-              <th>
-                血红蛋白
-                <br />
-                <small>(g/L)</small>
-              </th>
-              <th>
-                血小板
-                <br />
-                <small>(×10⁹/L)</small>
-              </th>
-              <th>关联周期</th>
-              <th>备注</th>
-              <th>操作</th>
+              <th>{t('tableDate')}</th>
+              <th>{t('wbc')}<br /><small>(×10⁹/L)</small></th>
+              <th>{t('rbc')}<br /><small>(×10¹²/L)</small></th>
+              <th>{t('hgb')}<br /><small>(g/L)</small></th>
+              <th>{t('plt')}<br /><small>(×10⁹/L)</small></th>
+              <th>{t('tableCycle')}</th>
+              <th>{t('tableNotes')}</th>
+              <th>{t('tableActions')}</th>
             </tr>
           </thead>
           <tbody>
             {bloodTests.map(test => (
               <tr key={test._id} className={test.isAbnormal ? 'abnormal' : ''}>
-                <td className="date-cell" data-label="日期">
-                  <span className="date-value-txt">
-                    {formatDate(test.date)}
-                  </span>
-                  <div
-                    className="badge-container"
-                    style={{ display: 'inline-flex', gap: 4, marginLeft: 6 }}
-                  >
-                    {test.isAbnormal && (
-                      <span className="abnormal-badge">异常</span>
-                    )}
+                <td className="date-cell" data-label={t('tableDate')}>
+                  <span className="date-value-txt">{formatDate(test.date)}</span>
+                  <div className="badge-container" style={{ display: 'inline-flex', gap: 4, marginLeft: 6 }}>
+                    {test.isAbnormal && <span className="abnormal-badge">{t('statusAbnormal')}</span>}
                     {(() => {
                       const gradeInfo = getMyelosuppressionGrade(test.neu);
                       if (gradeInfo && gradeInfo.grade > 0) {
                         return (
-                          <span
-                            className={`grade-badge ${gradeInfo.className}`}
-                          >
-                            {gradeInfo.grade}级抑制
+                          <span className={`grade-badge ${gradeInfo.className}`}>
+                            {t('gradeSuppression', { grade: gradeInfo.grade })}
                           </span>
                         );
                       }
@@ -207,77 +184,33 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
                     })()}
                   </div>
                 </td>
-                <td
-                  data-label="白细胞(WBC)"
-                  className={`value-cell ${
-                    getAbnormalIndicator(test.wbc, 4.0, 10.0)
-                      ? 'abnormal-value'
-                      : ''
-                  }`}
-                >
+                <td data-label={t('wbc')} className={`value-cell ${getAbnormalIndicator(test.wbc, 4.0, 10.0) ? 'abnormal-value' : ''}`}>
                   {renderValue(test.wbc, '')}
                   {getAbnormalIndicator(test.wbc, 4.0, 10.0)}
                 </td>
-                <td
-                  data-label="红细胞(RBC)"
-                  className={`value-cell ${
-                    getAbnormalIndicator(test.rbc, 3.5, 5.8)
-                      ? 'abnormal-value'
-                      : ''
-                  }`}
-                >
+                <td data-label={t('rbc')} className={`value-cell ${getAbnormalIndicator(test.rbc, 3.5, 5.8) ? 'abnormal-value' : ''}`}>
                   {renderValue(test.rbc, '')}
                   {getAbnormalIndicator(test.rbc, 3.5, 5.8)}
                 </td>
-                <td
-                  data-label="血红蛋白(HGB)"
-                  className={`value-cell ${
-                    getAbnormalIndicator(test.hgb, 110, 165)
-                      ? 'abnormal-value'
-                      : ''
-                  }`}
-                >
+                <td data-label={t('hgb')} className={`value-cell ${getAbnormalIndicator(test.hgb, 110, 165) ? 'abnormal-value' : ''}`}>
                   {renderValue(test.hgb, '')}
                   {getAbnormalIndicator(test.hgb, 110, 165)}
                 </td>
-                <td
-                  data-label="血小板(PLT)"
-                  className={`value-cell ${
-                    getAbnormalIndicator(test.plt, 100, 300)
-                      ? 'abnormal-value'
-                      : ''
-                  }`}
-                >
+                <td data-label={t('plt')} className={`value-cell ${getAbnormalIndicator(test.plt, 100, 300) ? 'abnormal-value' : ''}`}>
                   {renderValue(test.plt, '')}
                   {getAbnormalIndicator(test.plt, 100, 300)}
                 </td>
-                <td className="cycle-cell" data-label="关联周期">
+                <td className="cycle-cell" data-label={t('tableCycle')}>
                   {renderCycleLabel(test.chemoCycleId)}
                 </td>
-                <td
-                  className="notes-cell"
-                  title={test.notes || ''}
-                  data-label="备注"
-                >
-                  {test.notes
-                    ? test.notes.length > 20
-                      ? `${test.notes.substring(0, 20)}...`
-                      : test.notes
-                    : '-'}
+                <td className="notes-cell" title={test.notes || ''} data-label={t('tableNotes')}>
+                  {test.notes ? (test.notes.length > 20 ? `${test.notes.substring(0, 20)}...` : test.notes) : '-'}
                 </td>
-                <td className="actions-cell" data-label="操作">
-                  <button
-                    className="btn-icon btn-edit"
-                    onClick={() => onEdit(test)}
-                    title="编辑"
-                  >
+                <td className="actions-cell" data-label={t('tableActions')}>
+                  <button className="btn-icon btn-edit" onClick={() => onEdit(test)} title={t('edit')}>
                     ✏️
                   </button>
-                  <button
-                    className="btn-icon btn-delete"
-                    onClick={() => test._id && onDelete(test._id)}
-                    title="删除"
-                  >
+                  <button className="btn-icon btn-delete" onClick={() => test._id && onDelete(test._id)} title={t('delete')}>
                     🗑️
                   </button>
                 </td>
@@ -289,31 +222,23 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
 
       {pagination.pages > 1 && (
         <div className="pagination">
-          <button
-            className="btn-page"
-            onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={pagination.page === 1}
-          >
-            上一页
+          <button className="btn-page" onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}>
+            {t('prevPage')}
           </button>
           <span className="page-info">
-            第 {pagination.page} / {pagination.pages} 页
+            {t('pageInfo', { page: pagination.page, pages: pagination.pages })}
           </span>
-          <button
-            className="btn-page"
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page === pagination.pages}
-          >
-            下一页
+          <button className="btn-page" onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.pages}>
+            {t('nextPage')}
           </button>
         </div>
       )}
 
       <div className="list-legend">
         <p>
-          <span className="legend-abnormal">异常</span> 表示数值超出正常范围
-          <span className="legend-arrows">↑</span> 高于正常值
-          <span className="legend-arrows">↓</span> 低于正常值
+          <span className="legend-abnormal">{t('legendAbnormal')}</span>
+          {' '}
+          {t('statusAbnormal')} ↑↓
         </p>
       </div>
     </div>

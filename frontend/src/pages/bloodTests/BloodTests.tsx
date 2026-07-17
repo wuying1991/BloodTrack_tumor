@@ -8,6 +8,7 @@ import bloodTestService, {
 } from '../../services/bloodTest/bloodTestService';
 import chemoCycleService from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
+import { useT } from '../../i18n/useT';
 import './BloodTests.css';
 
 const CYCLE_WARNING_DAYS = 21;
@@ -16,12 +17,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 type ViewMode = 'list' | 'add' | 'edit';
 
 const BloodTests: React.FC = () => {
+  const t = useT('bloodTests');
   const navigate = useNavigate();
   const location = useLocation();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [editingTest, setEditingTest] = useState<BloodTest | undefined>(
-    undefined
-  );
+  const [editingTest, setEditingTest] = useState<BloodTest | undefined>(undefined);
 
   React.useEffect(() => {
     if (location.state && (location.state as any).addNew) {
@@ -43,13 +43,13 @@ const BloodTests: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('确定要删除这条记录吗？此操作无法撤销。')) {
+    if (window.confirm(t('deleteConfirm'))) {
       try {
         await bloodTestService.deleteBloodTest(id);
         setRefreshTrigger(prev => prev + 1);
       } catch (err: unknown) {
-        const msg = err instanceof ApiError ? err.message : '请重试';
-        alert('删除失败: ' + msg);
+        const msg = err instanceof ApiError ? err.message : t('retry');
+        alert(t('deleteFailed', { msg }));
       }
     }
   };
@@ -59,7 +59,7 @@ const BloodTests: React.FC = () => {
     try {
       await bloodTestService.exportCsv();
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.message : '导出失败，请重试';
+      const msg = err instanceof ApiError ? err.message : t('exportFailed');
       alert(msg);
     } finally {
       setIsExporting(false);
@@ -80,16 +80,13 @@ const BloodTests: React.FC = () => {
   const beforeBloodTestSubmit = async (
     data: BloodTestFormData
   ): Promise<'continue' | 'cancel'> => {
-    // 编辑已有记录时不弹周期提醒，避免干扰用户修正历史数据
     if (editingTest) return 'continue';
 
     try {
       const res = await chemoCycleService.getChemoCycles(1, 100);
       const cycles = res.data || [];
       if (cycles.length === 0) {
-        const goAddCycle = window.confirm(
-          '建议先添加化疗周期记录，以便关联血常规数据。\n\n点击“确定”去添加周期；点击“取消”仍然保存血常规。'
-        );
+        const goAddCycle = window.confirm(t('cycleWarningNone'));
         if (goAddCycle) {
           navigate('/chemo-cycles');
           return 'cancel';
@@ -98,22 +95,18 @@ const BloodTests: React.FC = () => {
       }
 
       const latest = [...cycles].sort(
-        (a, b) =>
-          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
       )[0];
       const testDate = new Date(data.date).getTime();
       const latestStart = new Date(latest.startDate).getTime();
       if (testDate - latestStart > CYCLE_WARNING_DAYS * DAY_MS) {
-        const goAddCycle = window.confirm(
-          '距离上一个化疗周期开始已超过 21 天，是否需要添加新的化疗周期？\n\n点击“确定”去添加周期；点击“取消”仍然保存血常规。'
-        );
+        const goAddCycle = window.confirm(t('cycleWarningOld'));
         if (goAddCycle) {
           navigate('/chemo-cycles');
           return 'cancel';
         }
       }
     } catch {
-      // 周期检查失败不阻止血常规保存
       return 'continue';
     }
 
@@ -123,19 +116,19 @@ const BloodTests: React.FC = () => {
   return (
     <div className="blood-tests-page">
       <div className="page-header">
-        <h1>血常规记录</h1>
+        <h1>{t('pageTitle')}</h1>
         {viewMode === 'list' && (
           <div className="page-header-actions">
             <button
               className="btn btn-secondary"
               onClick={handleExport}
               disabled={isExporting}
-              title="导出全部记录为 CSV"
+              title={t('exportCsv')}
             >
-              {isExporting ? '导出中...' : '⬇ 导出 CSV'}
+              {isExporting ? t('exporting') : t('exportCsv')}
             </button>
             <button className="btn btn-primary" onClick={handleAddNew}>
-              + 添加记录
+              {t('addRecord')}
             </button>
           </div>
         )}
@@ -143,11 +136,7 @@ const BloodTests: React.FC = () => {
 
       <div className="page-content">
         {viewMode === 'list' && (
-          <BloodTestList
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            refreshTrigger={refreshTrigger}
-          />
+          <BloodTestList onEdit={handleEdit} onDelete={handleDelete} refreshTrigger={refreshTrigger} />
         )}
 
         {(viewMode === 'add' || viewMode === 'edit') && (
@@ -162,16 +151,16 @@ const BloodTests: React.FC = () => {
 
       <div className="info-cards">
         <div className="info-card">
-          <h4>💡 提示</h4>
-          <p>定期记录血常规数据有助于追踪治疗效果。建议化疗前后都进行检测。</p>
+          <h4>{t('tipTitle')}</h4>
+          <p>{t('tipContent')}</p>
         </div>
         <div className="info-card">
-          <h4>⚠️ 注意</h4>
-          <p>如果检测结果显示异常指标，请及时咨询您的主治医生。</p>
+          <h4>{t('warningTitle')}</h4>
+          <p>{t('warningContent')}</p>
         </div>
         <div className="info-card">
-          <h4>📊 数据安全</h4>
-          <p>您的健康数据已加密存储，只有您可以访问自己的记录。</p>
+          <h4>{t('dataSecurityTitle')}</h4>
+          <p>{t('dataSecurityContent')}</p>
         </div>
       </div>
     </div>
