@@ -4,7 +4,10 @@ import { useT } from '../../i18n/useT';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth/authService';
 import { ApiError } from '../../services/api/apiClient';
-import { translateApiError, translateFieldError } from '../../services/api/errorMapper';
+import {
+  translateApiError,
+  translateFieldError,
+} from '../../services/api/errorMapper';
 import './Auth.css';
 
 const Register: React.FC = () => {
@@ -67,7 +70,10 @@ const Register: React.FC = () => {
         setError(translateApiError(err));
         if (err.errors || err.errorCodes) {
           const fields = Array.from(
-            new Set([...Object.keys(err.errors || {}), ...Object.keys(err.errorCodes || {})])
+            new Set([
+              ...Object.keys(err.errors || {}),
+              ...Object.keys(err.errorCodes || {}),
+            ])
           );
           const map: Record<string, string> = {};
           fields.forEach(f => {
@@ -145,7 +151,9 @@ const Register: React.FC = () => {
                 className="password-toggle"
                 onClick={() => setShowPassword(prev => !prev)}
                 disabled={isLoading}
-                aria-label={showPassword ? t('register.hideAria') : t('register.showAria')}
+                aria-label={
+                  showPassword ? t('register.hideAria') : t('register.showAria')
+                }
               >
                 {showPassword ? t('register.hide') : t('register.show')}
               </button>
@@ -156,7 +164,9 @@ const Register: React.FC = () => {
             )}
           </div>
           <div className="form-group">
-            <label htmlFor="confirmPassword">{t('register.confirmLabel')}</label>
+            <label htmlFor="confirmPassword">
+              {t('register.confirmLabel')}
+            </label>
             <div className="password-input-wrapper">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
@@ -176,7 +186,9 @@ const Register: React.FC = () => {
                 onClick={() => setShowConfirmPassword(prev => !prev)}
                 disabled={isLoading}
                 aria-label={
-                  showConfirmPassword ? t('register.hideConfirmAria') : t('register.showConfirmAria')
+                  showConfirmPassword
+                    ? t('register.hideConfirmAria')
+                    : t('register.showConfirmAria')
                 }
               >
                 {showConfirmPassword ? t('register.hide') : t('register.show')}
@@ -197,7 +209,8 @@ const Register: React.FC = () => {
           </button>
         </form>
         <div className="auth-footer">
-          {t('register.footerPrefix')} <Link to="/login">{t('register.loginLink')}</Link>
+          {t('register.footerPrefix')}{' '}
+          <Link to="/login">{t('register.loginLink')}</Link>
         </div>
       </div>
     </div>

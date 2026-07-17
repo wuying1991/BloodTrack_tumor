@@ -156,7 +156,9 @@ const Dashboard: React.FC = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <div className="welcome-section">
-          <h1>{user ? t('greeting', { name: user.fullName }) : t('titleFallback')}</h1>
+          <h1>
+            {user ? t('greeting', { name: user.fullName }) : t('titleFallback')}
+          </h1>
           <p className="welcome-subtitle">{t('welcomeSubtitle')}</p>
         </div>
         <div className="header-actions">
@@ -304,9 +306,13 @@ const Dashboard: React.FC = () => {
                       </td>
                       <td>
                         {test.isAbnormal ? (
-                          <span className="badge badge-abnormal">{t('badgeAbnormal')}</span>
+                          <span className="badge badge-abnormal">
+                            {t('badgeAbnormal')}
+                          </span>
                         ) : (
-                          <span className="badge badge-normal">{t('badgeNormal')}</span>
+                          <span className="badge badge-normal">
+                            {t('badgeNormal')}
+                          </span>
                         )}
                       </td>
                       <td className="notes-cell">{test.notes || '-'}</td>

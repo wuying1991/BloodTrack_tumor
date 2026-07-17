@@ -3,6 +3,7 @@ import errors from './errors.json';
 import layout from './layout.json';
 import auth from './auth.json';
 import dashboard from './dashboard.json';
+import chemoCycle from './chemoCycle.json';
 
-// Phase 4 在此追加各 UI 命名空间 import (bloodTest/...) 并加入下面的 export。
-export default { common, errors, layout, auth, dashboard };
+// Phase 4 在此追加各 UI 命名空间 import (analytics/...) 并加入下面的 export。
+export default { common, errors, layout, auth, dashboard, chemoCycle };

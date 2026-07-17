@@ -93,7 +93,9 @@ const Login: React.FC = () => {
                 className="password-toggle"
                 onClick={() => setShowPassword(prev => !prev)}
                 disabled={isLoading}
-                aria-label={showPassword ? t('login.hideAria') : t('login.showAria')}
+                aria-label={
+                  showPassword ? t('login.hideAria') : t('login.showAria')
+                }
               >
                 {showPassword ? t('login.hide') : t('login.show')}
               </button>
@@ -108,7 +110,8 @@ const Login: React.FC = () => {
           </button>
         </form>
         <div className="auth-footer">
-          {t('login.footerPrefix')} <Link to="/register">{t('login.registerLink')}</Link>
+          {t('login.footerPrefix')}{' '}
+          <Link to="/register">{t('login.registerLink')}</Link>
         </div>
       </div>
     </div>

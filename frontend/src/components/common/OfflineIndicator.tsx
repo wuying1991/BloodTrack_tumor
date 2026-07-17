@@ -18,11 +18,7 @@ const OfflineIndicator: React.FC = () => {
 
   if (isOnline) return null;
 
-  return (
-    <div className="offline-indicator">
-      {t('offline')}
-    </div>
-  );
+  return <div className="offline-indicator">{t('offline')}</div>;
 };
 
 export default OfflineIndicator;
