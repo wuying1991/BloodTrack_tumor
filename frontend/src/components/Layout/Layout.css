@@ -5,6 +5,17 @@
   background-color: var(--bg-color);
 }
 
+.offline-indicator {
+  background-color: #fff3cd;
+  color: #856404;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-bottom: 1px solid #ffeaa7;
+  flex-shrink: 0;
+}
+
 .layout-header {
   background-color: var(--card-bg);
   color: var(--text-primary);
