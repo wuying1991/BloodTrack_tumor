@@ -35,6 +35,7 @@ export interface User {
       enabled: boolean;
       sharedWith: string[];
     };
+    language?: 'zh-CN' | 'en-US';
   };
   createdAt?: string;
   updatedAt?: string;

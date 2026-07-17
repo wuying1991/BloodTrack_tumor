@@ -396,6 +396,10 @@ export const validateSettingsUpdate = runValidation([
     .optional()
     .isArray()
     .withMessage('共享用户列表必须为数组'),
+  body('language')
+    .optional()
+    .isIn(['zh-CN', 'en-US'])
+    .withMessage('language 必须为 zh-CN 或 en-US (language must be zh-CN or en-US)'),
 ]);
 
 // Change password validation

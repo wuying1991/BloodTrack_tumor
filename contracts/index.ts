@@ -65,6 +65,7 @@ export interface UserSettings {
     enabled: boolean;
     sharedWith: string[];
   };
+  language?: 'zh-CN' | 'en-US';
 }
 
 export type RegisterResponse = ApiResponse<AuthUser & TokenPair>;

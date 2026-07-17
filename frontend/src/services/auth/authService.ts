@@ -103,6 +103,7 @@ class AuthService {
   async updateSettings(settings: {
     notifications?: { email?: boolean; push?: boolean };
     dataSharing?: { enabled?: boolean };
+    language?: 'zh-CN' | 'en-US';
   }): Promise<{ success: boolean; data: User['settings'] }> {
     return apiClient.put('/auth/settings', settings);
   }
