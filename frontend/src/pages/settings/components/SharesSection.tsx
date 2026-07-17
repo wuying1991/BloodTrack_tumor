@@ -3,44 +3,41 @@ import shareService, {
   ShareListItem,
 } from '../../../services/share/shareService';
 import { ApiError } from '../../../services/api/apiClient';
+import { useT } from '../../../i18n/useT';
 import CreateShareDialog from './CreateShareDialog';
 
 interface Props {
-  /** 总开关 (settings.dataSharing.enabled) */
   sharingEnabled: boolean;
 }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
   });
 }
 
-function describeExpiresAt(expiresAt: string | null): string {
-  if (!expiresAt) return '永不过期';
-  const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return `已过期 (${formatDate(expiresAt)})`;
-  const days = Math.ceil(ms / (24 * 60 * 60 * 1000));
-  return `${days} 天后过期 (${formatDate(expiresAt)})`;
-}
-
-function describeScope(s: ShareListItem['scope']): string {
-  const parts: string[] = [];
-  if (s.bloodTests) parts.push('血常规');
-  if (s.chemoCycles) parts.push('化疗周期');
-  if (s.analytics) parts.push('趋势分析');
-  return parts.join('、');
-}
-
 const SharesSection: React.FC<Props> = ({ sharingEnabled }) => {
+  const t = useT('share');
   const [shares, setShares] = useState<ShareListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDialog, setShowDialog] = useState(false);
+
+  const describeExpiresAt = (expiresAt: string | null): string => {
+    if (!expiresAt) return t('neverExpires');
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    if (ms <= 0) return `${t('expiredShort')} (${formatDate(expiresAt)})`;
+    const days = Math.ceil(ms / (24 * 60 * 60 * 1000));
+    return `${t('expiresInDays', { days })} (${formatDate(expiresAt)})`;
+  };
+
+  const describeScope = (s: ShareListItem['scope']): string => {
+    const parts: string[] = [];
+    if (s.bloodTests) parts.push(t('sectionBloodTests'));
+    if (s.chemoCycles) parts.push(t('sectionChemoCycles'));
+    if (s.analytics) parts.push(t('sectionAnalytics'));
+    return parts.join('、');
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,69 +47,58 @@ const SharesSection: React.FC<Props> = ({ sharingEnabled }) => {
       setShares(res.data);
     } catch (err) {
       if (err instanceof ApiError) setError(err.message);
-      else setError('加载失败');
+      else setError(t('loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const handleRevoke = async (id: string) => {
-    if (!window.confirm('撤销后链接将立即失效，无法恢复。继续？')) return;
+    if (!window.confirm(t('revokeConfirm'))) return;
     try {
       await shareService.deleteShare(id);
       await load();
     } catch (err) {
       if (err instanceof ApiError) alert(err.message);
-      else alert('撤销失败');
+      else alert(t('revokeFailed'));
     }
   };
 
   return (
     <section style={{ marginTop: 24 }}>
-      <h3>我的分享链接</h3>
+      <h3>{t('myShares')}</h3>
 
       <button
         type="button"
         onClick={() => setShowDialog(true)}
         disabled={!sharingEnabled}
-        title={!sharingEnabled ? '请先开启数据共享' : ''}
+        title={!sharingEnabled ? t('enableSharingFirst') : ''}
       >
-        + 创建分享链接
+        {t('createShareLink')}
       </button>
 
-      {loading && <p>加载中…</p>}
+      {loading && <p>{t('loading')}</p>}
       {error && <p style={{ color: '#c33' }}>{error}</p>}
 
       {!loading && shares.length === 0 && (
-        <p style={{ color: '#888' }}>还没有创建过分享链接。</p>
+        <p style={{ color: '#888' }}>{t('noShares')}</p>
       )}
 
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {shares.map(s => (
-          <li
-            key={s._id}
-            style={{
-              border: '1px solid #ddd',
-              borderRadius: 4,
-              padding: 12,
-              marginTop: 8,
-            }}
-          >
+          <li key={s._id} style={{ border: '1px solid #ddd', borderRadius: 4, padding: 12, marginTop: 8 }}>
             <div>
-              范围: {describeScope(s.scope)}
-              {s.hasPin ? '   PIN: 已设置' : ''}
+              {t('scope')}: {describeScope(s.scope)}
+              {s.hasPin ? `   ${t('pinSet')}` : ''}
             </div>
-            <div>有效期: {describeExpiresAt(s.expiresAt)}</div>
-            <div>创建于: {formatDate(s.createdAt)}</div>
-            <button
-              onClick={() => handleRevoke(s._id)}
-              style={{ marginTop: 8 }}
-            >
-              撤销
+            <div>{t('expiry')}: {describeExpiresAt(s.expiresAt)}</div>
+            <div>{t('createdAtLabel')}: {formatDate(s.createdAt)}</div>
+            <button onClick={() => handleRevoke(s._id)} style={{ marginTop: 8 }}>
+              {t('revoke')}
             </button>
           </li>
         ))}
