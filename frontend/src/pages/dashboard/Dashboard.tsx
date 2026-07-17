@@ -7,6 +7,7 @@ import reminderService, {
 } from '../../services/reminder/reminderService';
 import { useAuth } from '../../context/AuthContext';
 import { useT } from '../../i18n/useT';
+import i18n from '../../i18n';
 import './Dashboard.css';
 
 interface DashboardStats {
@@ -51,7 +52,7 @@ const Dashboard: React.FC = () => {
         if (tests.length > 0) {
           const dates = tests.map(t => new Date(t.date).getTime());
           const latest = new Date(Math.max(...dates));
-          latestTestDate = latest.toLocaleDateString('zh-CN', {
+          latestTestDate = latest.toLocaleDateString(i18n.language, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -88,7 +89,7 @@ const Dashboard: React.FC = () => {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -97,7 +98,7 @@ const Dashboard: React.FC = () => {
 
   const formatDueDateTime = (iso: string): string => {
     const d = new Date(iso);
-    return d.toLocaleString('zh-CN', {
+    return d.toLocaleString(i18n.language, {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',

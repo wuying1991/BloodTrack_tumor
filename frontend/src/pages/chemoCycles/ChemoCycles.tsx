@@ -8,6 +8,7 @@ import chemoCycleService, {
 import { ApiError } from '../../services/api/apiClient';
 import { translateApiError } from '../../services/api/errorMapper';
 import { useT } from '../../i18n/useT';
+import i18n from '../../i18n';
 import './ChemoCycles.css';
 
 type ViewMode = 'list' | 'add' | 'edit';
@@ -69,7 +70,7 @@ const ChemoCycles: React.FC = () => {
   const formatDate = (s?: string): string => {
     if (!s) return '-';
     const d = new Date(s);
-    return d.toLocaleDateString('zh-CN', {
+    return d.toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

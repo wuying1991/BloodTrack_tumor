@@ -3,6 +3,7 @@ import { Outlet, NavLink, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import OfflineIndicator from '../common/OfflineIndicator';
+import LanguageSwitcher from './LanguageSwitcher';
 import './Layout.css';
 
 const Layout: React.FC = () => {
@@ -38,6 +39,7 @@ const Layout: React.FC = () => {
               {user?.fullName?.charAt(0) || 'U'}
             </span>
             <span className="user-name">{user?.fullName}</span>
+            <LanguageSwitcher />
             <button onClick={logout} className="logout-button">
               {t('common:logout')}
             </button>

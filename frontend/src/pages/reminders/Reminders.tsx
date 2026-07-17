@@ -12,6 +12,7 @@ import {
   translateFieldError,
 } from '../../services/api/errorMapper';
 import { useT } from '../../i18n/useT';
+import i18n from '../../i18n';
 import './Reminders.css';
 
 type ViewMode = 'list' | 'add' | 'edit';
@@ -68,7 +69,7 @@ const formToCreatePayload = (f: FormData): ReminderCreateData => ({
 
 const formatDueDate = (iso: string): string => {
   const d = new Date(iso);
-  return d.toLocaleString('zh-CN', {
+  return d.toLocaleString(i18n.language, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
