@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useT } from '../../i18n/useT';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth/authService';
 import { ApiError } from '../../services/api/apiClient';
+import { translateApiError } from '../../services/api/errorMapper';
 import './Auth.css';
 
 const Login: React.FC = () => {
+  const t = useT('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,9 +21,7 @@ const Login: React.FC = () => {
   // Check if redirected due to session expiry
   const searchParams = new URLSearchParams(location.search);
   const expired = searchParams.get('expired');
-  const sessionExpiredMessage = expired
-    ? '会话已过期，请重新登录。 (Session expired, please login again)'
-    : '';
+  const sessionExpiredMessage = expired ? t('login.sessionExpired') : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,19 +40,15 @@ const Login: React.FC = () => {
         const from = (location.state as any)?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
       } else {
-        setError(
-          '登录失败，请稍后重试。 (Login failed, please try again later)'
-        );
+        setError(t('login.failedRetry'));
       }
     } catch (err: any) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        setError(translateApiError(err));
       } else if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
-        setError(
-          '登录失败，请检查您的邮箱和密码。 (Login failed, please check your email and password)'
-        );
+        setError(t('login.failedCheck'));
       }
     } finally {
       setIsLoading(false);
@@ -61,26 +58,26 @@ const Login: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>登录</h2>
+        <h2>{t('login.title')}</h2>
         {sessionExpiredMessage && (
           <div className="auth-warning">{sessionExpiredMessage}</div>
         )}
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">电子邮箱</label>
+            <label htmlFor="email">{t('login.emailLabel')}</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              placeholder="请输入您的邮箱"
+              placeholder={t('login.emailPlaceholder')}
               disabled={isLoading}
             />
           </div>
           <div className="form-group">
-            <label htmlFor="password">密码</label>
+            <label htmlFor="password">{t('login.passwordLabel')}</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -88,7 +85,7 @@ const Login: React.FC = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                placeholder="请输入您的密码"
+                placeholder={t('login.passwordPlaceholder')}
                 disabled={isLoading}
               />
               <button
@@ -96,9 +93,9 @@ const Login: React.FC = () => {
                 className="password-toggle"
                 onClick={() => setShowPassword(prev => !prev)}
                 disabled={isLoading}
-                aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                aria-label={showPassword ? t('login.hideAria') : t('login.showAria')}
               >
-                {showPassword ? '隐藏' : '显示'}
+                {showPassword ? t('login.hide') : t('login.show')}
               </button>
             </div>
           </div>
@@ -107,11 +104,11 @@ const Login: React.FC = () => {
             className="btn btn-primary btn-block"
             disabled={isLoading}
           >
-            {isLoading ? '登录中... (Logging in...)' : '登录'}
+            {isLoading ? t('login.submitting') : t('login.submit')}
           </button>
         </form>
         <div className="auth-footer">
-          还没有账号？ <Link to="/register">立即注册</Link>
+          {t('login.footerPrefix')} <Link to="/register">{t('login.registerLink')}</Link>
         </div>
       </div>
     </div>

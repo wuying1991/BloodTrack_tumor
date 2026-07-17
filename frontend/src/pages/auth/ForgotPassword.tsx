@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useT } from '../../i18n/useT';
 import authService from '../../services/auth/authService';
 import './Auth.css';
 
 const ForgotPassword: React.FC = () => {
+  const t = useT('auth');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -17,11 +19,9 @@ const ForgotPassword: React.FC = () => {
 
     try {
       await authService.forgotPassword(email);
-      setMessage(
-        '如果该邮箱已注册，密码重置链接已发送 (If email exists, reset link has been sent)'
-      );
+      setMessage(t('forgot.success'));
     } catch {
-      setError('发送失败，请稍后重试 (Failed to send, please try again later)');
+      setError(t('forgot.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -30,20 +30,20 @@ const ForgotPassword: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>忘记密码</h2>
-        <p className="auth-desc">输入您的注册邮箱，我们将发送密码重置链接</p>
+        <h2>{t('forgot.title')}</h2>
+        <p className="auth-desc">{t('forgot.desc')}</p>
         {message && <div className="auth-success">{message}</div>}
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">电子邮箱</label>
+            <label htmlFor="email">{t('forgot.emailLabel')}</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              placeholder="请输入您的注册邮箱"
+              placeholder={t('forgot.emailPlaceholder')}
               disabled={isLoading}
             />
           </div>
@@ -52,11 +52,11 @@ const ForgotPassword: React.FC = () => {
             className="btn btn-primary btn-block"
             disabled={isLoading}
           >
-            {isLoading ? '发送中...' : '发送重置链接'}
+            {isLoading ? t('forgot.submitting') : t('forgot.submit')}
           </button>
         </form>
         <div className="auth-footer">
-          <Link to="/login">返回登录</Link>
+          <Link to="/login">{t('forgot.backToLogin')}</Link>
         </div>
       </div>
     </div>
