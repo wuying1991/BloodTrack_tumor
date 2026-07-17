@@ -138,7 +138,7 @@
 | ~~L-P2~~ | ~~安全审计日志 (异常登录检测)~~ | 2天 | ✅ |
 | ~~L-P3~~ | ~~CI/CD + Docker~~ | 3天 | ✅ |
 | ~~L-P4~~ | ~~E2E 测试 (Playwright，原 Cypress)~~ | 3天 | ✅ |
-| L-P5 | i18n / 国际化 (i18next) | 2天 | ❌ |
+| L-P5 | i18n / 国际化 (i18next) | 3-4天 | 🟡 进行中 |
 | L-P6 | axios 升级到 1.x (CVE) | 0.1天 | ✅ |
 | L-P7 | JWT secret fallback 启动校验 (生产环境强制 env) | 0.1天 | ✅ |
 | L-P8 | 登录端点单独限流 (5/min vs 全局 100/15min) | 0.2天 | ✅ |
@@ -161,6 +161,17 @@
 ---
 
 ## 📅 变更日志
+
+### 2026-07-17（L-P5 i18n 国际化 - 进行中）
+- **设计文档 + 计划**：`docs/superpowers/specs/2026-07-17-i18n-design.md` + `plans/2026-07-17-i18n-implementation.md`。决策：zh-CN（默认）+ en-US；前端 i18n + 后端 error code（非 Accept-Language）。
+- **Phase 1 契约**：`UserSettings.language` 4 处同步（contracts / 前端 types / User model / validation），契约字段 optional 兼容历史用户；contract-validator 第 6 项（5/5 -> 6/6）。
+- **Phase 2 后端 error code**：`ApiError` 加 `code?`/`errorCodes?`（向后兼容）；6 controller 约 40 处 throw 加 code（18 code）；authController 8 个审计点加 `detailCode`/`detailParams`（保留 detail 向后兼容）；errorMiddleware 5 个 Mongoose/JWT 兜底加 code + 透传 code/errorCodes；app.ts 4 个限流 message 对象加 code；validation `runValidation`/`validate` 支持 codeMap，16 个 validator 全加平行 `errorCodes`（25 code）；`updateSettings` 持久化 language。
+- **Phase 3 前端 infra**：i18next v22 + react-i18next v12（v25 需 TS 5+，项目 TS 4.7.4 不兼容，降级）；`i18n/index.ts` 同步初始化（`initImmediate:false` + 声明 13 ns + `react.useSuspense:false`）；`setupTests.ts` 强制 zh-CN（jsdom navigator.language 默认 en-US 会误判）；`useT` 类型安全 hook（react-i18next v12 t() 返回 DefaultTFuncReturn 含 null，赋 string 报错）；`errorMapper.ts` `translateApiError`（code->翻译，回退 message）+ `translateFieldError`；`apiClient` ApiError 加 code?/errorCodes?。
+- **Phase 4 字符串抽取**（6/11 UI 命名空间完成）：layout+common / auth / dashboard / chemoCycle / reminders / analytics 全部 useT + t()，en-US 同步填全。analytics Nadir 科普卡片用拆分 key 保留 `<strong>`。已抽取页面的日期格式改用 `i18n.language`。`->` 箭头用 `{'->'}` 避免 JSX tsc 误判。
+- **Phase 5 语言切换器**：`LanguageSwitcher`（Layout header，中文/English 双按钮）+ `AuthContext.applyUserLanguage`（login/refreshUser 后应用 user.settings.language，手动 `lang` localStorage 覆盖优先）+ `formatDate.ts` util。切换语言即时生效：已抽取的 6 命名空间 + 错误码 + 日期均本地化。
+- **关键踩坑**：① i18next v25 类型需 TS 5+（降级 v22）；② jsdom navigator.language=en-US 误判（setupTests 强制 zh-CN）；③ react-i18next 命名空间 suspense 干扰 useEffect 时序（`useSuspense:false` + 声明 ns）；④ t() 返回类型含 null（useT 类型收敛）；⑤ Write 重写大文件易漏 useEffect（已补回）。
+- **未完成（5 命名空间待抽取）**：bloodTest（BloodTestForm/List/BloodTests + myelosuppression 耦合，19 测试选择器）、settings（Settings + SharesSection + CreateShareDialog + AuditLogSection，5 选择器）、share（SharedView + 6 子组件）、myelosuppression（util 重构为 gradeKey + 3 调用方）、audit（AuditLogSection detailCode 渲染）。这 5 命名空间未抽取的页面在 en-US 下仍显示中文（zh-CN 不受影响）。医学内容 en-US 待母语临床复核。
+- **质量门禁**：backend tsc ✅ + 6/6 contracts ✅ + 122/122 jest ✅；frontend tsc ✅ + 77/77 jest ✅ + lint 0 错误。分支 `feat/L-P5-i18n`，每个 phase/sub-chunk 单独 commit 全绿。
 
 ### 2026-07-16（L-P4 E2E 测试 - Playwright）
 - **工具决策**：DEVLOG 原写 Cypress，实际改用 **Playwright**。理由：本会话已用 Playwright + 系统 Edge 验证 PWA 离线（`setOffline`/`fromServiceWorker` 对 PWA 应用更合适），零额外浏览器依赖。已回写待办表 L-P4 行。
@@ -436,4 +447,4 @@
 - 第一次进度审查报告
 
 ---
-*最后更新: 2026-07-16*
+*最后更新: 2026-07-17*
