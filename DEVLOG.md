@@ -13,6 +13,7 @@
 | 前端页面 | 11 / 11 | 11 | 100% |
 | 后端测试 | 122 | 122 | ✅ 全绿 |
 | 前端测试 | 77 | 77 | ✅ 全绿 |
+| E2E 测试 | 12 | 12 | ✅ 全绿 (Playwright) |
 
 **项目总进度**: █████████████████████ 99%
 
@@ -136,8 +137,8 @@
 | ~~L-P1~~ | ~~PWA 离线支持~~ | 3天 | ✅ |
 | ~~L-P2~~ | ~~安全审计日志 (异常登录检测)~~ | 2天 | ✅ |
 | ~~L-P3~~ | ~~CI/CD + Docker~~ | 3天 | ✅ |
-| L-P4 | E2E 测试 (Cypress) | 3天 | ❌ |
-| L-P5 | i18n / 国际化 (i18next) | 2天 | ❌ |
+| ~~L-P4~~ | ~~E2E 测试 (Playwright，原 Cypress)~~ | 3天 | ✅ |
+| L-P5 | i18n / 国际化 (i18next) | 3-4天 | 🟡 进行中 |
 | L-P6 | axios 升级到 1.x (CVE) | 0.1天 | ✅ |
 | L-P7 | JWT secret fallback 启动校验 (生产环境强制 env) | 0.1天 | ✅ |
 | L-P8 | 登录端点单独限流 (5/min vs 全局 100/15min) | 0.2天 | ✅ |
@@ -161,6 +162,27 @@
 
 ## 📅 变更日志
 
+### 2026-07-17（L-P5 i18n 国际化 - 进行中）
+- **设计文档 + 计划**：`docs/superpowers/specs/2026-07-17-i18n-design.md` + `plans/2026-07-17-i18n-implementation.md`。决策：zh-CN（默认）+ en-US；前端 i18n + 后端 error code（非 Accept-Language）。
+- **Phase 1 契约**：`UserSettings.language` 4 处同步（contracts / 前端 types / User model / validation），契约字段 optional 兼容历史用户；contract-validator 第 6 项（5/5 -> 6/6）。
+- **Phase 2 后端 error code**：`ApiError` 加 `code?`/`errorCodes?`（向后兼容）；6 controller 约 40 处 throw 加 code（18 code）；authController 8 个审计点加 `detailCode`/`detailParams`（保留 detail 向后兼容）；errorMiddleware 5 个 Mongoose/JWT 兜底加 code + 透传 code/errorCodes；app.ts 4 个限流 message 对象加 code；validation `runValidation`/`validate` 支持 codeMap，16 个 validator 全加平行 `errorCodes`（25 code）；`updateSettings` 持久化 language。
+- **Phase 3 前端 infra**：i18next v22 + react-i18next v12（v25 需 TS 5+，项目 TS 4.7.4 不兼容，降级）；`i18n/index.ts` 同步初始化（`initImmediate:false` + 声明 13 ns + `react.useSuspense:false`）；`setupTests.ts` 强制 zh-CN（jsdom navigator.language 默认 en-US 会误判）；`useT` 类型安全 hook（react-i18next v12 t() 返回 DefaultTFuncReturn 含 null，赋 string 报错）；`errorMapper.ts` `translateApiError`（code->翻译，回退 message）+ `translateFieldError`；`apiClient` ApiError 加 code?/errorCodes?。
+- **Phase 4 字符串抽取**（6/11 UI 命名空间完成）：layout+common / auth / dashboard / chemoCycle / reminders / analytics 全部 useT + t()，en-US 同步填全。analytics Nadir 科普卡片用拆分 key 保留 `<strong>`。已抽取页面的日期格式改用 `i18n.language`。`->` 箭头用 `{'->'}` 避免 JSX tsc 误判。
+- **Phase 5 语言切换器**：`LanguageSwitcher`（Layout header，中文/English 双按钮）+ `AuthContext.applyUserLanguage`（login/refreshUser 后应用 user.settings.language，手动 `lang` localStorage 覆盖优先）+ `formatDate.ts` util。切换语言即时生效：已抽取的 6 命名空间 + 错误码 + 日期均本地化。
+- **关键踩坑**：① i18next v25 类型需 TS 5+（降级 v22）；② jsdom navigator.language=en-US 误判（setupTests 强制 zh-CN）；③ react-i18next 命名空间 suspense 干扰 useEffect 时序（`useSuspense:false` + 声明 ns）；④ t() 返回类型含 null（useT 类型收敛）；⑤ Write 重写大文件易漏 useEffect（已补回）。
+- **未完成（5 命名空间待抽取）**：bloodTest（BloodTestForm/List/BloodTests + myelosuppression 耦合，19 测试选择器）、settings（Settings + SharesSection + CreateShareDialog + AuditLogSection，5 选择器）、share（SharedView + 6 子组件）、myelosuppression（util 重构为 gradeKey + 3 调用方）、audit（AuditLogSection detailCode 渲染）。这 5 命名空间未抽取的页面在 en-US 下仍显示中文（zh-CN 不受影响）。医学内容 en-US 待母语临床复核。
+- **质量门禁**：backend tsc ✅ + 6/6 contracts ✅ + 122/122 jest ✅；frontend tsc ✅ + 77/77 jest ✅ + lint 0 错误。分支 `feat/L-P5-i18n`，每个 phase/sub-chunk 单独 commit 全绿。
+
+### 2026-07-16（L-P4 E2E 测试 - Playwright）
+- **工具决策**：DEVLOG 原写 Cypress，实际改用 **Playwright**。理由：本会话已用 Playwright + 系统 Edge 验证 PWA 离线（`setOffline`/`fromServiceWorker` 对 PWA 应用更合适），零额外浏览器依赖。已回写待办表 L-P4 行。
+- **结构**：新建顶层 `e2e/` 包（独立 `package.json`/`tsconfig`，与前端 CRA / 后端 jest 解耦）。`playwright.config.ts`（baseURL :3000、chromium、workers 1、60s 超时、html+list 报告）；`helpers/api.ts`（注册/建血常规/建分享/开数据共享，唯一邮箱隔离）；`fixtures/auth.ts`（`authenticatedPage` fixture：API 注册 + 注入 4 个 localStorage key 实现确定性登录，`beforeEach` 屏蔽 Google Fonts）；`run.sh`（建栈+等健康+跑测试+拆栈）。
+- **12 个用例**：auth（注册/登录/错密码/登出 4）、blood-tests CRUD（增/异常标记/改/删 4）、share（viewer 无 PIN 跨 fresh context / Settings UI 创建 2）、offline（离线 reload 缓存回源+指示器 / 断网指示器 2）。全链路 `run.sh` 实跑 16.3s 全绿。
+- **顺带修一个应用 bug**：E2E 发现错密码登录时 `apiClient` 的 401 拦截器把所有 401 当「token 过期」处理 -> 无 refreshToken（未登录态）时重定向 `/login?expired=1` 显示「会话已过期」而非「邮箱或密码错误」。修复：无 refreshToken 时直接抛原始错误给调用方（Login 表单显示正确错误），不重定向。前端 tsc ✅、jest 77/77 ✅。
+- **E2E 基础设施**：后端 `app.ts` 加 `RATE_LIMIT_DISABLED` env 开关（E2E 单 IP 高并发+CI 重试会打爆 100/15min 全局限流）；`e2e/docker-compose.e2e.yml` override 设置该开关；`run.sh` 用 `docker compose -f docker-compose.yml -f e2e/docker-compose.e2e.yml up --build`。`fixtures/auth.ts` beforeEach 屏蔽 Google Fonts（跨源、慢网络下挂起拖慢 page load 事件）。
+- **CI**：`.github/workflows/ci.yml` 加 `e2e` job（`npm ci` + `playwright install --with-deps chromium` + `bash e2e/run.sh` + 失败上传 `playwright-report` artifact）。GitHub runner 自带 Docker、Docker Hub 可达。
+- **质量门禁**：E2E 12/12 ✅、后端 tsc ✅ + jest 122/122 ✅、前端 tsc ✅ + jest 77/77 ✅ + lint 0 错误、e2e tsc ✅。
+- **未做**：未在真实 GitHub Actions 跑过 e2e job（本机无 push 权限验证），配置语法靠本地 `run.sh` 实跑验证；首次 push 后 CI 会实跑。
+
 ### 2026-07-16（L-P1 PWA 离线支持收尾）
 - **Service Worker** (`public/sw.js`)：自定义 SW，零额外依赖。install 缓存 app shell（`/`、`/index.html`、`/manifest.json`）+ `skipWaiting`；activate 清旧缓存 + `clients.claim`；fetch 分流——同源 GET 才处理，`/api/` 走 network-first（失败回退缓存，成功响应 clone 入缓存），静态资源走 cache-first 回退网络。
 - **SW 注册** (`src/index.tsx`)：仅 `production` 注册（CRA dev server HMR 与 SW 冲突），`load` 事件后 `navigator.serviceWorker.register('/sw.js')`。
@@ -171,7 +193,17 @@
 - **测试**：新增 `OfflineIndicator.test.tsx` 3 用例（联网不渲染 / 断网渲染提示 / 恢复联网后消失），dispatchEvent 用 `act()` 包裹确保状态 flush。
 - **顺手修既存 lint**：`npm run lint:fix` 修掉 `AuditLogSection.tsx` / `Settings.tsx` / `index.tsx` 的 prettier 格式错误（长行未折行 + `arrowParens`），lint 从 10 errors 降到 0 errors（剩 15 个既存 `no-explicit-any` 警告，exit 0）。
 - **质量门禁**：前端 tsc ✅ / lint 0 错误 / jest 77/77（74+3）✅；后端 tsc ✅ / jest 122/122 ✅。
-- **未做**：Docker 手动验证（spec §6 五步：登录浏览触发缓存 -> SW 注册 -> Offline 刷新 -> 离线提示条）。本机未装 Docker/WSL，待装 Docker Desktop 后补；自动化测试已覆盖组件逻辑。
+- **Docker 验证（2026-07-16 补，原「未做」项）**：用户装好 Docker Desktop + WSL 后补验。本机 Docker Hub 不通（国内网络），改从 DaoCloud 镜像 (`docker.m.daocloud.io`) 拉取 `mongo:7` / `node:20-alpine` / `nginx:alpine` 三张基础镜像并 `docker tag` 回标准名，compose / Dockerfile `FROM` 无需改动即可本地解析。
+  - **首次本地构建成功**（此前 DEVLOG 多次标注「未本地验证 docker build」）：`docker compose up --build -d` 三服务全部 Up，mongo healthy，backend 日志「MongoDB Connected Successfully / Server running in production mode on port 5000」。
+  - **服务端可程序化验证项（全部 ✅）**：① `/api/health` 200；② 前端 `/` 200 (text/html)；③ **`/sw.js` 200 且 MIME=`application/javascript`**（SW 注册必需，1811 字节）；④ `/manifest.json` 200 (application/json)，`start_url:/` + `display:standalone` + `theme_color:#2563eb` + `icon.svg` `any maskable`；⑤ `/icon.svg` 200 (image/svg+xml)；⑥ SPA fallback：`/dashboard` 等深路径回退 index.html 200；⑦ 生产 JS bundle 含 SW 注册代码（`serviceWorker in navigator` 守卫 + `load` 事件 + `register("/sw.js").catch(...)`）；⑧ 全链路 API：注册(签发 JWT) -> 建血常规(`isAbnormal` 自动判定生效) -> 列表(带分页) -> 登录 -> 无 token 401；⑨ **中文 UTF-8 完整性**：`fullName:"张三丰"` 以 UTF-8 文件 `--data-binary @file` 发送，响应字节原样回显 `e5bc a0e4 b889 e4b8 b0`，DB 存储无损（inline `-d` 中文在 Git Bash/中文 Windows 下会被本地代码页破坏，属测试工具链问题非应用 bug）。
+  - **spec §6 浏览器点验（2026-07-16 Playwright 自动化）**：在隔离临时目录装 Playwright（npmmirror 源，跳过浏览器下载），用系统自带 Edge（`channel:'msedge'`）headless 驱动。API 注册账号 + 注入 localStorage（`authToken/refreshToken/user/tokenExpiry`）实现确定性登录（`apiClient` 直接读 `localStorage.authToken`，无需 UI 表单）。结果：
+    - ✅ **SW 注册并激活**：scope `http://localhost:3000/`，state `activated`，`navigator.serviceWorker.controller=true`。
+    - ✅ **离线 app shell 由 SW 缓存回源**：断网 reload `/blood-tests`，文档请求 `response.fromServiceWorker()=true`，页面渲染出完整外壳（侧边栏 仪表板/血常规记录/化疗周期/数据分析/提醒管理/设置 + 用户名 + 登出）。
+    - ✅ **离线指示器渲染**：`.offline-indicator` 出现，文案「⚠️ 您当前处于离线状态，仅可查看已缓存的数据」。
+    - ❌ **离线 API 数据未缓存**：`http://localhost:5000/api/blood-tests?page=1&limit=10` 断网后 `net::ERR_INTERNET_DISCONNECTED`，列表区显示「Network error. Please check your connection. 重试」。
+  - **根因（重要发现）**：`sw.js` fetch handler 显式只处理同源 GET（`url.origin !== self.location.origin` 直接 return）。Docker standalone 部署前端 `:3000`、后端 `:5000` 跨源，bundle 内 `REACT_APP_API_URL=http://localhost:5000/api`，故 SW 从不拦截/缓存 API 响应（在线时 `api.fromServiceWorker()=false` 亦印证）。结果：离线只有 app shell 可用，API 数据全部失败。生产部署走反向代理（DEPLOY.md §3，`/api` 同源 → backend）时 API 即同源，SW 会缓存 GET，离线数据可用--即 PWA 离线数据承诺在生产架构下成立，仅 Docker standalone 跨源配置下不成立。
+  - **已修复（同会话，用户选「nginx /api 反代」方案）**：① `frontend/nginx.conf` 加 `location /api/ { proxy_pass http://backend:5000; ... }` 反代 + 转发 `X-Forwarded-For/X-Real-IP/Host`；② `backend/src/app.ts` 加 `app.set('trust proxy', production?1:false)`，使 `req.ip` 在 nginx 后仍取真实客户端 IP（全局/登录限流按 IP 计数、审计日志新 IP 检测不退化）；③ `docker-compose.yml` + `frontend/Dockerfile` 的 `REACT_APP_API_URL` 默认改 `/api`（同源相对）。本地 dev（`npm start`，无 nginx）仍用 `.env.example` 的 `http://localhost:5000/api` 直连后端，不受影响。
+  - **修复后复验（Playwright 重跑，全 4 项 PASS）**：SW 注册激活 ✅ / 离线 app shell 由 SW 缓存回源 ✅ / **离线 API 数据由 SW 缓存回源 ✅**（`/api/blood-tests` 断网 reload `fromServiceWorker()=true`、status 200，列表区渲染出缓存数据「2026/07/15 异常 3.20↓ 4.10 110.00 120.00」，不再是「Network error」）/ 离线指示器 ✅。后端 tsc ✅、jest 122/122 ✅（trust proxy 仅 production 生效，test 环境不受影响）。
 
 ### 2026-07-15（L-P2 安全审计日志 + 异常登录检测）
 - **AuditLog Model**: `user/action/success/ip/userAgent/detail/isAnomaly/anomalyType`，TTL 索引 90 天自动清理；`{user,createdAt}` + `{ip,action,createdAt}` 复合索引
@@ -415,4 +447,4 @@
 - 第一次进度审查报告
 
 ---
-*最后更新: 2026-07-16*
+*最后更新: 2026-07-17*

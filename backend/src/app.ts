@@ -14,11 +14,18 @@ import { errorHandler, notFoundHandler } from './middlewares/errorMiddleware';
 
 const app: Application = express();
 
+// 生产环境运行在反向代理(nginx)后：信任 1 跳，使 req.ip 取真实客户端 IP
+// （全局/登录限流按 IP 计数、审计日志新 IP 检测都依赖此）。dev/test 直连后端不信任。
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
+
 // Security middleware
 app.use(helmet());
 
 // 测试环境跳过限流：避免集成测试 30 个用例打爆 5/min 阈值
 const isTest = process.env.NODE_ENV === 'test';
+// E2E (Playwright) 跑全链路 + 重试，单 IP 短时间大量请求，显式开关关闭限流
+const rateLimitDisabled = process.env.RATE_LIMIT_DISABLED === 'true';
+const skipRateLimit = () => isTest || rateLimitDisabled;
 
 // 全局限流: 每 IP 每 15 分钟 100 次（开发环境放宽到 2000，避免本地联调撞限流）
 const limiter = rateLimit({
@@ -26,8 +33,8 @@ const limiter = rateLimit({
   max: isTest ? 100 : (process.env.NODE_ENV === 'development' ? 2000 : 100),
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => isTest,
-  message: { success: false, message: '请求过于频繁，请稍后重试 (Too many requests, please try again later)' },
+  skip: skipRateLimit,
+  message: { success: false, code: 'RATE_LIMIT_GLOBAL', message: '请求过于频繁，请稍后重试 (Too many requests, please try again later)' },
 });
 
 // 敏感端点限流: 撞库/暴力破解防护，每 IP 每分钟 5 次
@@ -37,8 +44,8 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // 成功登录不计入，避免正常用户被锁
-  skip: () => isTest,
-  message: { success: false, message: '尝试次数过多，请稍后再试 (Too many attempts, please try again later)' },
+  skip: skipRateLimit,
+  message: { success: false, code: 'RATE_LIMIT_AUTH', message: '尝试次数过多，请稍后再试 (Too many attempts, please try again later)' },
 });
 
 // 公开 share API 限流: 30 次/分钟/IP（meta + verify + 3 资源 = 5 个请求/次访问，余量充足）
@@ -47,8 +54,8 @@ const publicShareLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => isTest,
-  message: { success: false, message: '请求过于频繁 (Too many requests)' },
+  skip: skipRateLimit,
+  message: { success: false, code: 'RATE_LIMIT_SHARE', message: '请求过于频繁 (Too many requests)' },
 });
 
 // PIN verify 端点单独限流: 5 次/分钟/IP+token, 跳过成功
@@ -59,8 +66,8 @@ const pinVerifyLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? '')}:${req.params?.token ?? 'no-token'}`,
-  skip: () => isTest,
-  message: { success: false, message: '尝试过多，请稍后再试 (Too many attempts)' },
+  skip: skipRateLimit,
+  message: { success: false, code: 'RATE_LIMIT_PIN', message: '尝试过多，请稍后再试 (Too many attempts)' },
 });
 
 app.use('/api/', limiter);

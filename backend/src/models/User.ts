@@ -13,6 +13,7 @@ export interface IUser extends Document {
   settings: {
     notifications: { email: boolean; push: boolean };
     dataSharing: { enabled: boolean; sharedWith: string[] };
+    language?: 'zh-CN' | 'en-US';
   };
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -35,7 +36,8 @@ const userSchema = new Schema<IUser>(
       dataSharing: {
         enabled: { type: Boolean, default: false },
         sharedWith: [{ type: String }]
-      }
+      },
+      language: { type: String, enum: ['zh-CN', 'en-US'], default: 'zh-CN' }
     }
   },
   { timestamps: true }

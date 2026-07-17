@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useT } from '../../i18n/useT';
 import authService from '../../services/auth/authService';
 import './Auth.css';
 
 const ResetPassword: React.FC = () => {
+  const t = useT('auth');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
   const [password, setPassword] = useState('');
@@ -18,24 +20,22 @@ const ResetPassword: React.FC = () => {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致 (Passwords do not match)');
+      setError(t('reset.passwordMismatch'));
       return;
     }
 
     if (password.length < 6) {
-      setError('密码至少需要6个字符 (Password must be at least 6 characters)');
+      setError(t('reset.passwordTooShort'));
       return;
     }
 
     setIsLoading(true);
     try {
       await authService.resetPassword(token, password);
-      setMessage('密码已成功重置！即将跳转到登录页面...');
+      setMessage(t('reset.success'));
       setTimeout(() => navigate('/login'), 2000);
     } catch {
-      setError(
-        '重置失败，令牌可能已过期 (Reset failed, token may have expired)'
-      );
+      setError(t('reset.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -45,10 +45,10 @@ const ResetPassword: React.FC = () => {
     return (
       <div className="auth-container">
         <div className="auth-card">
-          <h2>无效链接</h2>
-          <div className="auth-error">重置链接无效，请重新申请密码重置</div>
+          <h2>{t('reset.invalidTitle')}</h2>
+          <div className="auth-error">{t('reset.invalidDesc')}</div>
           <div className="auth-footer">
-            <Link to="/forgot-password">重新申请</Link>
+            <Link to="/forgot-password">{t('reset.reapply')}</Link>
           </div>
         </div>
       </div>
@@ -58,33 +58,33 @@ const ResetPassword: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>重置密码</h2>
+        <h2>{t('reset.title')}</h2>
         {message && <div className="auth-success">{message}</div>}
         {error && <div className="auth-error">{error}</div>}
         {!message && (
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="password">新密码</label>
+              <label htmlFor="password">{t('reset.passwordLabel')}</label>
               <input
                 type="password"
                 id="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                placeholder="请输入新密码（至少6个字符）"
+                placeholder={t('reset.passwordPlaceholder')}
                 disabled={isLoading}
                 minLength={6}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="confirmPassword">确认密码</label>
+              <label htmlFor="confirmPassword">{t('reset.confirmLabel')}</label>
               <input
                 type="password"
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
-                placeholder="请再次输入新密码"
+                placeholder={t('reset.confirmPlaceholder')}
                 disabled={isLoading}
               />
             </div>
@@ -93,7 +93,7 @@ const ResetPassword: React.FC = () => {
               className="btn btn-primary btn-block"
               disabled={isLoading}
             >
-              {isLoading ? '重置中...' : '重置密码'}
+              {isLoading ? t('reset.submitting') : t('reset.submit')}
             </button>
           </form>
         )}

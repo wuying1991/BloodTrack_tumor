@@ -5,21 +5,37 @@ import { ApiError } from '../utils/ApiError';
 /**
  * Validation Middleware
  * Handles request validation using express-validator
+ *
+ * L-P5: runValidation 接受可选 codeMap (field -> 错误码)，validate() 平行构建
+ * errorCodes map。前端优先用 errorCodes[field] 翻译，回退到 errors[field] 双语文案。
  */
 
 // Middleware to check validation results
-export const validate = (req: Request, res: Response, next: NextFunction): void => {
+export const validate = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  codeMap?: Record<string, string>
+): void => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
     const errorMap: Record<string, string> = {};
+    const errorCodes: Record<string, string> = {};
     errors.array().forEach((error: any) => {
       if (error.path) {
         errorMap[error.path] = error.msg;
+        if (codeMap?.[error.path]) {
+          errorCodes[error.path] = codeMap[error.path];
+        }
       }
     });
 
-    const error = ApiError.validation('Validation failed', errorMap);
+    const error = ApiError.validation(
+      'Validation failed',
+      errorMap,
+      Object.keys(errorCodes).length > 0 ? errorCodes : undefined
+    );
     return next(error);
   }
 
@@ -27,11 +43,14 @@ export const validate = (req: Request, res: Response, next: NextFunction): void 
 };
 
 // Helper to run validations
-export const runValidation = (validations: ValidationChain[]) => {
+export const runValidation = (
+  validations: ValidationChain[],
+  codeMap?: Record<string, string>
+) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Run all validations
     await Promise.all(validations.map(validation => validation.run(req)));
-    validate(req, res, next);
+    validate(req, res, next, codeMap);
   };
 };
 
@@ -64,7 +83,13 @@ export const validateRegister = runValidation([
     .optional()
     .isIn(['male', 'female', 'other', 'prefer-not-to-say'])
     .withMessage('请选择有效的性别选项 (Please select a valid gender option)'),
-]);
+], {
+  email: 'VALIDATION_EMAIL_FORMAT',
+  password: 'VALIDATION_PASSWORD_STRENGTH',
+  fullName: 'VALIDATION_FIELD_REQUIRED',
+  dateOfBirth: 'VALIDATION_DATE_FORMAT',
+  gender: 'VALIDATION_ENUM',
+});
 
 // User login validation
 export const validateLogin = runValidation([
@@ -75,7 +100,10 @@ export const validateLogin = runValidation([
   body('password')
     .notEmpty()
     .withMessage('请输入密码 (Password is required)'),
-]);
+], {
+  email: 'VALIDATION_EMAIL_FORMAT',
+  password: 'VALIDATION_PASSWORD_REQUIRED',
+});
 
 // Password reset request validation
 export const validateForgotPassword = runValidation([
@@ -83,7 +111,9 @@ export const validateForgotPassword = runValidation([
     .isEmail()
     .normalizeEmail()
     .withMessage('请输入有效的邮箱地址 (Please enter a valid email)'),
-]);
+], {
+  email: 'VALIDATION_EMAIL_FORMAT',
+});
 
 // Password reset validation
 export const validateResetPassword = runValidation([
@@ -99,7 +129,10 @@ export const validateResetPassword = runValidation([
       }
       return true;
     }),
-]);
+], {
+  password: 'VALIDATION_PASSWORD_STRENGTH',
+  confirmPassword: 'VALIDATION_PASSWORD_MATCH',
+});
 
 // Blood test data validation
 // Fields MUST match BloodTest model schema exactly
@@ -150,7 +183,17 @@ export const validateBloodTest = runValidation([
       }
       return true;
     }),
-]);
+], {
+  date: 'VALIDATION_DATE_FORMAT',
+  wbc: 'VALIDATION_NUMBER_POSITIVE',
+  rbc: 'VALIDATION_NUMBER_POSITIVE',
+  hgb: 'VALIDATION_NUMBER_POSITIVE',
+  plt: 'VALIDATION_NUMBER_POSITIVE',
+  neu: 'VALIDATION_NUMBER_POSITIVE',
+  lym: 'VALIDATION_NUMBER_POSITIVE',
+  notes: 'VALIDATION_TEXT',
+  chemoCycleId: 'VALIDATION_CHEMO_CYCLE_ID',
+});
 
 // Update validation - all fields optional (partial update)
 export const validateBloodTestUpdate = runValidation([
@@ -195,7 +238,17 @@ export const validateBloodTestUpdate = runValidation([
       }
       return true;
     }),
-]);
+], {
+  date: 'VALIDATION_DATE_FORMAT',
+  wbc: 'VALIDATION_NUMBER_POSITIVE',
+  rbc: 'VALIDATION_NUMBER_POSITIVE',
+  hgb: 'VALIDATION_NUMBER_POSITIVE',
+  plt: 'VALIDATION_NUMBER_POSITIVE',
+  neu: 'VALIDATION_NUMBER_POSITIVE',
+  lym: 'VALIDATION_NUMBER_POSITIVE',
+  notes: 'VALIDATION_TEXT',
+  chemoCycleId: 'VALIDATION_CHEMO_CYCLE_ID',
+});
 
 // Pagination validation
 export const validatePagination = runValidation([
@@ -209,14 +262,19 @@ export const validatePagination = runValidation([
     .isInt({ min: 1, max: 100 })
     .withMessage('每页数量必须在1-100之间 (Limit must be between 1-100)')
     .toInt(),
-]);
+], {
+  page: 'VALIDATION_PAGE',
+  limit: 'VALIDATION_LIMIT',
+});
 
 // ID parameter validation
 export const validateId = runValidation([
   param('id')
     .isMongoId()
     .withMessage('无效的资源ID (Invalid resource ID)'),
-]);
+], {
+  id: 'VALIDATION_INVALID_ID',
+});
 
 // Chemo cycle validation
 const hasMedicationContent = (m: Record<string, unknown> | undefined): boolean => {
@@ -297,7 +355,13 @@ export const validateChemoCycle = runValidation([
     .optional()
     .isString()
     .withMessage('医生备注必须是文本'),
-]);
+], {
+  regimenName: 'VALIDATION_REGIMEN_NAME',
+  startDate: 'VALIDATION_DATE_FORMAT',
+  endDate: 'VALIDATION_DATE_RANGE',
+  medications: 'VALIDATION_MEDICATIONS',
+  doctorNotes: 'VALIDATION_TEXT',
+});
 
 // Update validation - all fields optional
 export const validateChemoCycleUpdate = runValidation([
@@ -359,7 +423,13 @@ export const validateChemoCycleUpdate = runValidation([
     .optional()
     .isString()
     .withMessage('医生备注必须是文本'),
-]);
+], {
+  regimenName: 'VALIDATION_REGIMEN_NAME',
+  startDate: 'VALIDATION_DATE_FORMAT',
+  endDate: 'VALIDATION_DATE_RANGE',
+  medications: 'VALIDATION_MEDICATIONS',
+  doctorNotes: 'VALIDATION_TEXT',
+});
 
 // Profile update validation
 export const validateProfileUpdate = runValidation([
@@ -376,7 +446,11 @@ export const validateProfileUpdate = runValidation([
     .optional()
     .isIn(['male', 'female', 'other', 'prefer-not-to-say'])
     .withMessage('请选择有效的性别选项'),
-]);
+], {
+  fullName: 'VALIDATION_FIELD_REQUIRED',
+  dateOfBirth: 'VALIDATION_DATE_FORMAT',
+  gender: 'VALIDATION_ENUM',
+});
 
 // Settings update validation
 export const validateSettingsUpdate = runValidation([
@@ -396,7 +470,17 @@ export const validateSettingsUpdate = runValidation([
     .optional()
     .isArray()
     .withMessage('共享用户列表必须为数组'),
-]);
+  body('language')
+    .optional()
+    .isIn(['zh-CN', 'en-US'])
+    .withMessage('language 必须为 zh-CN 或 en-US (language must be zh-CN or en-US)'),
+], {
+  'notifications.email': 'VALIDATION_BOOLEAN',
+  'notifications.push': 'VALIDATION_BOOLEAN',
+  'dataSharing.enabled': 'VALIDATION_BOOLEAN',
+  'dataSharing.sharedWith': 'VALIDATION_ARRAY',
+  language: 'VALIDATION_LANGUAGE',
+});
 
 // Change password validation
 export const validateChangePassword = runValidation([
@@ -415,14 +499,20 @@ export const validateChangePassword = runValidation([
       }
       return true;
     }),
-]);
+], {
+  currentPassword: 'VALIDATION_PASSWORD_REQUIRED',
+  newPassword: 'VALIDATION_PASSWORD_STRENGTH',
+  confirmPassword: 'VALIDATION_PASSWORD_MATCH',
+});
 
 // Delete account validation - 仅需密码二次确认
 export const validateDeleteAccount = runValidation([
   body('password')
     .notEmpty()
     .withMessage('请输入密码以确认删除 (Password is required to confirm deletion)'),
-]);
+], {
+  password: 'VALIDATION_PASSWORD_REQUIRED',
+});
 
 // ============================================================
 // Reminder validation
@@ -436,6 +526,17 @@ const REMINDER_TYPES = [
   'custom',
 ];
 const REMINDER_RECURRENCES = ['none', 'daily', 'weekly', 'monthly'];
+
+const REMINDER_CODES = {
+  title: 'VALIDATION_TITLE',
+  description: 'VALIDATION_TEXT',
+  type: 'VALIDATION_ENUM',
+  dueDate: 'VALIDATION_DATE_FORMAT',
+  recurrence: 'VALIDATION_ENUM',
+  enabled: 'VALIDATION_BOOLEAN',
+  'notifications.email': 'VALIDATION_BOOLEAN',
+  'notifications.push': 'VALIDATION_BOOLEAN',
+};
 
 export const validateReminderCreate = runValidation([
   body('title')
@@ -471,7 +572,7 @@ export const validateReminderCreate = runValidation([
     .optional()
     .isBoolean()
     .withMessage('推送通知必须为布尔值'),
-]);
+], REMINDER_CODES);
 
 // Update: 全部字段 optional
 export const validateReminderUpdate = runValidation([
@@ -514,7 +615,7 @@ export const validateReminderUpdate = runValidation([
     .optional()
     .isBoolean()
     .withMessage('推送通知必须为布尔值'),
-]);
+], { ...REMINDER_CODES, completed: 'VALIDATION_BOOLEAN' });
 
 // ============================================================
 // Share validation (M-P4 数据共享)
@@ -546,6 +647,13 @@ export const validateShareCreate = runValidation([
     .optional({ nullable: true, checkFalsy: true })
     .matches(/^\d{4,6}$/)
     .withMessage('PIN 必须为 4–6 位数字'),
-]);
+], {
+  scope: 'VALIDATION_SCOPE',
+  'scope.bloodTests': 'VALIDATION_BOOLEAN',
+  'scope.chemoCycles': 'VALIDATION_BOOLEAN',
+  'scope.analytics': 'VALIDATION_BOOLEAN',
+  expiresIn: 'VALIDATION_ENUM',
+  pin: 'VALIDATION_PIN_FORMAT',
+});
 
 export default validate;

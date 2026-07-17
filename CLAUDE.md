@@ -116,6 +116,7 @@ When adding or changing API fields, update **all three** locations: `contracts/i
 
 - **Backend**: Jest + ts-jest + supertest + mongodb-memory-server. Tests live in `src/__tests__/` — `contracts/` for API shape tests, `integration/` for full request-through-middleware tests
 - **Frontend**: React Testing Library + jest. Components are tested via `render()` + `screen.getBy*()` + `userEvent`
+- **E2E** (`e2e/`, Playwright): runs against the full Docker stack via `bash e2e/run.sh` (builds stack with rate limiting disabled via `e2e/docker-compose.e2e.yml`, waits for health, runs 12 specs, tears down). Specs: auth / blood-tests CRUD / share viewer / PWA offline. `fixtures/auth.ts` registers a user via API + injects localStorage for deterministic login; `beforeEach` blocks Google Fonts. If chromium download blocked: `E2E_BROWSER_CHANNEL=msedge npx playwright test`. See `e2e/README.md`.
 - Mock pattern: `jest.mock()` for service modules; use `mockResolvedValueOnce()` per test, reset with `jest.clearAllMocks()` in `beforeEach`
 - When `clearAllMocks` clears a jest.mock factory default, re-set it in `beforeEach` (e.g., `reminderService.getUpcoming` defaults to `{ success: true, data: [] }`)
 - `useAuth` mock user object must be a module-level constant (hoisted) to avoid useEffect infinite re-render from reference changes

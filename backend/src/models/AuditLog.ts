@@ -19,6 +19,8 @@ export interface IAuditLog extends Document {
   ip: string;
   userAgent: string;
   detail?: string;
+  detailCode?: string;
+  detailParams?: Record<string, unknown>;
   isAnomaly: boolean;
   anomalyType?: 'new_ip' | 'brute_force';
   createdAt: Date;
@@ -32,6 +34,8 @@ const auditLogSchema = new Schema<IAuditLog>(
     ip: { type: String, required: true, default: '' },
     userAgent: { type: String, default: '' },
     detail: { type: String },
+    detailCode: { type: String },
+    detailParams: { type: Schema.Types.Mixed },
     isAnomaly: { type: Boolean, default: false },
     anomalyType: { type: String, enum: ['new_ip', 'brute_force'] },
   },

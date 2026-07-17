@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import { User } from '../types';
 import authService from '../services/auth/authService';
+import i18n from '../i18n';
 
 interface AuthContextType {
   user: User | null;
@@ -37,6 +38,15 @@ interface AuthProviderProps {
 // Token expiration check (in milliseconds)
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh 5 minutes before expiry
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // Auto logout after 30 minutes of inactivity
+
+// 登录/刷新资料后，若用户偏好语言与当前不同且未手动覆盖，则切换 (L-P5)
+function applyUserLanguage(user: User | null): void {
+  const lang = user?.settings?.language;
+  const manualOverride = localStorage.getItem('lang');
+  if (lang && !manualOverride && lang !== i18n.language) {
+    void i18n.changeLanguage(lang);
+  }
+}
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -182,6 +192,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setAccessToken(newAccessToken);
       setRefreshToken(newRefreshToken);
       setUser(newUser);
+      applyUserLanguage(newUser);
 
       localStorage.setItem('authToken', newAccessToken);
       localStorage.setItem('refreshToken', newRefreshToken);
@@ -269,6 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.getProfile();
       if (response.success) {
         setUser(response.data);
+        applyUserLanguage(response.data);
         localStorage.setItem('user', JSON.stringify(response.data));
       }
     } catch {

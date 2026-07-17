@@ -112,7 +112,7 @@ export const getReminderById = asyncHandler(
     });
 
     if (!reminder) {
-      throw ApiError.notFound('提醒未找到 (Reminder not found)');
+      throw ApiError.notFound('提醒未找到 (Reminder not found)', 'REMINDER_NOT_FOUND');
     }
 
     res.json({
@@ -138,7 +138,7 @@ export const updateReminder = asyncHandler(
     );
 
     if (!updated) {
-      throw ApiError.notFound('提醒未找到 (Reminder not found)');
+      throw ApiError.notFound('提醒未找到 (Reminder not found)', 'REMINDER_NOT_FOUND');
     }
 
     res.json({
@@ -159,7 +159,7 @@ export const completeReminder = asyncHandler(
     })) as IReminder | null;
 
     if (!reminder) {
-      throw ApiError.notFound('提醒未找到 (Reminder not found)');
+      throw ApiError.notFound('提醒未找到 (Reminder not found)', 'REMINDER_NOT_FOUND');
     }
 
     reminder.lastTriggeredAt = reminder.dueDate;
@@ -193,7 +193,7 @@ export const deleteReminder = asyncHandler(
     });
 
     if (result.deletedCount === 0) {
-      throw ApiError.notFound('提醒未找到 (Reminder not found)');
+      throw ApiError.notFound('提醒未找到 (Reminder not found)', 'REMINDER_NOT_FOUND');
     }
 
     res.json({

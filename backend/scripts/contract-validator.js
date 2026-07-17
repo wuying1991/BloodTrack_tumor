@@ -202,6 +202,48 @@ check('ChemoCycle 类型定义三处一致 (M-P7)', () => {
 });
 
 // ============================================================
+// 检查 6: UserSettings.language 四处一致 (L-P5)
+// ============================================================
+check('UserSettings.language 四处一致 (L-P5)', () => {
+  const errors = [];
+
+  // 6a. contracts/index.ts UserSettings
+  const contractsPath = path.join(ROOT, '..', 'contracts', 'index.ts');
+  const contractsContent = fs.readFileSync(contractsPath, 'utf-8');
+  const contractsSection = contractsContent.substring(
+    contractsContent.indexOf('export interface UserSettings {'),
+    contractsContent.indexOf('export type RegisterResponse')
+  );
+  if (!contractsSection.includes('language') || !contractsSection.includes("'zh-CN'") || !contractsSection.includes("'en-US'")) {
+    errors.push('contracts/index.ts UserSettings 缺少 language 字段 (zh-CN|en-US)');
+  }
+
+  // 6b. 前端 types/index.ts User.settings
+  const typesPath = path.join(ROOT, '..', 'frontend', 'src', 'types', 'index.ts');
+  const typesContent = fs.readFileSync(typesPath, 'utf-8');
+  if (!typesContent.includes("language?: 'zh-CN' | 'en-US'")) {
+    errors.push('前端 types/index.ts User.settings 缺少 language 字段');
+  }
+
+  // 6c. 后端 User Model schema
+  const modelPath = path.join(ROOT, 'src', 'models', 'User.ts');
+  const modelContent = fs.readFileSync(modelPath, 'utf-8');
+  if (!modelContent.includes("language: { type: String, enum: ['zh-CN', 'en-US'], default: 'zh-CN' }")) {
+    errors.push('backend/src/models/User.ts settings 缺少 language schema');
+  }
+
+  // 6d. 后端 validation
+  const valPath = path.join(ROOT, 'src', 'middlewares', 'validationMiddleware.ts');
+  const valContent = fs.readFileSync(valPath, 'utf-8');
+  const valSection = valContent.substring(valContent.indexOf('export const validateSettingsUpdate ='));
+  if (!valSection.includes("'language'") || !valSection.includes("'zh-CN'")) {
+    errors.push('validateSettingsUpdate 缺少 language 校验');
+  }
+
+  return errors;
+});
+
+// ============================================================
 // 输出报告
 // ============================================================
 console.log('========================================');

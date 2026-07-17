@@ -35,6 +35,7 @@ export interface User {
       enabled: boolean;
       sharedWith: string[];
     };
+    language?: 'zh-CN' | 'en-US';
   };
   createdAt?: string;
   updatedAt?: string;
@@ -245,6 +246,8 @@ export interface AuditLogEntry {
   ip: string;
   userAgent: string;
   detail?: string;
+  detailCode?: string;
+  detailParams?: Record<string, unknown>;
   isAnomaly: boolean;
   anomalyType?: AuditAnomalyType;
   createdAt: string;

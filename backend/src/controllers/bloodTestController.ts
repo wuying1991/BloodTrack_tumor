@@ -22,7 +22,7 @@ async function resolveChemoCycleId(
   if (body.chemoCycleId) {
     const cycle = await ChemoCycle.findOne({ _id: body.chemoCycleId, user: userId });
     if (!cycle) {
-      throw ApiError.badRequest('指定的化疗周期不存在或无权访问');
+      throw ApiError.badRequest('指定的化疗周期不存在或无权访问', undefined, 'CHEMO_CYCLE_NOT_FOUND');
     }
     return cycle._id;
   }
@@ -101,7 +101,7 @@ export const getBloodTestById = asyncHandler(async (req: AuthRequest, res: Respo
   const bloodTest = await BloodTest.findOne({ _id: req.params.id, user: req.user?._id });
 
   if (!bloodTest) {
-    throw ApiError.notFound('记录未找到 (Record not found)');
+    throw ApiError.notFound('记录未找到 (Record not found)', 'BLOOD_TEST_NOT_FOUND');
   }
 
   res.json({
@@ -135,7 +135,7 @@ export const updateBloodTest = asyncHandler(async (req: AuthRequest, res: Respon
   );
 
   if (!updatedTest) {
-    throw ApiError.notFound('记录未找到 (Record not found)');
+    throw ApiError.notFound('记录未找到 (Record not found)', 'BLOOD_TEST_NOT_FOUND');
   }
 
   res.json({
@@ -151,7 +151,7 @@ export const deleteBloodTest = asyncHandler(async (req: AuthRequest, res: Respon
   const result = await BloodTest.deleteOne({ _id: req.params.id, user: req.user?._id });
 
   if (result.deletedCount === 0) {
-    throw ApiError.notFound('记录未找到 (Record not found)');
+    throw ApiError.notFound('记录未找到 (Record not found)', 'BLOOD_TEST_NOT_FOUND');
   }
 
   res.json({
@@ -182,7 +182,7 @@ interface CycleLite {
 export const exportBloodTests = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
   const format = (req.query.format as string) || 'csv';
   if (format !== 'csv') {
-    throw ApiError.badRequest('暂只支持 csv 格式 (Only csv format supported)');
+    throw ApiError.badRequest('暂只支持 csv 格式 (Only csv format supported)', undefined, 'EXPORT_FORMAT_UNSUPPORTED');
   }
 
   const [tests, cycles] = await Promise.all([

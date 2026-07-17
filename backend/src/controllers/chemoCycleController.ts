@@ -145,7 +145,7 @@ export const getChemoCycleById = asyncHandler(async (req: AuthRequest, res: Resp
   const cycle = await ChemoCycle.findOne({ _id: req.params.id, user: req.user?._id });
 
   if (!cycle) {
-    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)');
+    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)', 'CHEMO_CYCLE_NOT_FOUND');
   }
 
   res.json({
@@ -161,7 +161,7 @@ export const updateChemoCycle = asyncHandler(async (req: AuthRequest, res: Respo
   const existing = await ChemoCycle.findOne({ _id: req.params.id, user: req.user?._id });
 
   if (!existing) {
-    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)');
+    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)', 'CHEMO_CYCLE_NOT_FOUND');
   }
 
   const update: Record<string, unknown> = { ...req.body };
@@ -181,7 +181,7 @@ export const updateChemoCycle = asyncHandler(async (req: AuthRequest, res: Respo
   );
 
   if (!updated) {
-    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)');
+    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)', 'CHEMO_CYCLE_NOT_FOUND');
   }
 
   await reconcileCycleBoundaries(req.user?._id);
@@ -200,7 +200,7 @@ export const deleteChemoCycle = asyncHandler(async (req: AuthRequest, res: Respo
   const result = await ChemoCycle.deleteOne({ _id: req.params.id, user: req.user?._id });
 
   if (result.deletedCount === 0) {
-    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)');
+    throw ApiError.notFound('化疗周期未找到 (Chemo cycle not found)', 'CHEMO_CYCLE_NOT_FOUND');
   }
 
   await reconcileCycleBoundaries(req.user?._id);

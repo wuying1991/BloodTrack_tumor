@@ -6,6 +6,9 @@ import chemoCycleService, {
   addDaysLocal,
 } from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
+import { translateApiError } from '../../services/api/errorMapper';
+import { useT } from '../../i18n/useT';
+import i18n from '../../i18n';
 import './ChemoCycles.css';
 
 type ViewMode = 'list' | 'add' | 'edit';
@@ -32,6 +35,7 @@ const emptyFormData = (): ChemoCycleFormData => {
 };
 
 const ChemoCycles: React.FC = () => {
+  const t = useT('chemoCycle');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [cycles, setCycles] = useState<ChemoCycle[]>([]);
   const [editingCycle, setEditingCycle] = useState<ChemoCycle | null>(null);
@@ -51,13 +55,12 @@ const ChemoCycles: React.FC = () => {
       }
     } catch (err) {
       const message =
-        err instanceof ApiError
-          ? err.message
-          : '加载失败，请检查网络连接后重试';
+        err instanceof ApiError ? translateApiError(err) : t('loadFailed');
       setError(message);
     } finally {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -67,7 +70,7 @@ const ChemoCycles: React.FC = () => {
   const formatDate = (s?: string): string => {
     if (!s) return '-';
     const d = new Date(s);
-    return d.toLocaleDateString('zh-CN', {
+    return d.toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -79,14 +82,14 @@ const ChemoCycles: React.FC = () => {
 
   const validateForm = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!formData.regimenName.trim()) errs.regimenName = '方案名称是必需的';
-    if (!formData.startDate) errs.startDate = '开始日期是必需的';
+    if (!formData.regimenName.trim()) errs.regimenName = t('errRegimenName');
+    if (!formData.startDate) errs.startDate = t('errStartDate');
     if (
       formData.startDate &&
       formData.endDate &&
       new Date(formData.endDate) < new Date(formData.startDate)
     ) {
-      errs.endDate = '结束日期必须晚于开始日期';
+      errs.endDate = t('errEndDate');
     }
 
     for (let i = 0; i < formData.medications.length; i++) {
@@ -97,7 +100,7 @@ const ChemoCycles: React.FC = () => {
         m.endDate &&
         new Date(m.endDate) < new Date(m.startDate)
       ) {
-        errs[`medication_${i}`] = '用药结束日期必须晚于开始日期';
+        errs[`medication_${i}`] = t('errMedEndDate');
       }
     }
 
@@ -122,17 +125,17 @@ const ChemoCycles: React.FC = () => {
         setViewMode('edit');
       }
     } catch {
-      setError('加载化疗周期详情失败');
+      setError(t('loadDetailFailed'));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('确定要删除这个化疗周期吗？此操作无法撤销。')) return;
+    if (!window.confirm(t('deleteConfirm'))) return;
     try {
       await chemoCycleService.deleteChemoCycle(id);
       await fetchCycles();
     } catch {
-      setError('删除失败，请重试');
+      setError(t('deleteFailed'));
     }
   };
 
@@ -152,7 +155,7 @@ const ChemoCycles: React.FC = () => {
       await fetchCycles();
       setViewMode('list');
     } catch {
-      setError(viewMode === 'edit' ? '更新失败，请重试' : '保存失败，请重试');
+      setError(viewMode === 'edit' ? t('updateFailed') : t('saveFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -209,7 +212,7 @@ const ChemoCycles: React.FC = () => {
     return (
       <div className="chemo-cycles loading">
         <div className="spinner" />
-        <p>加载中...</p>
+        <p>{t('loading')}</p>
       </div>
     );
   }
@@ -219,7 +222,7 @@ const ChemoCycles: React.FC = () => {
       <div className="chemo-cycles error">
         <div className="error-message">{error}</div>
         <button className="btn btn-secondary" onClick={fetchCycles}>
-          重试
+          {t('retry')}
         </button>
       </div>
     );
@@ -228,10 +231,10 @@ const ChemoCycles: React.FC = () => {
   return (
     <div className="chemo-cycles-page">
       <div className="page-header">
-        <h1>化疗周期</h1>
+        <h1>{t('title')}</h1>
         {viewMode === 'list' && (
           <button className="btn btn-primary" onClick={handleAddNew}>
-            添加周期
+            {t('addCycle')}
           </button>
         )}
       </div>
@@ -240,10 +243,8 @@ const ChemoCycles: React.FC = () => {
         <>
           {cycles.length === 0 ? (
             <div className="empty-state">
-              <p>暂无化疗周期记录</p>
-              <p className="empty-hint">
-                点击上方的"添加周期"按钮创建您的第一个化疗周期记录
-              </p>
+              <p>{t('empty')}</p>
+              <p className="empty-hint">{t('emptyHint')}</p>
             </div>
           ) : (
             <div className="cycle-list">
@@ -251,11 +252,13 @@ const ChemoCycles: React.FC = () => {
                 <div key={cycle._id} className="cycle-card">
                   <div className="cycle-header">
                     <div>
-                      <h3>{cycle.regimenName || '未命名方案'}</h3>
+                      <h3>{cycle.regimenName || t('unnamedRegimen')}</h3>
                       <div className="cycle-dates">
-                        <span className="cycle-date-label">周期：</span>
+                        <span className="cycle-date-label">
+                          {t('cycleLabel')}
+                        </span>
                         {formatDate(cycle.startDate)}
-                        <span className="cycle-date-sep">→</span>
+                        <span className="cycle-date-sep">{'->'}</span>
                         {formatDate(cycle.endDate)}
                       </div>
                     </div>
@@ -264,38 +267,39 @@ const ChemoCycles: React.FC = () => {
                         className="btn btn-sm btn-secondary"
                         onClick={() => handleEdit(cycle)}
                       >
-                        编辑
+                        {t('edit')}
                       </button>
                       <button
                         className="btn btn-sm btn-danger"
                         onClick={() => handleDelete(cycle._id)}
                       >
-                        删除
+                        {t('delete')}
                       </button>
                     </div>
                   </div>
 
                   <div className="cycle-medications">
-                    <h4>药物</h4>
+                    <h4>{t('medications')}</h4>
                     {cycle.medications.length === 0 ? (
-                      <p className="empty-hint">药物信息：未填写</p>
+                      <p className="empty-hint">{t('medsEmpty')}</p>
                     ) : (
                       <div className="med-list">
                         {cycle.medications.map((med, idx) => (
                           <div key={idx} className="med-item">
                             <span className="med-name">
-                              {med.name || '未填写药名'}
+                              {med.name || t('unnamedMed')}
                             </span>
                             {med.dosage && (
                               <span className="med-dosage">{med.dosage}</span>
                             )}
                             <span className="med-schedule">
-                              {formatDate(med.startDate)} →{' '}
+                              {formatDate(med.startDate)} {'->'}{' '}
                               {formatDate(med.endDate)}
                             </span>
                             {med.notes && (
                               <span className="med-notes">
-                                备注：{med.notes}
+                                {t('medNotesPrefix')}
+                                {med.notes}
                               </span>
                             )}
                           </div>
@@ -306,7 +310,7 @@ const ChemoCycles: React.FC = () => {
 
                   {cycle.doctorNotes && (
                     <div className="cycle-notes">
-                      <h4>医生备注</h4>
+                      <h4>{t('doctorNotes')}</h4>
                       <p>{cycle.doctorNotes}</p>
                     </div>
                   )}
@@ -319,19 +323,19 @@ const ChemoCycles: React.FC = () => {
 
       {(viewMode === 'add' || viewMode === 'edit') && (
         <div className="cycle-form">
-          <h2>{viewMode === 'edit' ? '更新周期' : '新建化疗周期'}</h2>
+          <h2>{viewMode === 'edit' ? t('updateTitle') : t('createTitle')}</h2>
 
           {error && <div className="form-error">{error}</div>}
 
           <div className="form-group">
-            <label>方案名称 *</label>
+            <label>{t('regimenNameLabel')}</label>
             <input
               type="text"
               value={formData.regimenName}
               onChange={e =>
                 setFormData(prev => ({ ...prev, regimenName: e.target.value }))
               }
-              placeholder="例如：VAC方案、CHOP方案、TC方案"
+              placeholder={t('regimenNamePlaceholder')}
               className={formErrors.regimenName ? 'input-error' : ''}
             />
             {formErrors.regimenName && (
@@ -341,21 +345,21 @@ const ChemoCycles: React.FC = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>周期开始日期 *</label>
+              <label>{t('startDateLabel')}</label>
               <input
                 type="date"
                 value={formData.startDate}
                 onChange={e => updateStartDate(e.target.value)}
                 className={formErrors.startDate ? 'input-error' : ''}
               />
-              <small>填写本周期首日用药日期。</small>
+              <small>{t('startDateHint')}</small>
               {formErrors.startDate && (
                 <span className="field-error">{formErrors.startDate}</span>
               )}
             </div>
 
             <div className="form-group">
-              <label>周期结束日期</label>
+              <label>{t('endDateLabel')}</label>
               <input
                 type="date"
                 value={formData.endDate}
@@ -364,9 +368,7 @@ const ChemoCycles: React.FC = () => {
                 }
                 className={formErrors.endDate ? 'input-error' : ''}
               />
-              <small>
-                默认开始日期 + 21 天；保存后若有下一个周期，系统会自动修正。
-              </small>
+              <small>{t('endDateHint')}</small>
               {formErrors.endDate && (
                 <span className="field-error">{formErrors.endDate}</span>
               )}
@@ -374,18 +376,16 @@ const ChemoCycles: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label>药物（可选）</label>
+            <label>{t('medsLabel')}</label>
             {formData.medications.length === 0 && (
-              <p className="empty-hint">
-                未添加药物。病人不清楚药物细节时可留空。
-              </p>
+              <p className="empty-hint">{t('medsFormHint')}</p>
             )}
             {formData.medications.map((med, idx) => (
               <div key={idx} className="medication-entry">
                 <div className="med-row">
                   <input
                     type="text"
-                    placeholder="药物名称（可选）"
+                    placeholder={t('medNamePlaceholder')}
                     value={med.name || ''}
                     onChange={e =>
                       updateMedication(idx, 'name', e.target.value)
@@ -393,7 +393,7 @@ const ChemoCycles: React.FC = () => {
                   />
                   <input
                     type="text"
-                    placeholder="剂量（可选）"
+                    placeholder={t('medDosagePlaceholder')}
                     value={med.dosage || ''}
                     onChange={e =>
                       updateMedication(idx, 'dosage', e.target.value)
@@ -405,7 +405,7 @@ const ChemoCycles: React.FC = () => {
                     onChange={e =>
                       updateMedication(idx, 'startDate', e.target.value)
                     }
-                    title="用药开始日期"
+                    title={t('medStartDateTitle')}
                   />
                   <input
                     type="date"
@@ -413,7 +413,7 @@ const ChemoCycles: React.FC = () => {
                     onChange={e =>
                       updateMedication(idx, 'endDate', e.target.value)
                     }
-                    title="用药结束日期"
+                    title={t('medEndDateTitle')}
                   />
                   <button
                     type="button"
@@ -425,7 +425,7 @@ const ChemoCycles: React.FC = () => {
                 </div>
                 <textarea
                   rows={2}
-                  placeholder="药物备注（可选）"
+                  placeholder={t('medNotesPlaceholder')}
                   value={med.notes || ''}
                   onChange={e => updateMedication(idx, 'notes', e.target.value)}
                 />
@@ -441,19 +441,19 @@ const ChemoCycles: React.FC = () => {
               className="btn btn-secondary btn-sm"
               onClick={addMedication}
             >
-              添加药物
+              {t('addMedication')}
             </button>
           </div>
 
           <div className="form-group">
-            <label>医生备注</label>
+            <label>{t('doctorNotesLabel')}</label>
             <textarea
               rows={3}
               value={formData.doctorNotes}
               onChange={e =>
                 setFormData(prev => ({ ...prev, doctorNotes: e.target.value }))
               }
-              placeholder="医生意见或备注..."
+              placeholder={t('doctorNotesPlaceholder')}
             />
           </div>
 
@@ -464,17 +464,17 @@ const ChemoCycles: React.FC = () => {
               disabled={isSubmitting}
             >
               {isSubmitting
-                ? '保存中...'
+                ? t('saving')
                 : viewMode === 'edit'
-                ? '更新周期'
-                : '保存'}
+                ? t('updateTitle')
+                : t('save')}
             </button>
             <button
               className="btn btn-secondary"
               onClick={handleCancel}
               disabled={isSubmitting}
             >
-              取消
+              {t('cancel')}
             </button>
           </div>
         </div>

@@ -7,6 +7,12 @@ import reminderService, {
   ListFilter,
 } from '../../services/reminder/reminderService';
 import { ApiError } from '../../services/api/apiClient';
+import {
+  translateApiError,
+  translateFieldError,
+} from '../../services/api/errorMapper';
+import { useT } from '../../i18n/useT';
+import i18n from '../../i18n';
 import './Reminders.css';
 
 type ViewMode = 'list' | 'add' | 'edit';
@@ -21,21 +27,6 @@ interface FormData {
   emailNotify: boolean;
   pushNotify: boolean;
 }
-
-const TYPE_LABELS: Record<ReminderType, string> = {
-  'blood-test': '血常规复查',
-  'chemo-cycle': '化疗周期',
-  medication: '用药提醒',
-  'follow-up': '复诊随访',
-  custom: '自定义',
-};
-
-const RECURRENCE_LABELS: Record<ReminderRecurrence, string> = {
-  none: '不重复',
-  daily: '每天',
-  weekly: '每周',
-  monthly: '每月',
-};
 
 const emptyForm = (): FormData => ({
   title: '',
@@ -78,7 +69,7 @@ const formToCreatePayload = (f: FormData): ReminderCreateData => ({
 
 const formatDueDate = (iso: string): string => {
   const d = new Date(iso);
-  return d.toLocaleString('zh-CN', {
+  return d.toLocaleString(i18n.language, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -88,6 +79,7 @@ const formatDueDate = (iso: string): string => {
 };
 
 const Reminders: React.FC = () => {
+  const t = useT('reminders');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [editing, setEditing] = useState<Reminder | null>(null);
@@ -98,6 +90,20 @@ const Reminders: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const typeLabels: Record<ReminderType, string> = {
+    'blood-test': t('type.blood-test'),
+    'chemo-cycle': t('type.chemo-cycle'),
+    medication: t('type.medication'),
+    'follow-up': t('type.follow-up'),
+    custom: t('type.custom'),
+  };
+  const recurrenceLabels: Record<ReminderRecurrence, string> = {
+    none: t('recurrence.none'),
+    daily: t('recurrence.daily'),
+    weekly: t('recurrence.weekly'),
+    monthly: t('recurrence.monthly'),
+  };
+
   const fetchReminders = useCallback(async () => {
     setIsLoading(true);
     setError('');
@@ -105,12 +111,11 @@ const Reminders: React.FC = () => {
       const res = await reminderService.getReminders(filter);
       if (res.success) setReminders(res.data);
     } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : '加载失败，请检查网络连接后重试'
-      );
+      setError(e instanceof ApiError ? translateApiError(e) : t('loadFailed'));
     } finally {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   useEffect(() => {
@@ -119,10 +124,10 @@ const Reminders: React.FC = () => {
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!form.title.trim()) errs.title = '标题不能为空';
-    else if (form.title.length > 120) errs.title = '标题最多 120 字符';
-    if (!form.dueDate) errs.dueDate = '到期日期不能为空';
-    if (form.description.length > 1000) errs.description = '备注最多 1000 字符';
+    if (!form.title.trim()) errs.title = t('errTitleEmpty');
+    else if (form.title.length > 120) errs.title = t('errTitleTooLong');
+    if (!form.dueDate) errs.dueDate = t('errDueEmpty');
+    if (form.description.length > 1000) errs.description = t('errDescTooLong');
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -163,10 +168,23 @@ const Reminders: React.FC = () => {
       setViewMode('list');
     } catch (e) {
       if (e instanceof ApiError) {
-        setError(e.message);
-        if (e.errors) setFormErrors(e.errors);
+        setError(translateApiError(e));
+        if (e.errors || e.errorCodes) {
+          const fields = Array.from(
+            new Set([
+              ...Object.keys(e.errors || {}),
+              ...Object.keys(e.errorCodes || {}),
+            ])
+          );
+          const map: Record<string, string> = {};
+          fields.forEach(f => {
+            const m = translateFieldError(e, f);
+            if (m) map[f] = m;
+          });
+          if (Object.keys(map).length > 0) setFormErrors(map);
+        }
       } else {
-        setError(viewMode === 'edit' ? '更新失败，请重试' : '保存失败，请重试');
+        setError(viewMode === 'edit' ? t('updateFailed') : t('saveFailed'));
       }
     } finally {
       setIsSubmitting(false);
@@ -178,29 +196,32 @@ const Reminders: React.FC = () => {
       await reminderService.completeReminder(r._id);
       await fetchReminders();
     } catch (e) {
-      window.alert(e instanceof ApiError ? e.message : '操作失败，请稍后重试');
+      window.alert(
+        e instanceof ApiError ? translateApiError(e) : t('opFailed')
+      );
     }
   };
 
   const handleDelete = async (r: Reminder) => {
-    if (!window.confirm(`确定要删除提醒 "${r.title}" 吗？此操作无法撤销。`))
-      return;
+    if (!window.confirm(t('deleteConfirm', { title: r.title }))) return;
     try {
       await reminderService.deleteReminder(r._id);
       await fetchReminders();
     } catch (e) {
-      window.alert(e instanceof ApiError ? e.message : '删除失败，请重试');
+      window.alert(
+        e instanceof ApiError ? translateApiError(e) : t('deleteFailed')
+      );
     }
   };
 
   const renderForm = () => (
     <div className="reminder-form">
-      <h2>{viewMode === 'edit' ? '编辑提醒' : '新建提醒'}</h2>
+      <h2>{viewMode === 'edit' ? t('editTitle') : t('createTitle')}</h2>
       {error && <div className="form-error">{error}</div>}
 
       <div className="form-grid">
         <div className="full">
-          <label>标题 *</label>
+          <label>{t('titleLabel')}</label>
           <input
             type="text"
             value={form.title}
@@ -212,23 +233,23 @@ const Reminders: React.FC = () => {
         </div>
 
         <div>
-          <label>类型</label>
+          <label>{t('typeLabel')}</label>
           <select
             value={form.type}
             onChange={e =>
               setForm(p => ({ ...p, type: e.target.value as ReminderType }))
             }
           >
-            {(Object.keys(TYPE_LABELS) as ReminderType[]).map(t => (
-              <option key={t} value={t}>
-                {TYPE_LABELS[t]}
+            {(Object.keys(typeLabels) as ReminderType[]).map(tp => (
+              <option key={tp} value={tp}>
+                {typeLabels[tp]}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label>循环</label>
+          <label>{t('recurrenceLabel')}</label>
           <select
             value={form.recurrence}
             onChange={e =>
@@ -238,16 +259,16 @@ const Reminders: React.FC = () => {
               }))
             }
           >
-            {(Object.keys(RECURRENCE_LABELS) as ReminderRecurrence[]).map(r => (
+            {(Object.keys(recurrenceLabels) as ReminderRecurrence[]).map(r => (
               <option key={r} value={r}>
-                {RECURRENCE_LABELS[r]}
+                {recurrenceLabels[r]}
               </option>
             ))}
           </select>
         </div>
 
         <div className="full">
-          <label>到期时间 *</label>
+          <label>{t('dueLabel')}</label>
           <input
             type="datetime-local"
             value={form.dueDate}
@@ -259,14 +280,14 @@ const Reminders: React.FC = () => {
         </div>
 
         <div className="full">
-          <label>备注</label>
+          <label>{t('descLabel')}</label>
           <textarea
             rows={3}
             value={form.description}
             onChange={e =>
               setForm(p => ({ ...p, description: e.target.value }))
             }
-            placeholder="可选..."
+            placeholder={t('descPlaceholder')}
           />
           {formErrors.description && (
             <span className="field-error">{formErrors.description}</span>
@@ -282,7 +303,7 @@ const Reminders: React.FC = () => {
                 setForm(p => ({ ...p, enabled: e.target.checked }))
               }
             />
-            启用
+            {t('enabled')}
           </label>
           <label>
             <input
@@ -292,7 +313,7 @@ const Reminders: React.FC = () => {
                 setForm(p => ({ ...p, emailNotify: e.target.checked }))
               }
             />
-            邮件通知
+            {t('emailNotify')}
           </label>
           <label>
             <input
@@ -302,7 +323,7 @@ const Reminders: React.FC = () => {
                 setForm(p => ({ ...p, pushNotify: e.target.checked }))
               }
             />
-            推送通知
+            {t('pushNotify')}
           </label>
         </div>
       </div>
@@ -313,10 +334,14 @@ const Reminders: React.FC = () => {
           onClick={handleSubmit}
           disabled={isSubmitting}
         >
-          {isSubmitting ? '保存中...' : viewMode === 'edit' ? '更新' : '保存'}
+          {isSubmitting
+            ? t('saving')
+            : viewMode === 'edit'
+            ? t('update')
+            : t('save')}
         </button>
         <button className="btn btn-secondary" onClick={handleCancel}>
-          取消
+          {t('cancel')}
         </button>
       </div>
     </div>
@@ -347,13 +372,16 @@ const Reminders: React.FC = () => {
             <div className="reminder-description">{r.description}</div>
           )}
           <div className="reminder-meta">
-            <span className="meta-tag">{TYPE_LABELS[r.type]}</span>
-            <span className="meta-tag">{RECURRENCE_LABELS[r.recurrence]}</span>
+            <span className="meta-tag">{typeLabels[r.type]}</span>
+            <span className="meta-tag">{recurrenceLabels[r.recurrence]}</span>
             <span className={`meta-due ${isOverdue ? 'overdue' : ''}`}>
-              到期：{formatDueDate(r.dueDate)}
+              {t('duePrefix')}
+              {formatDueDate(r.dueDate)}
             </span>
-            {!r.enabled && <span className="meta-tag">已停用</span>}
-            {r.completed && <span className="meta-tag">已完成</span>}
+            {!r.enabled && <span className="meta-tag">{t('disabledTag')}</span>}
+            {r.completed && (
+              <span className="meta-tag">{t('completedTag')}</span>
+            )}
           </div>
         </div>
         <div className="reminder-actions">
@@ -362,20 +390,20 @@ const Reminders: React.FC = () => {
               className="btn btn-sm btn-primary"
               onClick={() => handleComplete(r)}
             >
-              {r.recurrence === 'none' ? '完成' : '完成本次'}
+              {r.recurrence === 'none' ? t('complete') : t('completeRecurring')}
             </button>
           )}
           <button
             className="btn btn-sm btn-secondary"
             onClick={() => handleEdit(r)}
           >
-            编辑
+            {t('edit')}
           </button>
           <button
             className="btn btn-sm btn-danger"
             onClick={() => handleDelete(r)}
           >
-            删除
+            {t('delete')}
           </button>
         </div>
       </div>
@@ -385,10 +413,10 @@ const Reminders: React.FC = () => {
   return (
     <div className="reminders-page">
       <div className="page-header">
-        <h1>提醒管理</h1>
+        <h1>{t('title')}</h1>
         {viewMode === 'list' && (
           <button className="btn btn-primary" onClick={handleAddNew}>
-            添加提醒
+            {t('addReminder')}
           </button>
         )}
       </div>
@@ -405,9 +433,9 @@ const Reminders: React.FC = () => {
                 }))
               }
             >
-              <option value="">全部状态</option>
-              <option value="pending">未完成</option>
-              <option value="completed">已完成</option>
+              <option value="">{t('filterAllStatus')}</option>
+              <option value="pending">{t('filterPending')}</option>
+              <option value="completed">{t('filterCompleted')}</option>
             </select>
             <select
               value={filter.type ?? ''}
@@ -418,10 +446,10 @@ const Reminders: React.FC = () => {
                 }))
               }
             >
-              <option value="">全部类型</option>
-              {(Object.keys(TYPE_LABELS) as ReminderType[]).map(t => (
-                <option key={t} value={t}>
-                  {TYPE_LABELS[t]}
+              <option value="">{t('filterAllType')}</option>
+              {(Object.keys(typeLabels) as ReminderType[]).map(tp => (
+                <option key={tp} value={tp}>
+                  {typeLabels[tp]}
                 </option>
               ))}
             </select>
@@ -430,13 +458,11 @@ const Reminders: React.FC = () => {
           {error && <div className="form-error">{error}</div>}
 
           {isLoading ? (
-            <div className="reminders-empty">加载中...</div>
+            <div className="reminders-empty">{t('loading')}</div>
           ) : reminders.length === 0 ? (
             <div className="reminders-empty">
-              <p>暂无提醒</p>
-              <p className="empty-hint">
-                点击右上角"添加提醒"创建您的第一个提醒
-              </p>
+              <p>{t('empty')}</p>
+              <p className="empty-hint">{t('emptyHint')}</p>
             </div>
           ) : (
             <div className="reminder-list">{reminders.map(renderItem)}</div>

@@ -17,6 +17,7 @@ import analyticsService, {
 import chemoCycleService, {
   ChemoCycle,
 } from '../../services/chemoCycle/chemoCycleService';
+import { useT } from '../../i18n/useT';
 import './Analytics.css';
 
 ChartJS.register(
@@ -54,20 +55,8 @@ const Y_AXIS: Record<Metric, { min: number; max: number }> = {
   plt: { min: 0, max: 500 },
 };
 
-const RANGES: Array<{ key: Range; label: string }> = [
-  { key: '1m', label: '近 1 月' },
-  { key: '3m', label: '近 3 月' },
-  { key: '6m', label: '近 6 月' },
-  { key: '1y', label: '近 1 年' },
-  { key: 'all', label: '全部' },
-];
-
-const METRICS: Array<{ key: Metric; label: string; unit: string }> = [
-  { key: 'wbc', label: '白细胞', unit: '×10⁹/L' },
-  { key: 'rbc', label: '红细胞', unit: '×10¹²/L' },
-  { key: 'hgb', label: '血红蛋白', unit: 'g/L' },
-  { key: 'plt', label: '血小板', unit: '×10⁹/L' },
-];
+const RANGE_KEYS: Range[] = ['1m', '3m', '6m', '1y', 'all'];
+const METRIC_KEYS: Metric[] = ['wbc', 'rbc', 'hgb', 'plt'];
 
 function isDateInNadirWindow(
   dateStr: string,
@@ -90,6 +79,7 @@ function isDateInNadirWindow(
 }
 
 const Analytics: React.FC = () => {
+  const t = useT('analytics');
   const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [cycles, setCycles] = useState<ChemoCycle[]>([]);
@@ -115,7 +105,7 @@ const Analytics: React.FC = () => {
         if (summaryRes.success) setSummary(summaryRes.data);
         if (cyclesRes && cyclesRes.success) setCycles(cyclesRes.data);
       } catch {
-        if (!cancelled) setError('加载分析数据失败');
+        if (!cancelled) setError(t('loadFailed'));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -124,35 +114,36 @@ const Analytics: React.FC = () => {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
   // 用 useMemo 避免每次渲染都重算（趋势点多时差距明显）
   const chartData = useMemo(() => {
     const m = activeMetric;
-    const range = NORMAL_RANGES[m];
-    const labels = trends.map(t => t.date);
-    const values = trends.map(t => t[m]);
+    const rangeNormal = NORMAL_RANGES[m];
+    const labels = trends.map(tp => tp.date);
+    const values = trends.map(tp => tp[m]);
 
-    const nadirStates = trends.map(t => isDateInNadirWindow(t.date, cycles));
+    const nadirStates = trends.map(tp => isDateInNadirWindow(tp.date, cycles));
 
     // 异常点高亮（红色），Nadir 低谷期点高亮（橙色）
-    const pointColors = trends.map((t, idx) => {
-      const v = t[m];
+    const pointColors = trends.map((tp, idx) => {
+      const v = tp[m];
       const r = NORMAL_RANGES[m];
       if (v < r.min || v > r.max) return '#d0021b';
       if (nadirStates[idx].inNadir) return '#f5a623';
       return CHART_COLORS[m].border;
     });
 
-    const pointRadii = trends.map((t, idx) => {
-      const v = t[m];
+    const pointRadii = trends.map((tp, idx) => {
+      const v = tp[m];
       const r = NORMAL_RANGES[m];
       if (v < r.min || v > r.max) return 7;
       if (nadirStates[idx].inNadir) return 7;
       return 4;
     });
 
-    const pointStyles = trends.map((t, idx) => {
+    const pointStyles = trends.map((tp, idx) => {
       return nadirStates[idx].inNadir ? 'rectRot' : 'circle';
     });
 
@@ -172,10 +163,10 @@ const Analytics: React.FC = () => {
           fill: true,
           order: 1,
         },
-        // 正常上下限参考线 —— 用恒定值的两条 dataset 模拟，无需 annotation 插件
+        // 正常上下限参考线 -- 用恒定值的两条 dataset 模拟，无需 annotation 插件
         {
-          label: '正常上限',
-          data: labels.map(() => range.max),
+          label: t('normalUpper'),
+          data: labels.map(() => rangeNormal.max),
           borderColor: 'rgba(208, 2, 27, 0.6)',
           borderDash: [6, 4],
           borderWidth: 1,
@@ -184,8 +175,8 @@ const Analytics: React.FC = () => {
           order: 2,
         },
         {
-          label: '正常下限',
-          data: labels.map(() => range.min),
+          label: t('normalLower'),
+          data: labels.map(() => rangeNormal.min),
           borderColor: 'rgba(208, 2, 27, 0.6)',
           borderDash: [6, 4],
           borderWidth: 1,
@@ -195,6 +186,7 @@ const Analytics: React.FC = () => {
         },
       ],
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trends, activeMetric, cycles]);
 
   const chartOptions = useMemo(
@@ -216,10 +208,11 @@ const Analytics: React.FC = () => {
               const date = trends[idx]?.date;
               const nadirInfo = date ? isDateInNadirWindow(date, cycles) : null;
 
-              const flag = v < r.min ? '（低）' : v > r.max ? '（高）' : '';
+              const flag =
+                v < r.min ? t('tooltipLow') : v > r.max ? t('tooltipHigh') : '';
               let label = `${ctx.dataset.label}: ${v}${flag}`;
               if (nadirInfo && nadirInfo.inNadir) {
-                label += ` [⚠️ Nadir期 Day ${nadirInfo.dayOfCycle}]`;
+                label += t('nadirTooltip', { day: nadirInfo.dayOfCycle });
               }
               return label;
             },
@@ -234,13 +227,14 @@ const Analytics: React.FC = () => {
         },
       },
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeMetric, cycles, trends]
   );
 
   const trendIcon = (direction: 'up' | 'down' | 'stable') => {
     if (direction === 'up') return '↑';
     if (direction === 'down') return '↓';
-    return '→';
+    return '->';
   };
 
   const handleExportPng = () => {
@@ -261,7 +255,7 @@ const Analytics: React.FC = () => {
     return (
       <div className="analytics loading">
         <div className="spinner" />
-        <p>加载中...</p>
+        <p>{t('loading')}</p>
       </div>
     );
   }
@@ -276,17 +270,17 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="analytics-page">
-      <h1>数据分析</h1>
+      <h1>{t('title')}</h1>
 
       {summary && (
         <div className="summary-grid">
           <div className="summary-card">
             <span className="summary-value">{summary.totalTests}</span>
-            <span className="summary-label">总记录数</span>
+            <span className="summary-label">{t('statTotal')}</span>
           </div>
           <div className="summary-card">
             <span className="summary-value">{summary.abnormalRate}%</span>
-            <span className="summary-label">异常率</span>
+            <span className="summary-label">{t('statAbnormalRate')}</span>
           </div>
           {summary.latestValues && (
             <>
@@ -295,7 +289,7 @@ const Analytics: React.FC = () => {
                   {summary.latestValues.wbc.toFixed(1)}
                 </span>
                 <span className="summary-label">
-                  最新 WBC {trendIcon(summary.trends.wbc)}
+                  {t('latestWbc')} {trendIcon(summary.trends.wbc)}
                 </span>
               </div>
               <div className="summary-card">
@@ -303,7 +297,7 @@ const Analytics: React.FC = () => {
                   {summary.latestValues.hgb.toFixed(0)}
                 </span>
                 <span className="summary-label">
-                  最新 HGB {trendIcon(summary.trends.hgb)}
+                  {t('latestHgb')} {trendIcon(summary.trends.hgb)}
                 </span>
               </div>
             </>
@@ -312,45 +306,41 @@ const Analytics: React.FC = () => {
       )}
 
       <div className="range-bar">
-        <span className="range-label">时间范围：</span>
-        {RANGES.map(r => (
+        <span className="range-label">{t('rangeLabel')}</span>
+        {RANGE_KEYS.map(r => (
           <button
-            key={r.key}
-            className={`range-chip ${range === r.key ? 'active' : ''}`}
-            onClick={() => setRange(r.key)}
+            key={r}
+            className={`range-chip ${range === r ? 'active' : ''}`}
+            onClick={() => setRange(r)}
           >
-            {r.label}
+            {t(`range.${r}`)}
           </button>
         ))}
         <button
           className="export-btn"
           onClick={handleExportPng}
           disabled={trends.length === 0}
-          title="将当前图表导出为 PNG"
+          title={t('exportTitle')}
         >
-          📷 导出图表
+          {t('exportChart')}
         </button>
       </div>
 
       {trends.length === 0 ? (
         <div className="empty-state">
-          <p>所选时间范围内暂无数据</p>
-          <p className="empty-hint">
-            请尝试切换到更长的范围，或先记录血常规数据
-          </p>
+          <p>{t('empty')}</p>
+          <p className="empty-hint">{t('emptyHint')}</p>
         </div>
       ) : (
         <div className="chart-section">
           <div className="metric-tabs">
-            {METRICS.map(m => (
+            {METRIC_KEYS.map(m => (
               <button
-                key={m.key}
-                className={`metric-tab ${
-                  activeMetric === m.key ? 'active' : ''
-                }`}
-                onClick={() => setActiveMetric(m.key)}
+                key={m}
+                className={`metric-tab ${activeMetric === m ? 'active' : ''}`}
+                onClick={() => setActiveMetric(m)}
               >
-                {m.label} ({m.unit})
+                {t(`metric.${m}`)} ({t(`metricUnit.${m}`)})
               </button>
             ))}
           </div>
@@ -362,37 +352,41 @@ const Analytics: React.FC = () => {
             />
           </div>
           <p className="chart-note">
-            红色虚线为正常参考范围（
-            {NORMAL_RANGES[activeMetric].min}–{NORMAL_RANGES[activeMetric].max}
-            ），红色实心点表示该次检测超出正常范围。
+            {t('chartNote', {
+              min: NORMAL_RANGES[activeMetric].min,
+              max: NORMAL_RANGES[activeMetric].max,
+            })}
           </p>
 
           <div className="nadir-education-card">
-            <h4>💡 化疗科普：什么是骨髓抑制低谷期（Nadir 期）？</h4>
+            <h4>{t('nadirTitle')}</h4>
             <p>
-              在化疗给药后的第 <strong>7 至 14 天</strong>{' '}
-              左右，化疗药物对骨髓造血功能的抑制作用达到顶峰，导致血液中的白细胞、中性粒细胞和血小板数量降至最低谷。这一时期在医学上被称为{' '}
-              <strong>Nadir 期（低谷期）</strong>。
+              {t('nadirDesc1')}
+              <strong>{t('nadirDays')}</strong>
+              {t('nadirDesc2')}
+              <strong>{t('nadirPeriod')}</strong>
+              {t('nadirDesc3')}
             </p>
             <div className="nadir-warning-tips">
-              <h5>🚨 此时您需要特别注意：</h5>
+              <h5>{t('nadirTipsTitle')}</h5>
               <ul>
                 <li>
-                  <strong>防感染</strong>
-                  ：免疫力极度脆弱。外出必戴口罩，避免前往人群密集场所，不接触有感冒症状的人。
+                  <strong>{t('tipInfectionLabel')}</strong>
+                  {t('tipInfectionBody')}
                 </li>
                 <li>
-                  <strong>防出血</strong>
-                  ：若血小板偏低，请使用软毛牙刷，避免外伤和磕碰，谨防皮肤淤斑或牙龈出血。
+                  <strong>{t('tipBleedingLabel')}</strong>
+                  {t('tipBleedingBody')}
                 </li>
                 <li>
-                  <strong>安全饮食</strong>
-                  ：禁食生冷食物、剩饭菜以及未剥皮水果，餐具可用开水煮沸消毒。
+                  <strong>{t('tipDietLabel')}</strong>
+                  {t('tipDietBody')}
                 </li>
                 <li>
-                  <strong>异常发热</strong>：若腋下体温超过{' '}
-                  <strong>38.0℃</strong>{' '}
-                  或有寒战，请立即前往医院急诊就医，切勿自行服药拖延。
+                  <strong>{t('tipFeverLabel')}</strong>
+                  {t('tipFeverBody1')}
+                  <strong>{t('tipFeverTemp')}</strong>
+                  {t('tipFeverBody2')}
                 </li>
               </ul>
             </div>

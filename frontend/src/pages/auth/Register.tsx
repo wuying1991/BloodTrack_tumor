@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useT } from '../../i18n/useT';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth/authService';
 import { ApiError } from '../../services/api/apiClient';
+import {
+  translateApiError,
+  translateFieldError,
+} from '../../services/api/errorMapper';
 import './Auth.css';
 
 const Register: React.FC = () => {
+  const t = useT('auth');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -39,7 +45,7 @@ const Register: React.FC = () => {
 
     if (formData.password !== formData.confirmPassword) {
       setValidationErrors({
-        confirmPassword: '两次输入的密码不一致 (Passwords do not match)',
+        confirmPassword: t('register.passwordMismatch'),
       });
       setIsLoading(false);
       return;
@@ -57,15 +63,24 @@ const Register: React.FC = () => {
         login(accessToken, refreshToken, userData as any);
         navigate('/dashboard');
       } else {
-        setError(
-          '注册失败，请稍后重试。 (Registration failed, please try again later)'
-        );
+        setError(t('register.failedRetry'));
       }
     } catch (err: any) {
       if (err instanceof ApiError) {
-        setError(err.message);
-        if (err.errors) {
-          setValidationErrors(err.errors);
+        setError(translateApiError(err));
+        if (err.errors || err.errorCodes) {
+          const fields = Array.from(
+            new Set([
+              ...Object.keys(err.errors || {}),
+              ...Object.keys(err.errorCodes || {}),
+            ])
+          );
+          const map: Record<string, string> = {};
+          fields.forEach(f => {
+            const m = translateFieldError(err, f);
+            if (m) map[f] = m;
+          });
+          if (Object.keys(map).length > 0) setValidationErrors(map);
         }
       } else if (err.response?.data?.message) {
         setError(err.response.data.message);
@@ -73,9 +88,7 @@ const Register: React.FC = () => {
           setValidationErrors(err.response.data.errors);
         }
       } else {
-        setError(
-          '注册失败，请稍后重试。 (Registration failed, please try again later)'
-        );
+        setError(t('register.failedRetry'));
       }
     } finally {
       setIsLoading(false);
@@ -85,18 +98,18 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>注册</h2>
+        <h2>{t('register.title')}</h2>
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="fullName">姓名</label>
+            <label htmlFor="fullName">{t('register.fullNameLabel')}</label>
             <input
               type="text"
               id="fullName"
               value={formData.fullName}
               onChange={handleChange}
               required
-              placeholder="请输入您的姓名"
+              placeholder={t('register.fullNamePlaceholder')}
               disabled={isLoading}
               className={validationErrors.fullName ? 'input-error' : ''}
             />
@@ -105,14 +118,14 @@ const Register: React.FC = () => {
             )}
           </div>
           <div className="form-group">
-            <label htmlFor="email">电子邮箱</label>
+            <label htmlFor="email">{t('register.emailLabel')}</label>
             <input
               type="email"
               id="email"
               value={formData.email}
               onChange={handleChange}
               required
-              placeholder="请输入您的邮箱"
+              placeholder={t('register.emailPlaceholder')}
               disabled={isLoading}
               className={validationErrors.email ? 'input-error' : ''}
             />
@@ -121,7 +134,7 @@ const Register: React.FC = () => {
             )}
           </div>
           <div className="form-group">
-            <label htmlFor="password">密码</label>
+            <label htmlFor="password">{t('register.passwordLabel')}</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -129,7 +142,7 @@ const Register: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                placeholder="请输入密码"
+                placeholder={t('register.passwordPlaceholder')}
                 disabled={isLoading}
                 className={validationErrors.password ? 'input-error' : ''}
               />
@@ -138,20 +151,22 @@ const Register: React.FC = () => {
                 className="password-toggle"
                 onClick={() => setShowPassword(prev => !prev)}
                 disabled={isLoading}
-                aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                aria-label={
+                  showPassword ? t('register.hideAria') : t('register.showAria')
+                }
               >
-                {showPassword ? '隐藏' : '显示'}
+                {showPassword ? t('register.hide') : t('register.show')}
               </button>
             </div>
-            <p className="password-hint">
-              密码至少 6 位，且必须同时包含大写字母、小写字母和数字。
-            </p>
+            <p className="password-hint">{t('register.passwordHint')}</p>
             {validationErrors.password && (
               <span className="field-error">{validationErrors.password}</span>
             )}
           </div>
           <div className="form-group">
-            <label htmlFor="confirmPassword">确认密码</label>
+            <label htmlFor="confirmPassword">
+              {t('register.confirmLabel')}
+            </label>
             <div className="password-input-wrapper">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
@@ -159,7 +174,7 @@ const Register: React.FC = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                placeholder="请再次输入密码"
+                placeholder={t('register.confirmPlaceholder')}
                 disabled={isLoading}
                 className={
                   validationErrors.confirmPassword ? 'input-error' : ''
@@ -171,10 +186,12 @@ const Register: React.FC = () => {
                 onClick={() => setShowConfirmPassword(prev => !prev)}
                 disabled={isLoading}
                 aria-label={
-                  showConfirmPassword ? '隐藏确认密码' : '显示确认密码'
+                  showConfirmPassword
+                    ? t('register.hideConfirmAria')
+                    : t('register.showConfirmAria')
                 }
               >
-                {showConfirmPassword ? '隐藏' : '显示'}
+                {showConfirmPassword ? t('register.hide') : t('register.show')}
               </button>
             </div>
             {validationErrors.confirmPassword && (
@@ -188,11 +205,12 @@ const Register: React.FC = () => {
             className="btn btn-primary btn-block"
             disabled={isLoading}
           >
-            {isLoading ? '注册中... (Registering...)' : '注册'}
+            {isLoading ? t('register.submitting') : t('register.submit')}
           </button>
         </form>
         <div className="auth-footer">
-          已有账号？ <Link to="/login">立即登录</Link>
+          {t('register.footerPrefix')}{' '}
+          <Link to="/login">{t('register.loginLink')}</Link>
         </div>
       </div>
     </div>
