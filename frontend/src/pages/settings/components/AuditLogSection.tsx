@@ -3,6 +3,7 @@ import auditLogService from '../../../services/auth/auditLogService';
 import type { AuditLogEntry, AuditAction } from '../../../types';
 import { ApiError } from '../../../services/api/apiClient';
 import { useT } from '../../../i18n/useT';
+import { formatDateTime as formatTime } from '../../../utils/formatDate';
 
 const ACTION_KEYS: Record<AuditAction, string> = {
   login: 'actionLogin',
@@ -16,16 +17,6 @@ const ACTION_KEYS: Record<AuditAction, string> = {
   share_create: 'actionShareCreate',
   share_revoke: 'actionShareRevoke',
 };
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function shortenUA(ua: string): string {
   if (!ua) return '-';

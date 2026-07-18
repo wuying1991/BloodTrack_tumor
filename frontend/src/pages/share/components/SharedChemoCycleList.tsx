@@ -1,13 +1,10 @@
 import React from 'react';
 import type { PublicChemoCycle } from '../../../services/share/publicShareService';
 import { useT } from '../../../i18n/useT';
+import { formatDate as fmtDate } from '../../../utils/formatDate';
 
 interface Props {
   cycles: PublicChemoCycle[];
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('zh-CN');
 }
 
 const SharedChemoCycleList: React.FC<Props> = ({ cycles }) => {

@@ -2,13 +2,10 @@ import React from 'react';
 import type { PublicBloodTest } from '../../../services/share/publicShareService';
 import { getMyelosuppressionGrade } from '../../../utils/myelosuppression';
 import { useT } from '../../../i18n/useT';
+import { formatDate as fmtDate } from '../../../utils/formatDate';
 
 interface Props {
   tests: PublicBloodTest[];
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('zh-CN');
 }
 
 const SharedBloodTestList: React.FC<Props> = ({ tests }) => {

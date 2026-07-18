@@ -46,6 +46,8 @@
   "cycleSelect": "Associate with chemo cycle (optional)",
   "autoMatch": "Auto-match by date",
   "noAssociation": "No association",
+  "unnamedRegimen": "Unnamed regimen",
+  "cycleOptionLabel": "{{regimen}}: {{start}} - {{end}}",
   "saveRecord": "Save Record",
   "updateRecord": "Update Record",
   "saving": "Saving...",

@@ -152,9 +152,9 @@
 | 后端 TypeScript 编译 | `cd backend && npx tsc --noEmit` | ✅ 通过 |
 | 前端 TypeScript 编译 | `cd frontend && npx tsc --noEmit` | ✅ 通过 |
 | 前端 ESLint | `cd frontend && npm run lint` | ✅ M-P4 新增/改动 0 错误 (旧 prettier CRLF 噪声依旧) |
-| 后端契约测试 | `cd backend && npm run test:contract` | ✅ 34/34 |
-| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 72/72 |
-| 后端全部测试 | `cd backend && npx jest` | ✅ 122/122 |
+| 后端契约测试 | `cd backend && npm run test:contract` | ✅ 33/33 |
+| 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 100/100 |
+| 后端全部测试 | `cd backend && npx jest` | ✅ 133/133 |
 | 前端单元测试 | `cd frontend && npm test` | ✅ 77/77 |
 | 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 7/7 |
 
@@ -180,8 +180,20 @@
   - 侧边栏「生化检查」导航（烧瓶 SVG 图标）
   - i18n: biochem.json (zh-CN + en-US) 60+ 翻译键 + layout nav 键
 - **测试**: 后端集成测试 11 用例（CRUD/异常检测/eGFR/跨用户隔离/CSV导出/401），全后端 133/133
-- **contract-validator**: 第 7 项 BiochemTest 字段三处对齐校验
+- **contract-validator**: 第 7 项 BiochemTest 字段三处对齐校验。修复：7b 检查原先从 `export const validateBiochemTest =` 起截取 validationMiddleware 源码段，但字段名（alt/cr/k/ldh 等）实际定义在该函数之前的 `BIOCHEM_NUMERIC_FIELDS` 数组里，导致段内查不到字段、检查误判。改为从 `BIOCHEM_NUMERIC_FIELDS` 起截取，7/7 ✅。
 - **门禁**: backend tsc ✅ / contract 7/7 ✅ / jest 133/133 ✅; frontend tsc ✅ / jest 77/77 ✅
+
+### 2026-07-18 续（L-P5 i18n 收尾 - 日期本地化 + 残留硬编码清理）
+- **问题**：`utils/formatDate.ts` 工具已存在（`formatDate`/`formatDateTime`/`formatDateShort`/`formatDateTimeShort`，跟随 `i18n.language`）但**无人引用**；bloodTest / biochem / share / settings 多处仍硬编码 `toLocaleDateString('zh-CN')`，en-US 下日期/时间不随语言切换。
+- **修复**（8 文件）：
+  - `BloodTestForm.tsx` + `BiochemForm.tsx`：化疗周期 `<option>` 文案改用 i18next 插值键 `cycleOptionLabel`/`cycleOptionWithDrugs`（含 `unnamedRegimen`/`drugSeparator`），日期改用 `formatDate`。zh-CN 保留全角 `：`/`（）`/`、`，en-US 用半角 `:`/`()`/`, `与 ` - ` 范围符。
+  - `BloodTestList.tsx`：删本地 `formatDate`（硬编码 zh-CN + 2-digit 选项），改用 `formatDateShort`；周期标签同样本地化。
+  - `SharedBloodTestList.tsx` / `SharedChemoCycleList.tsx`：本地 `fmtDate` → `formatDate` 别名导入。
+  - `SharesSection.tsx` / `AuditLogSection.tsx`：本地 `formatDate`/`formatTime` → `formatDateTime` 别名导入。
+  - `SharedView.tsx`：过期时间 `toLocaleString('zh-CN')` → `formatDateTime`。
+- **新增翻译键**：bloodTests / biochem 命名空间各加 `unnamedRegimen` + 周期选项格式键（zh-CN + en-US）。
+- **遗留**：`chemoCycleService.convertApiToFormData` 的 `regimenName || '未命名方案'` 是表单数据层默认值（会回写保存），非展示文案，保留不动。en-US 医学内容仍待母语临床复核。
+- **门禁**: frontend tsc ✅ / jest 77/77 ✅ / 新增改动 0 lint 错误（旧 prettier CRLF 噪声依旧）。
 
 ### 2026-07-17（L-P5 i18n 国际化 - 进行中）
 - **设计文档 + 计划**：`docs/superpowers/specs/2026-07-17-i18n-design.md` + `plans/2026-07-17-i18n-implementation.md`。决策：zh-CN（默认）+ en-US；前端 i18n + 后端 error code（非 Accept-Language）。

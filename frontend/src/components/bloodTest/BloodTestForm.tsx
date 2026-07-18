@@ -9,6 +9,7 @@ import chemoCycleService, {
 import { ApiError } from '../../services/api/apiClient';
 import { getMyelosuppressionGrade } from '../../utils/myelosuppression';
 import { useT } from '../../i18n/useT';
+import { formatDate } from '../../utils/formatDate';
 import './BloodTestForm.css';
 
 // Numeric ranges only (labels come from i18n)
@@ -370,13 +371,19 @@ const BloodTestForm: React.FC<BloodTestFormProps> = ({
             <option value="">{t('autoMatch')}</option>
             <option value="none">{t('noAssociation')}</option>
             {cycles.map(c => {
-              const start = new Date(c.startDate).toLocaleDateString('zh-CN');
-              const end = new Date(c.endDate).toLocaleDateString('zh-CN');
-              const drugs = (c.medications || []).map(m => m.name).filter(Boolean).join('、');
+              const regimen = c.regimenName || t('unnamedRegimen');
+              const start = formatDate(c.startDate);
+              const end = formatDate(c.endDate);
+              const drugs = (c.medications || [])
+                .map(m => m.name)
+                .filter(Boolean)
+                .join(t('drugSeparator'));
+              const label = drugs
+                ? t('cycleOptionWithDrugs', { regimen, start, end, drugs })
+                : t('cycleOptionLabel', { regimen, start, end });
               return (
                 <option key={c._id} value={c._id}>
-                  {c.regimenName || '未命名方案'}：{start} ~ {end}
-                  {drugs ? `（${drugs}）` : ''}
+                  {label}
                 </option>
               );
             })}

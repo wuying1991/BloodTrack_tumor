@@ -8,6 +8,7 @@ import chemoCycleService, {
 } from '../../services/chemoCycle/chemoCycleService';
 import { ApiError } from '../../services/api/apiClient';
 import { useT } from '../../i18n/useT';
+import { formatDate } from '../../utils/formatDate';
 import '../bloodTest/BloodTestForm.css';
 
 interface BiochemFormProps {
@@ -157,11 +158,12 @@ const BiochemForm: React.FC<BiochemFormProps> = ({
             <option value="">{t('autoMatch')}</option>
             <option value="none">{t('noAssociation')}</option>
             {cycles.map(c => {
-              const start = new Date(c.startDate).toLocaleDateString('zh-CN');
-              const end = new Date(c.endDate).toLocaleDateString('zh-CN');
+              const regimen = c.regimenName || t('unnamedRegimen');
+              const start = formatDate(c.startDate);
+              const end = formatDate(c.endDate);
               return (
                 <option key={c._id} value={c._id}>
-                  {c.regimenName || '未命名方案'}：{start} ~ {end}
+                  {t('cycleOptionLabel', { regimen, start, end })}
                 </option>
               );
             })}

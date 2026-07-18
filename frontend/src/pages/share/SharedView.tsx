@@ -8,6 +8,7 @@ import publicShareService, {
 } from '../../services/share/publicShareService';
 import { PublicApiError } from '../../services/share/publicApiClient';
 import { useT } from '../../i18n/useT';
+import { formatDateTime } from '../../utils/formatDate';
 import PinPrompt from './components/PinPrompt';
 import SharedBloodTestList from './components/SharedBloodTestList';
 import SharedChemoCycleList from './components/SharedChemoCycleList';
@@ -117,7 +118,7 @@ const SharedView: React.FC = () => {
   if (!meta) return null;
 
   const expiryLabel = meta.expiresAt
-    ? t('expiresOn', { date: new Date(meta.expiresAt).toLocaleString('zh-CN') })
+    ? t('expiresOn', { date: formatDateTime(meta.expiresAt) })
     : t('neverExpires');
 
   return (

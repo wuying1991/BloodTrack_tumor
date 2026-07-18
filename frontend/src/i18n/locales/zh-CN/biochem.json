@@ -46,6 +46,8 @@
   "cycleSelect": "关联到化疗周期（可选）",
   "autoMatch": "自动按日期匹配",
   "noAssociation": "不关联任何周期",
+  "unnamedRegimen": "未命名方案",
+  "cycleOptionLabel": "{{regimen}}：{{start}} ~ {{end}}",
   "saveRecord": "保存记录",
   "updateRecord": "更新记录",
   "saving": "保存中...",

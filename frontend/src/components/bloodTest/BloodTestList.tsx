@@ -7,6 +7,7 @@ import chemoCycleService, {
 import { ApiError } from '../../services/api/apiClient';
 import { getMyelosuppressionGrade } from '../../utils/myelosuppression';
 import { useT } from '../../i18n/useT';
+import { formatDateShort } from '../../utils/formatDate';
 import './BloodTestList.css';
 
 interface BloodTestListProps {
@@ -69,15 +70,6 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
     }
   };
 
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  };
-
   const renderValue = (value: number | undefined, unit: string): string => {
     if (value === undefined || value === null) return '-';
     return `${value.toFixed(2)} ${unit}`;
@@ -98,12 +90,12 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
     if (!cycleId) return <span className="cycle-empty">-</span>;
     const c = cycleMap[cycleId];
     if (!c) return <span className="cycle-empty">{t('noCycle')}</span>;
-    const start = new Date(c.startDate).toLocaleDateString('zh-CN');
-    const end = new Date(c.endDate).toLocaleDateString('zh-CN');
+    const start = formatDateShort(c.startDate);
+    const end = formatDateShort(c.endDate);
     const drugs = (c.medications || [])
       .map(m => m.name)
       .filter(Boolean)
-      .join('、');
+      .join(t('drugSeparator'));
     return (
       <span className="cycle-label" title={drugs}>
         {start}~{end}
@@ -168,7 +160,7 @@ const BloodTestList: React.FC<BloodTestListProps> = ({
             {bloodTests.map(test => (
               <tr key={test._id} className={test.isAbnormal ? 'abnormal' : ''}>
                 <td className="date-cell" data-label={t('tableDate')}>
-                  <span className="date-value-txt">{formatDate(test.date)}</span>
+                  <span className="date-value-txt">{formatDateShort(test.date)}</span>
                   <div className="badge-container" style={{ display: 'inline-flex', gap: 4, marginLeft: 6 }}>
                     {test.isAbnormal && <span className="abnormal-badge">{t('statusAbnormal')}</span>}
                     {(() => {
