@@ -2,6 +2,8 @@
   "title": "Analytics",
   "loading": "Loading...",
   "loadFailed": "Failed to load analytics data",
+  "panelBlood": "Blood Test",
+  "panelBiochem": "Biochem",
   "statTotal": "Total records",
   "statAbnormalRate": "Abnormal rate",
   "latestWbc": "Latest WBC",

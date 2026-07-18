@@ -14,6 +14,7 @@ import analyticsService, {
   TrendPoint,
   SummaryData,
 } from '../../services/analytics/analyticsService';
+import apiClient from '../../services/api/apiClient';
 import chemoCycleService, {
   ChemoCycle,
 } from '../../services/chemoCycle/chemoCycleService';
@@ -81,12 +82,14 @@ function isDateInNadirWindow(
 const Analytics: React.FC = () => {
   const t = useT('analytics');
   const [trends, setTrends] = useState<TrendPoint[]>([]);
+  const [biochemTrends, setBiochemTrends] = useState<Record<string, unknown>[]>([]);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [cycles, setCycles] = useState<ChemoCycle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeMetric, setActiveMetric] = useState<Metric>('wbc');
   const [range, setRange] = useState<Range>('3m');
+  const [panel, setPanel] = useState<'blood' | 'biochem'>('blood');
   const chartRef = useRef<ChartJS<'line'> | null>(null);
 
   useEffect(() => {
@@ -95,15 +98,23 @@ const Analytics: React.FC = () => {
       setIsLoading(true);
       setError('');
       try {
-        const [trendsRes, summaryRes, cyclesRes] = await Promise.all([
+        const urls = [
           analyticsService.getTrends(range),
           analyticsService.getSummary(),
           chemoCycleService.getChemoCycles(1, 100).catch(() => null),
-        ]);
+        ] as const;
+        const [trendsRes, summaryRes, cyclesRes] = await Promise.all(urls);
         if (cancelled) return;
         if (trendsRes.success) setTrends(trendsRes.data);
         if (summaryRes.success) setSummary(summaryRes.data);
         if (cyclesRes && cyclesRes.success) setCycles(cyclesRes.data);
+
+        // 同时拉取生化趋势（不阻塞主数据）
+        apiClient.get<{ success: boolean; data: Record<string, unknown>[] }>(
+          `/analytics/biochem-trends?range=${range}`
+        ).then(res => {
+          if (!cancelled && res.success) setBiochemTrends(res.data || []);
+        }).catch(() => {});
       } catch {
         if (!cancelled) setError(t('loadFailed'));
       } finally {
@@ -304,6 +315,21 @@ const Analytics: React.FC = () => {
           )}
         </div>
       )}
+
+      <div className="metric-tabs" style={{ marginBottom: '0.5rem' }}>
+        <button
+          className={`metric-tab ${panel === 'blood' ? 'active' : ''}`}
+          onClick={() => setPanel('blood')}
+        >
+          {t('panelBlood')}
+        </button>
+        <button
+          className={`metric-tab ${panel === 'biochem' ? 'active' : ''}`}
+          onClick={() => setPanel('biochem')}
+        >
+          {t('panelBiochem')}
+        </button>
+      </div>
 
       <div className="range-bar">
         <span className="range-label">{t('rangeLabel')}</span>

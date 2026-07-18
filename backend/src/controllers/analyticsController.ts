@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { BloodTest } from '../models/BloodTest';
+import { BiochemTest } from '../models/BiochemTest';
 import { asyncHandler } from '../utils/asyncHandler';
 
 type RangeKey = '1m' | '3m' | '6m' | '1y' | 'all';
@@ -39,6 +40,40 @@ export const getTrends = asyncHandler(async (req: AuthRequest, res: Response): P
     plt: t.plt,
     neu: t.neu,
     lym: t.lym,
+    isAbnormal: t.isAbnormal,
+  }));
+
+  res.json({ success: true, data: trends });
+});
+
+// @desc    Get trend data for biochem test values over time
+// @route   GET /api/analytics/biochem-trends?range=1m|3m|6m|1y|all
+// @access  Private
+export const getBiochemTrends = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const dateFilter = buildDateFilter(req.query.range);
+
+  const tests = await BiochemTest.find({ user: req.user?._id, ...dateFilter })
+    .sort('date')
+    .lean();
+
+  const trends = tests.map(t => ({
+    date: (t as any).date.toISOString().split('T')[0],
+    alt: t.alt,
+    ast: t.ast,
+    tbil: t.tbil,
+    dbil: t.dbil,
+    alb: t.alb,
+    ggt: t.ggt,
+    alp: t.alp,
+    bun: t.bun,
+    cr: t.cr,
+    ua: t.ua,
+    egfr: t.egfr,
+    k: t.k,
+    na: t.na,
+    cl: t.cl,
+    ca: t.ca,
+    ldh: t.ldh,
     isAbnormal: t.isAbnormal,
   }));
 
