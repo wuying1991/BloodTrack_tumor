@@ -263,7 +263,7 @@ check('BiochemTest 类型定义三处一致 (生化全套)', () => {
   // 7b. 后端 validation
   const valPath = path.join(ROOT, 'src', 'middlewares', 'validationMiddleware.ts');
   const valContent = fs.readFileSync(valPath, 'utf-8');
-  const valSection = valContent.substring(valContent.indexOf('export const validateBiochemTest ='));
+  const valSection = valContent.substring(valContent.indexOf('BIOCHEM_NUMERIC_FIELDS'));
   if (!valSection || valSection.length < 50) {
     errors.push('validationMiddleware.ts 找不到 validateBiochemTest');
   } else {
