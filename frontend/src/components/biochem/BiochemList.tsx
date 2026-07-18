@@ -3,6 +3,7 @@ import { BiochemTest } from '../../types';
 import biochemService from '../../services/biochem/biochemService';
 import { ApiError } from '../../services/api/apiClient';
 import { useT } from '../../i18n/useT';
+import { formatDateShort } from '../../utils/formatDate';
 import '../bloodTest/BloodTestList.css';
 
 interface BiochemListProps {
@@ -47,12 +48,6 @@ const BiochemList: React.FC<BiochemListProps> = ({
     if (newPage >= 1 && newPage <= pagination.pages) {
       setPagination(prev => ({ ...prev, page: newPage }));
     }
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-    });
   };
 
   const countAbnormal = (test: BiochemTest): number => {
@@ -114,7 +109,7 @@ const BiochemList: React.FC<BiochemListProps> = ({
           <tbody>
             {tests.map(test => (
               <tr key={test._id} className={test.isAbnormal ? 'abnormal' : ''}>
-                <td className="date-cell">{formatDate(test.date)}</td>
+                <td className="date-cell">{formatDateShort(test.date)}</td>
                 {SUMMARY_FIELDS.map(f => {
                   const val = test[f as keyof BiochemTest];
                   return (
