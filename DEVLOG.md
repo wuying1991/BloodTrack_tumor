@@ -12,7 +12,7 @@
 | 后端基础设施 | 6 / 6 | 6 | 100% |
 | 前端页面 | 12 / 12 | 12 | 100% |
 | 后端测试 | 133 | 133 | ✅ 全绿 |
-| 前端测试 | 77 | 77 | ✅ 全绿 |
+| 前端测试 | 94 | 94 | ✅ 全绿 |
 | E2E 测试 | 12 | 12 | ✅ 全绿 (Playwright) |
 
 **项目总进度**: █████████████████████ 99%
@@ -155,7 +155,7 @@
 | 后端契约测试 | `cd backend && npm run test:contract` | ✅ 33/33 |
 | 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 100/100 |
 | 后端全部测试 | `cd backend && npx jest` | ✅ 133/133 |
-| 前端单元测试 | `cd frontend && npm test` | ✅ 77/77 |
+| 前端单元测试 | `cd frontend && npm test` | ✅ 94/94 |
 | 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 7/7 |
 
 ---
@@ -194,6 +194,14 @@
 - **新增翻译键**：bloodTests / biochem 命名空间各加 `unnamedRegimen` + 周期选项格式键（zh-CN + en-US）。
 - **遗留**：`chemoCycleService.convertApiToFormData` 的 `regimenName || '未命名方案'` 是表单数据层默认值（会回写保存），非展示文案，保留不动。en-US 医学内容仍待母语临床复核。
 - **门禁**: frontend tsc ✅ / jest 77/77 ✅ / 新增改动 0 lint 错误（旧 prettier CRLF 噪声依旧）。
+
+### 2026-07-18 续 2（biochem Docker 烟雾测试 + 前端测试补齐 + BiochemList 漏网修复）
+- **Docker 端到端验证**：`docker compose up --build` 重建三服务（mongo/backend/frontend）全绿。biochem 模块容器内实跑：注册→token→创建(alt=200)→`isAbnormal:true`（pre-save hook 容器内生效）→列表→按 ID 取(200)→删除→再取(404) 全链路通过。路由挂载校验：`/api/biochem-tests` 与 `/export` 无 token 均回 401（protect 中间件生效）。前端 nginx 正常吐 SPA + JS bundle。
+- **BiochemList 漏网修复**：上轮 i18n 扫描 grep 模式 `')` 漏匹配 `',`（带选项对象的 `toLocaleDateString('zh-CN', {...})`），BiochemList 本地 `formatDate` 仍硬编码 zh-CN。改用 `formatDateShort`，全前端再无硬编码 zh-CN 日期（`grep -rnE "toLocaleDateString?\(['\"]zh-CN['\"]" src/` 空）。
+- **前端测试补齐**（+17 用例，2 新套件，77→94）：
+  - `pages/biochemTests/__tests__/BiochemTests.test.tsx`（10 用例）：桩 BiochemList/BiochemForm，测页面级编排——默认列表视图、添加/取消/提交成功切换、编辑入口、删除 confirm 双分支、删除失败 ApiError 弹窗、导出 loading 与失败弹窗。
+  - `services/biochem/__tests__/biochemService.test.ts`（7 用例）：`convertFormToApiData`（数字解析/空字段忽略/25 字段全转/非数字忽略/notes trim+chemoCycleId）+ `convertApiToFormData`（数字转串/undefined 转空/日期去 T/null notes）+ 互逆往返校验。
+- **门禁**: frontend tsc ✅ / jest 94/94 ✅ / 新增改动 0 lint 错误。
 
 ### 2026-07-17（L-P5 i18n 国际化 - 进行中）
 - **设计文档 + 计划**：`docs/superpowers/specs/2026-07-17-i18n-design.md` + `plans/2026-07-17-i18n-implementation.md`。决策：zh-CN（默认）+ en-US；前端 i18n + 后端 error code（非 Accept-Language）。
