@@ -21,6 +21,7 @@ frontend/
 │   ├── components/     # 可复用组件
 │   │   ├── auth/       # 认证相关组件
 │   │   ├── bloodTest/  # 血常规相关组件
+│   │   ├── biochem/    # 生化检查组件
 │   │   ├── charts/     # 图表组件
 │   │   ├── chemoCycle/ # 化疗周期组件
 │   │   ├── common/     # 通用组件
@@ -30,12 +31,15 @@ frontend/
 │   │   └── AuthContext.tsx  # 认证状态管理
 │   ├── hooks/          # 自定义 Hooks
 │   ├── pages/          # 页面组件
-│   │   ├── Auth/       # 登录/注册页面
-│   │   ├── Dashboard/  # 仪表板
-│   │   ├── BloodTests/ # 血常规记录页面
-│   │   ├── ChemoCycles/# 化疗周期页面
-│   │   ├── Analytics/  # 数据分析页面
-│   │   └── Settings/   # 设置页面
+│   │   ├── auth/            # 登录/注册/找回密码
+│   │   ├── dashboard/       # 仪表板
+│   │   ├── bloodTests/      # 血常规记录页面
+│   │   ├── biochemTests/    # 生化检查页面
+│   │   ├── chemoCycles/     # 化疗周期页面
+│   │   ├── Analytics/       # 数据分析页面
+│   │   ├── reminders/       # 提醒页面
+│   │   ├── settings/       # 设置页面
+│   │   └── share/           # 只读分享查看页
 │   ├── services/       # API 服务
 │   │   ├── api/        # API 客户端
 │   │   └── auth/       # 认证服务
@@ -142,6 +146,32 @@ import { useAuth } from '@/context/AuthContext';
 ### 提醒系统
 - 创建提醒
 - 通知管理
+
+### 生化检查（肝肾功能 + 电解质）
+- 25 项指标（肝功能 15 + 肾功能 4 + 电解质 5 + LDH）
+- 异常自动检测（pre-save hook 对照正常范围）
+- 按日期自动关联化疗周期
+- CSV 导出
+
+### 数据共享
+- 生成只读分享链接（可选 PIN 码保护）
+- 一键撤销
+- 受分享者无需登录即可查看血常规/生化/周期/分析
+
+### PWA 离线支持
+- Service Worker 缓存应用外壳
+- API GET 网络优先、静态资源缓存优先
+- 离线指示器
+
+### 国际化 (i18n)
+- 中文（默认）+ English
+- 12 个命名空间，语言即时切换
+- 后端错误码本地化
+
+### 安全审计
+- 登录/登出/改密/删账户/分享创建撤销等审计日志
+- 异常登录检测（新设备/异地）
+- 90 天 TTL 自动清理
 
 ## 浏览器支持
 

@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**化疗血常规追踪器 (Chemotherapy Blood Tracker)** — a full-stack TypeScript app for chemotherapy patients to track blood test results, chemo cycles, medication reminders, and trend analytics.
+**化疗血常规追踪器 (Chemotherapy Blood Tracker)** — a full-stack TypeScript app for chemotherapy patients to track blood test results, biochemistry panels (liver/kidney/electrolyte), chemo cycles, medication reminders, trend analytics, and read-only data sharing.
 
 - **Backend**: Express + Mongoose + JWT (dual token) in `backend/`
-- **Frontend**: React 18 + React Router 6 + Chart.js + Axios in `frontend/`
+- **Frontend**: React 18 + React Router 6 + Chart.js + Axios + i18next (zh-CN/en-US) + PWA service worker in `frontend/`
 - **Shared contracts**: `contracts/index.ts` — single source of truth for API types (CI validates both sides against it)
 
 ## Common Commands
@@ -44,7 +44,7 @@ app.ts             → express app assembly (middleware, routes, error handlers)
 config/
   db.ts            → mongoose.connect (MONGODB_URI env)
   secrets.ts       → JWT_SECRET / JWT_REFRESH_SECRET loader (prod requires env ≥16 chars; dev/test falls back to random per-process value)
-models/            → Mongoose schemas: User, BloodTest, ChemoCycle, Reminder
+models/            → Mongoose schemas: User, BloodTest, BiochemTest, ChemoCycle, Reminder, Share, AuditLog
 controllers/       → route handlers (thin — call models, return JSON)
 routes/            → express routers (protect middleware + validation chains)
 middlewares/
@@ -75,14 +75,17 @@ pages/
   dashboard/       → stats cards + recent tests table + upcoming reminders
   auth/            → Login, Register, ForgotPassword, ResetPassword
   bloodTests/      → CRUD with list/add/edit views + CSV export
+  biochemTests/    → CRUD for 25-indicator biochemistry panel (liver/kidney/electrolyte) + CSV export
   chemoCyles/      → CRUD for chemo cycles
-  Analytics/       → Chart.js trend lines + summary cards + time range filter
+  Analytics/       → Chart.js trend lines + summary cards + time range filter (blood + biochem panels)
   reminders/       → CRUD with type/recurrence filters + complete/rollover
-  settings/        → 3-tab (profile, notifications, data) + change password + delete account
+  settings/        → 3-tab (profile, notifications, data) + change password + delete account + audit log + shares
+  share/           → SharedView (read-only public share with optional PIN) + sub-components
 services/
   api/apiClient.ts     → Axios singleton with interceptors (auto-attach Bearer, 401 → refresh → retry queue)
   auth/authService.ts  → login, register, profile, settings, changePassword, deleteAccount
-  bloodTest/, reminder/ → entity-specific API wrappers
+  auth/auditLogService.ts → security audit log listing
+  bloodTest/, biochem/, reminder/, share/ → entity-specific API wrappers
 utils/
   myelosuppression.ts  → calculates ANC myelosuppression grade (0-4) and guidelines
 types/index.ts     → frontend type definitions (mirrors contracts/index.ts)
@@ -96,10 +99,12 @@ types/index.ts     → frontend type definitions (mirrors contracts/index.ts)
 
 ### Data Contracts (`contracts/index.ts`)
 
-Shared TypeScript interfaces for API request/response shapes. Both backend controllers and frontend types must conform. CI runs `contract:check` (a custom Node script at `backend/scripts/contract-validator.js`) that validates:
-1. Backend BloodTest Model fields
-2. Validation middleware fields against Model
-3. Frontend `types/index.ts` BloodTest fields
+Shared TypeScript interfaces for API request/response shapes. Both backend controllers and frontend types must conform. CI runs `contract:check` (a custom Node script at `backend/scripts/contract-validator.js`) that runs 7 consistency checks, each verifying a type is aligned across `contracts/index.ts`, the backend Model + validation middleware, and `frontend/src/types/index.ts`:
+1. BloodTest (Model fields + validation + frontend types)
+2. Share (M-P4: read-only sharing types, three-way alignment)
+3. ChemoCycle (M-P7: regimen + medications with dates)
+4. UserSettings.language (L-P5: i18n, four-way incl. User model)
+5. BiochemTest (25-indicator biochemistry panel + normal ranges)
 
 When adding or changing API fields, update **all three** locations: `contracts/index.ts`, backend model/validation, and `frontend/src/types/index.ts`.
 

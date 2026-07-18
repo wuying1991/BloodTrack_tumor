@@ -203,6 +203,11 @@
   - `services/biochem/__tests__/biochemService.test.ts`（7 用例）：`convertFormToApiData`（数字解析/空字段忽略/25 字段全转/非数字忽略/notes trim+chemoCycleId）+ `convertApiToFormData`（数字转串/undefined 转空/日期去 T/null notes）+ 互逆往返校验。
 - **门禁**: frontend tsc ✅ / jest 94/94 ✅ / 新增改动 0 lint 错误。
 
+### 2026-07-18 续 3（文档同步：README + CLAUDE.md 补齐 biochem 及近期特性）
+- **CLAUDE.md**：① 项目概述补「生化全套 + 只读数据分享」；② 前端技术栈补 i18next + PWA SW；③ models 列表补 BiochemTest/Share/AuditLog；④ pages 树补 biochemTests/ + share/，settings 补审计日志+分享；⑤ services 补 auth/auditLogService + biochem/share 实体服务；⑥ Data Contracts 章节从「3 项 BloodTest 校验」更正为「7 项一致性校验」（BloodTest/Share/ChemoCycle/UserSettings.language/BiochemTest）。
+- **README.md**：① 组件树补 biochem/；② 页面树补 biochemTests/reminders/share 并修正大小写；③ 主要功能模块新增「生化检查 / 数据共享 / PWA 离线 / 国际化 / 安全审计」5 节。
+- **DEVLOG 进度概览**：复核后端 API 模块 8/8（含 biochem）、前端页面 12/12（12 个页面组件含 BiochemTests）均为现状正确值（commit 5845405 已随 biochem 修正），前端测试 94/94。
+
 ### 2026-07-17（L-P5 i18n 国际化 - 进行中）
 - **设计文档 + 计划**：`docs/superpowers/specs/2026-07-17-i18n-design.md` + `plans/2026-07-17-i18n-implementation.md`。决策：zh-CN（默认）+ en-US；前端 i18n + 后端 error code（非 Accept-Language）。
 - **Phase 1 契约**：`UserSettings.language` 4 处同步（contracts / 前端 types / User model / validation），契约字段 optional 兼容历史用户；contract-validator 第 6 项（5/5 -> 6/6）。
