@@ -32,32 +32,65 @@ ChartJS.register(
 );
 
 type Metric = 'wbc' | 'rbc' | 'hgb' | 'plt';
+type BiochemMetric = 'alt' | 'ast' | 'tbil' | 'alb' | 'cr' | 'bun' | 'ua' | 'k' | 'na' | 'ldh';
 type Range = '1m' | '3m' | '6m' | '1y' | 'all';
 
-const CHART_COLORS: Record<Metric, { border: string; bg: string }> = {
+const CHART_COLORS: Record<string, { border: string; bg: string }> = {
   wbc: { border: 'rgb(75, 192, 192)', bg: 'rgba(75, 192, 192, 0.1)' },
   rbc: { border: 'rgb(255, 99, 132)', bg: 'rgba(255, 99, 132, 0.1)' },
   hgb: { border: 'rgb(54, 162, 235)', bg: 'rgba(54, 162, 235, 0.1)' },
   plt: { border: 'rgb(153, 102, 255)', bg: 'rgba(153, 102, 255, 0.1)' },
+  alt: { border: 'rgb(255, 159, 64)', bg: 'rgba(255, 159, 64, 0.1)' },
+  ast: { border: 'rgb(255, 205, 86)', bg: 'rgba(255, 205, 86, 0.1)' },
+  tbil: { border: 'rgb(201, 203, 207)', bg: 'rgba(201, 203, 207, 0.1)' },
+  alb: { border: 'rgb(75, 192, 192)', bg: 'rgba(75, 192, 192, 0.1)' },
+  cr: { border: 'rgb(255, 99, 132)', bg: 'rgba(255, 99, 132, 0.1)' },
+  bun: { border: 'rgb(54, 162, 235)', bg: 'rgba(54, 162, 235, 0.1)' },
+  ua: { border: 'rgb(153, 102, 255)', bg: 'rgba(153, 102, 255, 0.1)' },
+  k: { border: 'rgb(255, 159, 64)', bg: 'rgba(255, 159, 64, 0.1)' },
+  na: { border: 'rgb(255, 205, 86)', bg: 'rgba(255, 205, 86, 0.1)' },
+  ldh: { border: 'rgb(201, 203, 207)', bg: 'rgba(201, 203, 207, 0.1)' },
 };
 
 // 与 BloodTestForm / contracts 中的参考范围保持一致
-const NORMAL_RANGES: Record<Metric, { min: number; max: number }> = {
+const NORMAL_RANGES: Record<string, { min: number; max: number }> = {
   wbc: { min: 4.0, max: 10.0 },
   rbc: { min: 3.5, max: 5.8 },
   hgb: { min: 110, max: 165 },
   plt: { min: 100, max: 300 },
+  // 生化指标
+  alt: { min: 7, max: 40 },
+  ast: { min: 13, max: 35 },
+  tbil: { min: 3.4, max: 20.5 },
+  alb: { min: 35, max: 50 },
+  cr: { min: 44, max: 133 },
+  bun: { min: 2.9, max: 7.5 },
+  ua: { min: 149, max: 416 },
+  k: { min: 3.5, max: 5.5 },
+  na: { min: 135, max: 145 },
+  ldh: { min: 120, max: 250 },
 };
 
-const Y_AXIS: Record<Metric, { min: number; max: number }> = {
+const Y_AXIS: Record<string, { min: number; max: number }> = {
   wbc: { min: 0, max: 15 },
   rbc: { min: 0, max: 8 },
   hgb: { min: 0, max: 200 },
   plt: { min: 0, max: 500 },
+  alt: { min: 0, max: 80 },
+  ast: { min: 0, max: 80 },
+  tbil: { min: 0, max: 40 },
+  alb: { min: 0, max: 60 },
+  cr: { min: 0, max: 200 },
+  bun: { min: 0, max: 15 },
+  ua: { min: 0, max: 500 },
+  k: { min: 0, max: 8 },
+  na: { min: 120, max: 160 },
+  ldh: { min: 0, max: 400 },
 };
 
 const RANGE_KEYS: Range[] = ['1m', '3m', '6m', '1y', 'all'];
 const METRIC_KEYS: Metric[] = ['wbc', 'rbc', 'hgb', 'plt'];
+const BIOCHEM_METRIC_KEYS: BiochemMetric[] = ['alt', 'ast', 'tbil', 'alb', 'cr', 'bun', 'ua', 'k', 'na', 'ldh'];
 
 function isDateInNadirWindow(
   dateStr: string,
@@ -87,7 +120,7 @@ const Analytics: React.FC = () => {
   const [cycles, setCycles] = useState<ChemoCycle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeMetric, setActiveMetric] = useState<Metric>('wbc');
+  const [activeMetric, setActiveMetric] = useState<string>('wbc');
   const [range, setRange] = useState<Range>('3m');
   const [panel, setPanel] = useState<'blood' | 'biochem'>('blood');
   const chartRef = useRef<ChartJS<'line'> | null>(null);
@@ -132,30 +165,25 @@ const Analytics: React.FC = () => {
   const chartData = useMemo(() => {
     const m = activeMetric;
     const rangeNormal = NORMAL_RANGES[m];
-    const labels = trends.map(tp => tp.date);
-    const values = trends.map(tp => tp[m]);
+    const isBiochem = panel === 'biochem';
+    const dataSource = isBiochem ? biochemTrends : trends;
+    const labels = dataSource.map((tp: any) => tp.date);
+    const values = dataSource.map((tp: any) => (tp[m] !== undefined && tp[m] !== null) ? tp[m] : null);
 
-    const nadirStates = trends.map(tp => isDateInNadirWindow(tp.date, cycles));
-
-    // 异常点高亮（红色），Nadir 低谷期点高亮（橙色）
-    const pointColors = trends.map((tp, idx) => {
+    const pointColors = dataSource.map((tp: any) => {
       const v = tp[m];
+      if (v === undefined || v === null) return 'rgba(200,200,200,0.3)';
       const r = NORMAL_RANGES[m];
-      if (v < r.min || v > r.max) return '#d0021b';
-      if (nadirStates[idx].inNadir) return '#f5a623';
-      return CHART_COLORS[m].border;
+      if (r && (v < r.min || v > r.max)) return '#d0021b';
+      return (CHART_COLORS[m] || { border: 'rgb(75,192,192)' }).border;
     });
 
-    const pointRadii = trends.map((tp, idx) => {
+    const pointRadii = dataSource.map((tp: any) => {
       const v = tp[m];
+      if (v === undefined || v === null) return 0;
       const r = NORMAL_RANGES[m];
-      if (v < r.min || v > r.max) return 7;
-      if (nadirStates[idx].inNadir) return 7;
+      if (r && (v < r.min || v > r.max)) return 7;
       return 4;
-    });
-
-    const pointStyles = trends.map((tp, idx) => {
-      return nadirStates[idx].inNadir ? 'rectRot' : 'circle';
     });
 
     return {
@@ -164,11 +192,11 @@ const Analytics: React.FC = () => {
         {
           label: m.toUpperCase(),
           data: values,
-          borderColor: CHART_COLORS[m].border,
-          backgroundColor: CHART_COLORS[m].bg,
+          borderColor: (CHART_COLORS[m] || { border: 'rgb(75,192,192)' }).border,
+          backgroundColor: (CHART_COLORS[m] || { bg: 'rgba(75,192,192,0.1)' }).bg,
           tension: 0.3,
           pointRadius: pointRadii,
-          pointStyle: pointStyles,
+          pointStyle: 'circle',
           pointBackgroundColor: pointColors,
           pointBorderColor: pointColors,
           fill: true,
@@ -198,7 +226,7 @@ const Analytics: React.FC = () => {
       ],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trends, activeMetric, cycles]);
+  }, [trends, biochemTrends, activeMetric, cycles, panel]);
 
   const chartOptions = useMemo(
     () => ({
@@ -239,7 +267,7 @@ const Analytics: React.FC = () => {
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeMetric, cycles, trends]
+    [activeMetric, cycles, trends, panel]
   );
 
   const trendIcon = (direction: 'up' | 'down' | 'stable') => {
@@ -352,21 +380,26 @@ const Analytics: React.FC = () => {
         </button>
       </div>
 
-      {trends.length === 0 ? (
+      {panel === 'blood' && trends.length === 0 ? (
         <div className="empty-state">
           <p>{t('empty')}</p>
           <p className="empty-hint">{t('emptyHint')}</p>
         </div>
+      ) : panel === 'biochem' && biochemTrends.length === 0 ? (
+        <div className="empty-state">
+          <p>{t('empty')}</p>
+          <p className="empty-hint">{t('emptyHintBiochem')}</p>
+        </div>
       ) : (
         <div className="chart-section">
           <div className="metric-tabs">
-            {METRIC_KEYS.map(m => (
+            {(panel === 'blood' ? METRIC_KEYS : BIOCHEM_METRIC_KEYS).map(m => (
               <button
                 key={m}
                 className={`metric-tab ${activeMetric === m ? 'active' : ''}`}
                 onClick={() => setActiveMetric(m)}
               >
-                {t(`metric.${m}`)} ({t(`metricUnit.${m}`)})
+                {m.toUpperCase()}
               </button>
             ))}
           </div>
@@ -379,11 +412,12 @@ const Analytics: React.FC = () => {
           </div>
           <p className="chart-note">
             {t('chartNote', {
-              min: NORMAL_RANGES[activeMetric].min,
-              max: NORMAL_RANGES[activeMetric].max,
+              min: NORMAL_RANGES[activeMetric]?.min ?? 0,
+              max: NORMAL_RANGES[activeMetric]?.max ?? 0,
             })}
           </p>
 
+          {panel === 'blood' && (
           <div className="nadir-education-card">
             <h4>{t('nadirTitle')}</h4>
             <p>
@@ -417,6 +451,7 @@ const Analytics: React.FC = () => {
               </ul>
             </div>
           </div>
+        )}
         </div>
       )}
     </div>

@@ -14,6 +14,7 @@
   "exportTitle": "将当前图表导出为 PNG",
   "empty": "所选时间范围内暂无数据",
   "emptyHint": "请尝试切换到更长的范围，或先记录血常规数据",
+  "emptyHintBiochem": "请尝试切换到更长的范围，或先记录生化检查数据",
   "chartNote": "红色虚线为正常参考范围（{{min}}–{{max}}），红色实心点表示该次检测超出正常范围。",
   "normalUpper": "正常上限",
   "normalLower": "正常下限",

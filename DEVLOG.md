@@ -11,7 +11,7 @@
 | 后端 API 模块 | 8 / 8 | 8 | 100% |
 | 后端基础设施 | 6 / 6 | 6 | 100% |
 | 前端页面 | 12 / 12 | 12 | 100% |
-| 后端测试 | 122 | 122 | ✅ 全绿 |
+| 后端测试 | 133 | 133 | ✅ 全绿 |
 | 前端测试 | 77 | 77 | ✅ 全绿 |
 | E2E 测试 | 12 | 12 | ✅ 全绿 (Playwright) |
 
@@ -156,7 +156,7 @@
 | 后端集成测试 | `cd backend && npx jest --testPathPatterns='integration'` | ✅ 72/72 |
 | 后端全部测试 | `cd backend && npx jest` | ✅ 122/122 |
 | 前端单元测试 | `cd frontend && npm test` | ✅ 77/77 |
-| 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 5/5 |
+| 契约一致性检查 | `cd backend && npm run contract:check` | ✅ 7/7 |
 
 ---
 

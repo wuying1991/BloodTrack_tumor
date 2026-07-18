@@ -13,6 +13,7 @@
   "exportTitle": "Export the current chart as PNG",
   "empty": "No data in the selected time range",
   "emptyHint": "Try a longer range, or record blood test data first",
+  "emptyHintBiochem": "Try a longer range, or record biochemistry data first",
   "chartNote": "Red dashed lines are the normal reference range ({{min}}–{{max}}); red solid points indicate values outside the normal range.",
   "normalUpper": "Normal upper limit",
   "normalLower": "Normal lower limit",
