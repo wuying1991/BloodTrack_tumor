@@ -11,6 +11,7 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 import shareRoutes from './routes/shareRoutes';
 import publicShareRoutes from './routes/publicShareRoutes';
+import labReportRoutes from './routes/labReportRoutes';
 import { errorHandler, notFoundHandler } from './middlewares/errorMiddleware';
 
 const app: Application = express();
@@ -75,6 +76,8 @@ app.use('/api/', limiter);
 // 必须在 /api 全局限流之后、authRoutes 挂载之前注册
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/sms/send', authLimiter);
+app.use('/api/auth/sms/login', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 
@@ -84,8 +87,9 @@ app.use('/api/public/shares/:token/verify', pinVerifyLimiter);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Lab-report photo may send base64 (~few MB); keep above default 100kb
+app.use(express.json({ limit: '8mb' }));
+app.use(express.urlencoded({ extended: true, limit: '8mb' }));
 
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
@@ -105,6 +109,7 @@ app.use('/api/chemo-cycles', chemoCycleRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/shares', shareRoutes);
+app.use('/api/lab-reports', labReportRoutes);
 
 // 公开路由（无 protect 中间件）
 app.use('/api/public/shares', publicShareRoutes);

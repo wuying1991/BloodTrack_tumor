@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/ApiError';
+import { redactErrorMessage } from '../utils/redact';
 
 /**
  * Error Response Interface
@@ -71,10 +72,13 @@ export const errorHandler = (
     statusCode = 401;
   }
 
-  // Prepare error response
+  // Prepare error response (never leak raw secrets via message)
+  const safeMessage = redactErrorMessage(
+    error.message || '服务器错误 (Server Error)'
+  );
   const response: ErrorResponse = {
     success: false,
-    message: error.message || '服务器错误 (Server Error)',
+    message: safeMessage,
     statusCode,
   };
 
@@ -85,14 +89,14 @@ export const errorHandler = (
     if (error.code) response.code = error.code;
   }
 
-  // Add stack trace in development mode
-  if (process.env.NODE_ENV === 'development') {
-    response.stack = error.stack;
+  // Add stack trace in development mode only (also redact long blobs)
+  if (process.env.NODE_ENV === 'development' && error.stack) {
+    response.stack = redactErrorMessage(error.stack);
   }
 
-  // Log error for debugging
+  // Log error for debugging — message only, avoid dumping full request bodies
   if (statusCode >= 500) {
-    console.error('Server Error:', error);
+    console.error('Server Error:', redactErrorMessage(error));
   }
 
   res.status(statusCode).json(response);

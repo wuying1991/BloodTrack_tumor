@@ -14,10 +14,44 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { recordAuditEvent } from '../utils/auditLogger';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { secrets } from '../config/secrets';
+import {
+  maskPhone,
+  normalizePhone,
+  sendLoginCode,
+  verifyLoginCode,
+} from '../services/sms/smsCodeService';
+import {
+  assertCanUnbindEmail,
+  assertCanUnbindPhone,
+  assertPasswordStrength,
+  identitySnapshot,
+  profilePayload,
+  resolvePasswordLoginLookup,
+} from '../utils/authIdentity';
 
 // Token configurations
 const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes
 const REFRESH_TOKEN_EXPIRES_IN = '7d'; // 7 days
+
+const authUserPayload = (user: {
+  _id: { toString(): string };
+  email?: string;
+  phone?: string;
+  fullName: string;
+  passwordHash?: string;
+  settings?: unknown;
+}) => {
+  const identity = identitySnapshot(user);
+  return {
+    _id: user._id.toString(),
+    email: user.email,
+    phone: user.phone,
+    fullName: user.fullName,
+    settings: user.settings,
+    hasPassword: identity.hasPassword,
+    methods: identity.methods,
+  };
+};
 
 /**
  * Generate access token
@@ -86,36 +120,48 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
   res.status(201).json({
     success: true,
     data: {
-      _id: user._id.toString(),
-      email: user.email,
-      fullName: user.fullName,
+      ...authUserPayload(user),
       ...tokens,
     },
   });
 });
 
-// @desc    Auth user & get token
+// @desc    Auth user & get token (email OR phone + password)
 // @route   POST /api/auth/login
 // @access  Public
 export const loginUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
+  const { password } = req.body;
   const clientIp = req.ip || '';
 
-  const user = await User.findOne({ email });
+  if (!password) {
+    throw ApiError.badRequest('请输入密码', undefined, 'VALIDATION_PASSWORD_REQUIRED');
+  }
 
-  if (!user || !(await user.comparePassword(password))) {
-    // 记录登录失败
+  const lookup = resolvePasswordLoginLookup(req.body);
+  const user = lookup.email
+    ? await User.findOne({ email: lookup.email })
+    : await User.findOne({ phone: lookup.phone });
+
+  const identifier = lookup.email || lookup.phone || '';
+
+  if (!user || !user.passwordHash || !(await user.comparePassword(password))) {
     await recordAuditEvent({
       user: user?._id ?? null,
       action: 'login',
       success: false,
       req,
-      detail: user ? '密码错误' : `邮箱不存在: ${email}`,
-      detailCode: user ? 'PASSWORD_INCORRECT' : 'EMAIL_NOT_FOUND',
-      detailParams: user ? undefined : { email },
+      detail: user
+        ? user.passwordHash
+          ? '密码错误'
+          : '账号尚未设置密码'
+        : `账号不存在: ${identifier}`,
+      detailCode: user
+        ? user.passwordHash
+          ? 'PASSWORD_INCORRECT'
+          : 'PASSWORD_NOT_SET'
+        : 'ACCOUNT_NOT_FOUND',
     });
 
-    // 暴力破解检测：同一 IP 15 分钟内 5 次登录失败
     const recentFails = await AuditLog.countDocuments({
       ip: clientIp,
       action: 'login',
@@ -129,16 +175,19 @@ export const loginUser = asyncHandler(async (req: Request, res: Response): Promi
         success: false,
         req,
         detail: `检测到暴力破解尝试: ${clientIp} 15 分钟内 ${recentFails} 次失败`,
-        detailCode: 'BRUTE_FORCE_DETECTED', detailParams: { ip: clientIp, count: recentFails },
+        detailCode: 'BRUTE_FORCE_DETECTED',
+        detailParams: { ip: clientIp, count: recentFails },
         isAnomaly: true,
         anomalyType: 'brute_force',
       });
     }
 
-    throw ApiError.unauthorized('邮箱或密码错误 (Invalid email or password)', 'AUTH_INVALID_CREDENTIALS');
+    throw ApiError.unauthorized(
+      '账号或密码错误 (Invalid account or password)',
+      'AUTH_INVALID_CREDENTIALS'
+    );
   }
 
-  // 新 IP 检测
   const isNewIp = !user.knownIps.includes(clientIp);
   if (isNewIp) {
     user.knownIps.push(clientIp);
@@ -150,23 +199,134 @@ export const loginUser = asyncHandler(async (req: Request, res: Response): Promi
     action: 'login',
     success: true,
     req,
-    detail: isNewIp ? `新 IP 登录: ${clientIp}` : undefined,
-    detailCode: isNewIp ? 'NEW_IP_LOGIN' : undefined,
+    detail: isNewIp
+      ? `新 IP 登录: ${clientIp}`
+      : lookup.phone
+        ? `手机号密码登录: ${maskPhone(lookup.phone)}`
+        : undefined,
+    detailCode: isNewIp ? 'NEW_IP_LOGIN' : lookup.phone ? 'PHONE_PASSWORD_LOGIN' : undefined,
     detailParams: isNewIp ? { ip: clientIp } : undefined,
     isAnomaly: isNewIp,
     anomalyType: isNewIp ? 'new_ip' : undefined,
   });
 
-  // Generate tokens
   const tokens = generateTokenPair(user._id.toString());
 
   res.json({
     success: true,
     data: {
-      _id: user._id.toString(),
-      email: user.email,
-      fullName: user.fullName,
-      settings: user.settings,
+      ...authUserPayload(user),
+      ...tokens,
+    },
+  });
+});
+
+// @desc    Send SMS verification code (Mock in local/dev)
+// @route   POST /api/auth/sms/send
+// @access  Public
+export const sendSmsCode = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { phone, purpose = 'login' } = req.body;
+  const smsPurpose = purpose === 'bind' ? 'bind' : 'login';
+
+  try {
+    const result = await sendLoginCode(phone, smsPurpose);
+    await recordAuditEvent({
+      user: null,
+      action: 'sms_send',
+      success: true,
+      req,
+      detail: `发送验证码: ${maskPhone(String(phone || ''))}`,
+      detailCode: 'SMS_SENT',
+    });
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    await recordAuditEvent({
+      user: null,
+      action: 'sms_send',
+      success: false,
+      req,
+      detail: `发送验证码失败: ${maskPhone(String(phone || ''))}`,
+      detailCode: 'SMS_SEND_FAILED',
+    });
+    throw err;
+  }
+});
+
+// @desc    Login or register with phone + SMS code
+// @route   POST /api/auth/sms/login
+// @access  Public
+export const loginWithSms = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { phone: phoneRaw, code, fullName } = req.body;
+  const clientIp = req.ip || '';
+
+  let phone: string;
+  try {
+    phone = await verifyLoginCode(phoneRaw, code, 'login');
+  } catch (err) {
+    await recordAuditEvent({
+      user: null,
+      action: 'sms_login',
+      success: false,
+      req,
+      detail: `手机验证码登录失败: ${maskPhone(String(phoneRaw || ''))}`,
+      detailCode: 'SMS_LOGIN_FAILED',
+    });
+    throw err;
+  }
+
+  let user = await User.findOne({ phone });
+  let isNew = false;
+
+  if (!user) {
+    isNew = true;
+    const name =
+      typeof fullName === 'string' && fullName.trim()
+        ? fullName.trim().slice(0, 50)
+        : `用户${phone.slice(-4)}`;
+    user = await User.create({
+      phone,
+      fullName: name,
+    });
+    await recordAuditEvent({
+      user: user._id,
+      action: 'register',
+      success: true,
+      req,
+      detail: `手机号注册: ${maskPhone(phone)}`,
+      detailCode: 'PHONE_REGISTER',
+    });
+  }
+
+  const isNewIp = !user.knownIps.includes(clientIp);
+  if (isNewIp) {
+    user.knownIps.push(clientIp);
+    await user.save();
+  }
+
+  await recordAuditEvent({
+    user: user._id,
+    action: 'sms_login',
+    success: true,
+    req,
+    detail: isNew
+      ? `手机号首次登录注册: ${maskPhone(phone)}`
+      : isNewIp
+        ? `新 IP 手机登录: ${clientIp}`
+        : `手机号登录: ${maskPhone(phone)}`,
+    detailCode: isNew ? 'PHONE_LOGIN_NEW' : isNewIp ? 'NEW_IP_LOGIN' : 'PHONE_LOGIN',
+    isAnomaly: isNewIp,
+    anomalyType: isNewIp ? 'new_ip' : undefined,
+  });
+
+  const tokens = generateTokenPair(user._id.toString());
+
+  res.status(isNew ? 201 : 200).json({
+    success: true,
+    data: {
+      ...authUserPayload(user),
       ...tokens,
     },
   });
@@ -307,7 +467,8 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response): P
 // @route   GET /api/auth/profile
 // @access  Private
 export const getProfile = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const user = await User.findById(req.user?._id).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
+  // Need passwordHash presence for hasPassword (not returned to client)
+  const user = await User.findById(req.user?._id).select('-resetPasswordToken -resetPasswordExpires');
 
   if (!user) {
     throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
@@ -315,16 +476,330 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response): 
 
   res.json({
     success: true,
-    data: {
-      _id: user._id,
-      email: user.email,
-      fullName: user.fullName,
-      dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
-      settings: user.settings,
-      createdAt: (user as any).createdAt,
-      updatedAt: (user as any).updatedAt,
-    },
+    data: profilePayload(user as any),
+  });
+});
+
+// @desc    Bound login methods (email / phone / password)
+// @route   GET /api/auth/identities
+// @access  Private
+export const getIdentities = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+  res.json({
+    success: true,
+    data: identitySnapshot(user),
+  });
+});
+
+// @desc    Bind or rebind phone (new phone SMS purpose=bind)
+// @route   POST /api/auth/phone/bind
+// @access  Private
+// Body: { phone, code, currentPassword?, currentPhoneCode? }
+// - First bind: session enough + new phone SMS
+// - Rebind (change number): need currentPassword OR SMS on old phone (currentPhoneCode)
+export const bindPhone = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { phone: phoneRaw, code, currentPassword, currentPhoneCode } = req.body;
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+
+  let phone: string;
+  try {
+    phone = await verifyLoginCode(phoneRaw, code, 'bind');
+  } catch (err) {
+    await recordAuditEvent({
+      user: user._id,
+      action: 'phone_bind',
+      success: false,
+      req,
+      detail: '绑定手机验证码失败',
+      detailCode: 'SMS_VERIFY_FAILED',
+    });
+    throw err;
+  }
+
+  const isRebind = !!(user.phone && user.phone !== phone);
+  if (isRebind) {
+    const oldPhone = user.phone as string;
+    let proved = false;
+    if (currentPassword && user.passwordHash) {
+      proved = await user.comparePassword(currentPassword);
+    }
+    if (!proved && currentPhoneCode) {
+      try {
+        await verifyLoginCode(oldPhone, currentPhoneCode, 'bind');
+        proved = true;
+      } catch {
+        proved = false;
+      }
+    }
+    if (!proved) {
+      throw ApiError.unauthorized(
+        '换绑手机需验证当前密码，或向原手机号发送并填写验证码',
+        'REBIND_PROOF_REQUIRED'
+      );
+    }
+  }
+
+  const occupied = await User.findOne({ phone });
+  if (occupied && occupied._id.toString() !== user._id.toString()) {
+    await recordAuditEvent({
+      user: user._id,
+      action: 'phone_bind',
+      success: false,
+      req,
+      detail: `手机号已被占用: ${maskPhone(phone)}`,
+      detailCode: 'PHONE_ALREADY_BOUND',
+    });
+    throw ApiError.conflict(
+      '该手机号已绑定其他账号',
+      'PHONE_ALREADY_BOUND'
+    );
+  }
+
+  const previous = user.phone;
+  user.phone = phone;
+  await user.save();
+
+  await recordAuditEvent({
+    user: user._id,
+    action: 'phone_bind',
+    success: true,
+    req,
+    detail: isRebind
+      ? `换绑手机: ${maskPhone(previous || '')} → ${maskPhone(phone)}`
+      : `绑定手机号: ${maskPhone(phone)}`,
+    detailCode: isRebind ? 'PHONE_REBOUND' : 'PHONE_BOUND',
+  });
+
+  res.json({
+    success: true,
+    data: profilePayload(user as any),
+  });
+});
+
+// @desc    Unbind phone (must keep email+password)
+// @route   DELETE /api/auth/phone/bind
+// @access  Private
+// Body: { password? } or { code? }  // code to current phone
+export const unbindPhone = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { password, code } = req.body || {};
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+  if (!user.phone) {
+    throw ApiError.badRequest('当前未绑定手机号', undefined, 'PHONE_NOT_BOUND');
+  }
+
+  assertCanUnbindPhone(user);
+
+  let proved = false;
+  if (password && user.passwordHash) {
+    proved = await user.comparePassword(password);
+  }
+  if (!proved && code) {
+    try {
+      await verifyLoginCode(user.phone, code, 'bind');
+      proved = true;
+    } catch {
+      proved = false;
+    }
+  }
+  if (!proved) {
+    throw ApiError.unauthorized(
+      '请输入密码，或向当前手机号发送并填写验证码以确认解绑',
+      'UNBIND_PROOF_REQUIRED'
+    );
+  }
+
+  const removed = user.phone;
+  await User.updateOne({ _id: user._id }, { $unset: { phone: 1 } });
+  const updated = await User.findById(user._id);
+  if (!updated) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+
+  await recordAuditEvent({
+    user: user._id,
+    action: 'phone_unbind',
+    success: true,
+    req,
+    detail: `解绑手机号: ${maskPhone(removed)}`,
+    detailCode: 'PHONE_UNBOUND',
+  });
+
+  res.json({
+    success: true,
+    message: '手机号已解绑',
+    data: profilePayload(updated as any),
+  });
+});
+
+// @desc    Bind or rebind email; first bind without password also sets password
+// @route   POST /api/auth/email/bind
+// @access  Private
+export const bindEmail = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { email: emailRaw, password, currentPassword } = req.body;
+  const email = String(emailRaw || '').trim().toLowerCase();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw ApiError.badRequest('请输入有效邮箱', undefined, 'VALIDATION_EMAIL_FORMAT');
+  }
+
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+
+  const isRebind = !!(user.email && user.email !== email);
+
+  const occupied = await User.findOne({ email });
+  if (occupied && occupied._id.toString() !== user._id.toString()) {
+    await recordAuditEvent({
+      user: user._id,
+      action: 'email_bind',
+      success: false,
+      req,
+      detail: `邮箱已被占用: ${email}`,
+      detailCode: 'EMAIL_ALREADY_BOUND',
+    });
+    throw ApiError.conflict('该邮箱已绑定其他账号', 'EMAIL_ALREADY_BOUND');
+  }
+
+  if (user.passwordHash) {
+    // Bind or rebind: prove with current password
+    const proof = currentPassword || password;
+    if (!proof || !(await user.comparePassword(proof))) {
+      throw ApiError.unauthorized(
+        isRebind ? '换绑邮箱请输入当前密码' : '请输入当前密码以绑定邮箱',
+        'AUTH_PASSWORD_INCORRECT'
+      );
+    }
+    user.email = email;
+  } else {
+    // Phone-only: first-time bind sets password + email (rebind N/A without email)
+    if (!password) {
+      throw ApiError.badRequest(
+        '请设置登录密码',
+        undefined,
+        'VALIDATION_PASSWORD_REQUIRED'
+      );
+    }
+    assertPasswordStrength(password);
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(password, salt);
+    user.email = email;
+  }
+
+  await user.save();
+
+  await recordAuditEvent({
+    user: user._id,
+    action: 'email_bind',
+    success: true,
+    req,
+    detail: isRebind ? `换绑邮箱: ${email}` : `绑定邮箱: ${email}`,
+    detailCode: isRebind ? 'EMAIL_REBOUND' : 'EMAIL_BOUND',
+  });
+
+  res.json({
+    success: true,
+    data: profilePayload(user as any),
+  });
+});
+
+// @desc    Unbind email (must keep phone)
+// @route   DELETE /api/auth/email/bind
+// @access  Private
+// Body: { password }
+export const unbindEmail = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { password } = req.body || {};
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+  if (!user.email) {
+    throw ApiError.badRequest('当前未绑定邮箱', undefined, 'EMAIL_NOT_BOUND');
+  }
+
+  assertCanUnbindEmail(user);
+
+  if (!password || !user.passwordHash || !(await user.comparePassword(password))) {
+    throw ApiError.unauthorized('请输入密码以确认解绑邮箱', 'AUTH_PASSWORD_INCORRECT');
+  }
+
+  const removed = user.email;
+  await User.updateOne({ _id: user._id }, { $unset: { email: 1 } });
+  const updated = await User.findById(user._id);
+  if (!updated) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+
+  await recordAuditEvent({
+    user: user._id,
+    action: 'email_unbind',
+    success: true,
+    req,
+    detail: `解绑邮箱: ${removed}`,
+    detailCode: 'EMAIL_UNBOUND',
+  });
+
+  res.json({
+    success: true,
+    message: '邮箱已解绑',
+    data: profilePayload(updated as any),
+  });
+});
+
+// @desc    Set password for accounts that have none (e.g. phone SMS only)
+// @route   POST /api/auth/password/set
+// @access  Private
+export const setPassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { password, confirmPassword } = req.body;
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
+  }
+
+  if (user.passwordHash) {
+    throw ApiError.badRequest(
+      '已设置密码，请使用修改密码',
+      undefined,
+      'PASSWORD_ALREADY_SET'
+    );
+  }
+
+  if (password !== confirmPassword) {
+    throw ApiError.badRequest(
+      '两次输入的密码不一致',
+      undefined,
+      'PASSWORD_CONFIRM_MISMATCH'
+    );
+  }
+  assertPasswordStrength(password);
+
+  const salt = await bcrypt.genSalt(10);
+  user.passwordHash = await bcrypt.hash(password, salt);
+  await user.save();
+
+  await recordAuditEvent({
+    user: user._id,
+    action: 'set_password',
+    success: true,
+    req,
+    detail: '设置登录密码',
+    detailCode: 'PASSWORD_SET',
+  });
+
+  res.json({
+    success: true,
+    message: '密码已设置，可用手机号或邮箱（若已绑定）+ 密码登录',
+    data: profilePayload(user as any),
   });
 });
 
@@ -351,18 +826,11 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
     throw ApiError.notFound('用户未找到 (User not found)', 'AUTH_USER_NOT_FOUND');
   }
 
+  // Re-fetch with passwordHash for hasPassword
+  const full = await User.findById(user._id);
   res.json({
     success: true,
-    data: {
-      _id: user._id,
-      email: user.email,
-      fullName: user.fullName,
-      dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
-      settings: user.settings,
-      createdAt: (user as any).createdAt,
-      updatedAt: (user as any).updatedAt,
-    },
+    data: profilePayload((full || user) as any),
   });
 });
 

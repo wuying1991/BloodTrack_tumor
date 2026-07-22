@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Secrets & local env (never commit)
+.env
+.env.*
+!.env.example
+!**/.env.example
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Backend / frontend build
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# Miniapp local
+miniapp/dist/
+miniapp/.hbuilderx/
+
+# Test artifacts
+.nyc_output/
+*.lcov

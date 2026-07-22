@@ -57,6 +57,7 @@ export interface BloodTest {
   plt: number;
   neu?: number;
   lym?: number;
+  crp?: number;
   notes?: string;
   isAbnormal?: boolean;
   chemoCycleId?: string | null;
@@ -72,6 +73,7 @@ export interface BloodTestCreateRequest {
   plt: number;
   neu?: number;
   lym?: number;
+  crp?: number;
   notes?: string;
   chemoCycleId?: string | null;
 }

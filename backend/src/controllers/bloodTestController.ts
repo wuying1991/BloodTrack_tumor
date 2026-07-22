@@ -71,7 +71,7 @@ export const getBloodTests = asyncHandler(async (req: AuthRequest, res: Response
 // @route   POST /api/blood-tests
 // @access  Private
 export const createBloodTest = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { date, wbc, rbc, hgb, plt, neu, lym, notes } = req.body;
+  const { date, wbc, rbc, hgb, plt, neu, lym, crp, notes } = req.body;
 
   const cycleId = await resolveChemoCycleId(req.user?._id, req.body);
 
@@ -84,6 +84,7 @@ export const createBloodTest = asyncHandler(async (req: AuthRequest, res: Respon
     plt,
     neu,
     lym,
+    crp,
     notes,
     chemoCycleId: cycleId === undefined ? undefined : cycleId,
   });
@@ -200,7 +201,7 @@ export const exportBloodTests = asyncHandler(async (req: AuthRequest, res: Respo
 
   const header = [
     '日期', '白细胞(WBC)', '红细胞(RBC)', '血红蛋白(HGB)', '血小板(PLT)',
-    '中性粒(NEU)', '淋巴(LYM)', '是否异常', '关联周期', '化疗药物', '备注',
+    '中性粒(NEU)', '淋巴细胞(LYM)', '是否异常', '关联周期', '化疗药物', '备注',
   ];
 
   const rows: string[] = [header.map(csvCell).join(',')];

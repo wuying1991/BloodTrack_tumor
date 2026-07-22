@@ -1,0 +1,31 @@
+/**
+ * BloodTrack 设计令牌 — 医疗浅绿、高可读、移动优先
+ */
+
+$bt-primary: #1f8a68;
+$bt-primary-soft: #e8f6ef;
+$bt-primary-deep: #167554;
+$bt-bg: #f2f5f4;
+$bt-card: #ffffff;
+$bt-text: #15241f;
+$bt-text-secondary: #5c6f68;
+$bt-text-muted: #8b9b95;
+$bt-border: #e6ece9;
+$bt-danger: #d14343;
+$bt-danger-soft: #fdeceb;
+$bt-warning: #d97706;
+$bt-radius-lg: 28rpx;
+$bt-radius-md: 20rpx;
+$bt-radius-sm: 14rpx;
+$bt-shadow: 0 8rpx 28rpx rgba(21, 36, 31, 0.06);
+
+/* uni 内置变量对齐 */
+$uni-color-primary: $bt-primary;
+$uni-color-success: $bt-primary;
+$uni-color-warning: $bt-warning;
+$uni-color-error: $bt-danger;
+$uni-text-color: $bt-text;
+$uni-text-color-grey: $bt-text-muted;
+$uni-bg-color: $bt-card;
+$uni-bg-color-grey: $bt-bg;
+$uni-border-color: $bt-border;

@@ -1,0 +1,139 @@
+import { defineStore } from 'pinia';
+import * as authApi from '@/api/auth';
+import type {
+  AuthUser,
+  LoginCredentials,
+  RegisterData,
+  SmsLoginPayload,
+} from '@/types/auth';
+import { clearTokens, getAccessToken, setTokens } from '@/utils/storage';
+import { ApiError } from '@/types/api';
+
+interface AuthState {
+  user: AuthUser | null;
+  bootstrapped: boolean;
+  loading: boolean;
+}
+
+function sessionToUser(session: AuthUser & { accessToken?: string; refreshToken?: string }): AuthUser {
+  return {
+    _id: session._id,
+    email: session.email,
+    phone: session.phone,
+    fullName: session.fullName,
+    settings: session.settings,
+    hasPassword: session.hasPassword,
+    methods: session.methods,
+    canUnbindPhone: session.canUnbindPhone,
+    canUnbindEmail: session.canUnbindEmail,
+  };
+}
+
+export const useAuthStore = defineStore('auth', {
+  state: (): AuthState => ({
+    user: null,
+    bootstrapped: false,
+    loading: false,
+  }),
+
+  getters: {
+    isAuthenticated: (state) => !!state.user && !!getAccessToken(),
+    displayName: (state) =>
+      state.user?.fullName ||
+      state.user?.email ||
+      state.user?.phone ||
+      '',
+  },
+
+  actions: {
+    async bootstrap() {
+      if (this.bootstrapped) return;
+      const token = getAccessToken();
+      if (!token) {
+        this.user = null;
+        this.bootstrapped = true;
+        return;
+      }
+      try {
+        this.user = await authApi.getProfile();
+      } catch {
+        clearTokens();
+        this.user = null;
+      } finally {
+        this.bootstrapped = true;
+      }
+    },
+
+    async login(credentials: LoginCredentials) {
+      this.loading = true;
+      try {
+        const session = await authApi.login(credentials);
+        setTokens(session.accessToken, session.refreshToken);
+        this.user = sessionToUser(session);
+        return this.user;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async loginWithSms(payload: SmsLoginPayload) {
+      this.loading = true;
+      try {
+        const session = await authApi.loginWithSms(payload);
+        setTokens(session.accessToken, session.refreshToken);
+        this.user = sessionToUser(session);
+        return this.user;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async register(payload: RegisterData) {
+      this.loading = true;
+      try {
+        const session = await authApi.register(payload);
+        setTokens(session.accessToken, session.refreshToken);
+        this.user = sessionToUser(session);
+        return this.user;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async logout() {
+      this.loading = true;
+      try {
+        try {
+          await authApi.logout();
+        } catch (err) {
+          if (!(err instanceof ApiError && err.statusCode === 401)) {
+            console.warn('logout API failed', err);
+          }
+        }
+      } finally {
+        clearTokens();
+        this.user = null;
+        this.loading = false;
+      }
+    },
+
+    async refreshProfile() {
+      this.user = await authApi.getProfile();
+      return this.user;
+    },
+
+    async applyUser(user: AuthUser) {
+      this.user = user;
+    },
+
+    async updateProfile(fields: {
+      fullName?: string;
+      dateOfBirth?: string;
+      gender?: string;
+    }) {
+      const user = await authApi.updateProfile(fields);
+      this.user = sessionToUser(user);
+      return this.user;
+    },
+  },
+});

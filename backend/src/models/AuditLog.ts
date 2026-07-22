@@ -10,7 +10,14 @@ export type AuditAction =
   | 'change_password'
   | 'delete_account'
   | 'share_create'
-  | 'share_revoke';
+  | 'share_revoke'
+  | 'sms_send'
+  | 'sms_login'
+  | 'phone_bind'
+  | 'email_bind'
+  | 'phone_unbind'
+  | 'email_unbind'
+  | 'set_password';
 
 export interface IAuditLog extends Document {
   user: mongoose.Types.ObjectId | null;

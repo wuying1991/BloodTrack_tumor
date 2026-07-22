@@ -9,7 +9,10 @@
     "build": "tsc",
     "test": "jest",
     "test:contract": "jest --testPathPatterns='contracts' --verbose",
-    "contract:check": "node scripts/contract-validator.js"
+    "contract:check": "node scripts/contract-validator.js",
+    "lab-provider": "bash scripts/switch-lab-provider.sh",
+    "lab-provider:show": "bash scripts/switch-lab-provider.sh show",
+    "test:lab-extract": "ts-node scripts/test-text-metric-extract.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

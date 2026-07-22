@@ -104,6 +104,8 @@ export interface BloodTest {
   plt: number;
   neu?: number;
   lym?: number;
+  /** C-reactive protein (mg/L) */
+  crp?: number;
   notes?: string;
   isAbnormal: boolean;
   chemoCycleId?: string | null;
@@ -119,6 +121,7 @@ export interface BloodTestCreateRequest {
   plt: number;
   neu?: number;
   lym?: number;
+  crp?: number;
   notes?: string;
   /** 显式关联到周期；不传则按 date 自动关联；显式传 null 解除关联 */
   chemoCycleId?: string | null;
@@ -246,6 +249,7 @@ export const BLOOD_TEST_NORMAL_RANGES: Record<string, NormalRange> = {
   plt: { min: 100, max: 300, unit: '\u00d710\u2079/L', name: '\u8840\u5c0f\u677f (PLT)' },
   neu: { min: 1.8, max: 6.3, unit: '\u00d710\u2079/L', name: '\u4e2d\u6027\u7c92\u7ec6\u80de (NEU)' },
   lym: { min: 1.0, max: 4.8, unit: '\u00d710\u2079/L', name: '\u6dcb\u5df4\u7ec6\u80de (LYM)' },
+  crp: { min: 0, max: 10, unit: 'mg/L', name: 'C\u53cd\u5e94\u86cb\u767d (CRP)' },
 };
 
 // ============================================================
