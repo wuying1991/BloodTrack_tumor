@@ -35,3 +35,6 @@ miniapp/.hbuilderx/
 # Test artifacts
 .nyc_output/
 *.lcov
+
+# Local git worktrees
+.worktrees/
