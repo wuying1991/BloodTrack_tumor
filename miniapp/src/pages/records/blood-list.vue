@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { onShow, onUnload } from '@dcloudio/uni-app';
 import QuickAddSheet from '@/components/QuickAddSheet.vue';
 import * as bloodApi from '@/api/bloodTest';
 import type { BloodTest, PaginationMeta } from '@/types/bloodTest';
@@ -84,6 +84,8 @@ import {
 } from '@/constants/bloodRanges';
 import { formatDisplayDate } from '@/utils/formatDate';
 import { getErrorMessage } from '@/utils/errorMessage';
+import { appendUniqueById } from '@/utils/pagination';
+import { createRequestEpoch } from '@/utils/requestEpoch';
 import { getAccessToken } from '@/utils/storage';
 
 const items = ref<BloodTest[]>([]);
@@ -98,6 +100,7 @@ const loadingMore = ref(false);
 const refreshing = ref(false);
 const error = ref('');
 const showSheet = ref(false);
+const listEpoch = createRequestEpoch();
 
 const hasMore = computed(
   () => pagination.value.page < pagination.value.pages
@@ -119,48 +122,77 @@ function summaryMetrics(item: BloodTest) {
   });
 }
 
-async function fetchPage(page: number, append: boolean) {
-  const res = await bloodApi.listBloodTests(page, pagination.value.limit);
-  pagination.value = res.pagination;
-  items.value = append ? [...items.value, ...res.data] : res.data;
+function fetchPage(page: number) {
+  return bloodApi.listBloodTests(page, pagination.value.limit);
 }
 
 async function reload() {
+  const generation = listEpoch.begin();
+  loadingMore.value = false;
+  refreshing.value = false;
   error.value = '';
   loading.value = true;
   try {
-    await fetchPage(1, false);
+    const res = await fetchPage(1);
+    if (!listEpoch.isCurrent(generation)) return;
+    items.value = res.data;
+    pagination.value = res.pagination;
   } catch (err) {
-    error.value = getErrorMessage(err, '加载失败');
+    if (listEpoch.isCurrent(generation)) {
+      error.value = getErrorMessage(err, '加载失败');
+    }
   } finally {
-    loading.value = false;
+    if (listEpoch.isCurrent(generation)) loading.value = false;
   }
 }
 
 async function onPullRefresh() {
+  if (loading.value || refreshing.value) return;
+  const generation = listEpoch.begin();
+  loadingMore.value = false;
   refreshing.value = true;
   error.value = '';
   try {
-    await fetchPage(1, false);
+    const res = await fetchPage(1);
+    if (!listEpoch.isCurrent(generation)) return;
+    items.value = res.data;
+    pagination.value = res.pagination;
   } catch (err) {
-    error.value = getErrorMessage(err, '刷新失败');
+    if (listEpoch.isCurrent(generation)) {
+      error.value = getErrorMessage(err, '刷新失败');
+    }
   } finally {
-    refreshing.value = false;
+    if (listEpoch.isCurrent(generation)) refreshing.value = false;
   }
 }
 
 async function onLoadMore() {
-  if (!hasMore.value || loadingMore.value || loading.value) return;
+  if (
+    !hasMore.value ||
+    loadingMore.value ||
+    loading.value ||
+    refreshing.value
+  ) return;
+  const generation = listEpoch.capture();
+  const targetPage = pagination.value.page + 1;
   loadingMore.value = true;
   try {
-    await fetchPage(pagination.value.page + 1, true);
+    const res = await fetchPage(targetPage);
+    if (
+      !listEpoch.isCurrent(generation) ||
+      pagination.value.page + 1 !== targetPage
+    ) return;
+    items.value = appendUniqueById(items.value, res.data);
+    pagination.value = res.pagination;
   } catch (err) {
-    uni.showToast({
-      title: getErrorMessage(err, '加载更多失败'),
-      icon: 'none',
-    });
+    if (listEpoch.isCurrent(generation)) {
+      uni.showToast({
+        title: getErrorMessage(err, '加载更多失败'),
+        icon: 'none',
+      });
+    }
   } finally {
-    loadingMore.value = false;
+    if (listEpoch.isCurrent(generation)) loadingMore.value = false;
   }
 }
 
@@ -202,8 +234,10 @@ onShow(() => {
     uni.reLaunch({ url: '/pages/auth/login' });
     return;
   }
-  reload();
+  void reload();
 });
+
+onUnload(() => listEpoch.invalidate());
 </script>
 
 <style scoped lang="scss">

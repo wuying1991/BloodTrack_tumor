@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import { appendUniqueById, collectAllPages } from '../pagination';
+import { createRequestEpoch } from '../requestEpoch';
 
 describe('collectAllPages', () => {
   test('concatenates every server page', async () => {
@@ -38,5 +39,14 @@ describe('appendUniqueById', () => {
       { _id: 'a', value: 1 },
       { _id: 'b', value: 2 },
     ]);
+  });
+
+  test('an old append can be rejected after a replacement load begins', () => {
+    const epoch = createRequestEpoch();
+    epoch.begin();
+    const appendGeneration = epoch.capture();
+    epoch.begin();
+
+    expect(epoch.isCurrent(appendGeneration)).toBe(false);
   });
 });
