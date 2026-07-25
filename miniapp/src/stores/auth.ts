@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import * as authApi from '@/api/auth';
+import { refreshSession } from '@/api/http';
 import type {
   AuthUser,
   LoginCredentials,
@@ -52,17 +53,18 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async bootstrap() {
       if (this.bootstrapped) return;
-      const token = getAccessToken();
-      if (!token) {
-        this.user = null;
-        this.bootstrapped = true;
-        return;
-      }
       try {
+        let token = getAccessToken();
+        if (!token && getRefreshToken()) {
+          token = (await refreshSession()) || '';
+        }
+        if (!token) {
+          this.clearLocalSession();
+          return;
+        }
         this.user = await authApi.getProfile();
       } catch {
-        clearTokens();
-        this.user = null;
+        this.clearLocalSession();
       } finally {
         this.bootstrapped = true;
       }
@@ -114,10 +116,14 @@ export const useAuthStore = defineStore('auth', {
           console.warn('logout API failed', err);
         }
       } finally {
-        clearTokens();
-        this.user = null;
+        this.clearLocalSession();
         this.loading = false;
       }
+    },
+
+    clearLocalSession() {
+      clearTokens();
+      this.user = null;
     },
 
     async refreshProfile() {

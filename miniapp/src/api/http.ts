@@ -29,13 +29,7 @@ interface UniRequestSuccess {
   header?: Record<string, string>;
 }
 
-let isRefreshing = false;
-let refreshWaiters: Array<(token: string | null) => void> = [];
-
-function notifyRefreshWaiters(token: string | null): void {
-  refreshWaiters.forEach((cb) => cb(token));
-  refreshWaiters = [];
-}
+let refreshPromise: Promise<string | null> | null = null;
 
 function buildUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -103,7 +97,7 @@ function rawRequest(options: RequestOptions): Promise<UniRequestSuccess> {
   });
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+async function performRefresh(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     return null;
@@ -140,6 +134,15 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+export function refreshSession(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = performRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 function redirectToLogin(): void {
   const pages = getCurrentPages();
   const current = pages[pages.length - 1] as { route?: string } | undefined;
@@ -173,36 +176,14 @@ export async function request<T>(options: RequestOptions): Promise<T> {
       throw parseFailure(statusCode, data);
     }
 
-    if (!isRefreshing) {
-      isRefreshing = true;
-      try {
-        const newToken = await refreshAccessToken();
-        notifyRefreshWaiters(newToken);
-        if (!newToken) {
-          redirectToLogin();
-          throw new ApiError(401, '登录已过期，请重新登录', {
-            code: 'AUTH_SESSION_EXPIRED',
-          });
-        }
-        return request<T>({ ...options, _retry: true });
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
-    return new Promise<T>((resolve, reject) => {
-      refreshWaiters.push((token) => {
-        if (!token) {
-          reject(
-            new ApiError(401, '登录已过期，请重新登录', {
-              code: 'AUTH_SESSION_EXPIRED',
-            })
-          );
-          return;
-        }
-        request<T>({ ...options, _retry: true }).then(resolve).catch(reject);
+    const newToken = await refreshSession();
+    if (!newToken) {
+      redirectToLogin();
+      throw new ApiError(401, '登录已过期，请重新登录', {
+        code: 'AUTH_SESSION_EXPIRED',
       });
-    });
+    }
+    return request<T>({ ...options, _retry: true });
   }
 
   throw parseFailure(statusCode, data);
