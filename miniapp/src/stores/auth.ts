@@ -126,6 +126,11 @@ export const useAuthStore = defineStore('auth', {
       this.user = null;
     },
 
+    async deleteAccount(password: string) {
+      await authApi.deleteAccount(password);
+      this.clearLocalSession();
+    },
+
     async refreshProfile() {
       this.user = await authApi.getProfile();
       return this.user;

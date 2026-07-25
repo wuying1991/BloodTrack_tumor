@@ -5,6 +5,7 @@ import { refreshSession } from '@/api/http';
 import { useAuthStore } from '../auth';
 
 vi.mock('@/api/auth', () => ({
+  deleteAccount: vi.fn(),
   getProfile: vi.fn(),
 }));
 
@@ -71,5 +72,37 @@ describe('auth store bootstrap', () => {
 
     expect(auth.user).toBeNull();
     expect(storage.size).toBe(0);
+  });
+
+  test('deleteAccount clears the local session only after API success', async () => {
+    storage.set('bt_access_token', 'access');
+    storage.set('bt_refresh_token', 'refresh');
+    vi.mocked(authApi.deleteAccount).mockResolvedValue(undefined);
+    const auth = useAuthStore();
+    auth.user = { _id: 'u1', fullName: 'User' };
+
+    await auth.deleteAccount('correct-password');
+
+    expect(authApi.deleteAccount).toHaveBeenCalledWith('correct-password');
+    expect(auth.user).toBeNull();
+    expect(storage.size).toBe(0);
+  });
+
+  test('deleteAccount preserves the session when the API rejects', async () => {
+    storage.set('bt_access_token', 'access');
+    storage.set('bt_refresh_token', 'refresh');
+    vi.mocked(authApi.deleteAccount).mockRejectedValue(
+      new Error('wrong password')
+    );
+    const auth = useAuthStore();
+    auth.user = { _id: 'u1', fullName: 'User' };
+
+    await expect(auth.deleteAccount('wrong-password')).rejects.toThrow(
+      'wrong password'
+    );
+
+    expect(auth.user?._id).toBe('u1');
+    expect(storage.get('bt_access_token')).toBe('access');
+    expect(storage.get('bt_refresh_token')).toBe('refresh');
   });
 });

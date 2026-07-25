@@ -139,3 +139,9 @@ export async function refreshToken(
   );
   return res.data;
 }
+
+export async function deleteAccount(password: string): Promise<void> {
+  await http.delete<ApiSuccess<Record<string, number>>>('/auth/account', {
+    password,
+  });
+}

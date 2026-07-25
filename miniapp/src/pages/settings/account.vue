@@ -115,6 +115,30 @@
       />
     </view>
 
+    <view class="card danger-zone">
+      <text class="card-title danger-title">危险操作</text>
+      <text class="hint">
+        删除后，血检、生化、化疗周期、提醒和分享数据均不可恢复。
+      </text>
+      <template v-if="auth.user?.hasPassword">
+        <input
+          class="input"
+          password
+          v-model="deletePassword"
+          placeholder="输入当前密码"
+        />
+        <button
+          class="danger delete-account"
+          :disabled="deleteBusy"
+          :loading="deleteBusy"
+          @click="onDeleteAccount"
+        >
+          永久删除账户
+        </button>
+      </template>
+      <text v-else class="hint">请先在本页设置登录密码，再删除账户。</text>
+    </view>
+
     <text v-if="error" class="error">{{ error }}</text>
     <text v-if="okMsg" class="ok">{{ okMsg }}</text>
   </view>
@@ -153,11 +177,13 @@ const newPassword = ref('');
 const confirmPassword = ref('');
 const devNew = ref('');
 const devOld = ref('');
+const deletePassword = ref('');
 const error = ref('');
 const okMsg = ref('');
 const busy = ref(false);
 const sendingNew = ref(false);
 const sendingOld = ref(false);
+const deleteBusy = ref(false);
 const cdNew = ref(0);
 const cdOld = ref(0);
 let tNew: ReturnType<typeof setInterval> | null = null;
@@ -376,6 +402,41 @@ function onUnbindEmail() {
     },
   });
 }
+
+function confirmAccountDeletion(): Promise<boolean> {
+  return new Promise((resolve) => {
+    uni.showModal({
+      title: '永久删除账户',
+      content: '所有健康记录、提醒和分享数据将永久删除且无法恢复。确定继续吗？',
+      confirmText: '永久删除',
+      confirmColor: '#c0392b',
+      success: (res) => resolve(res.confirm),
+      fail: () => resolve(false),
+    });
+  });
+}
+
+async function onDeleteAccount() {
+  error.value = '';
+  okMsg.value = '';
+  const password = deletePassword.value;
+  if (!password) {
+    error.value = '请输入当前密码';
+    return;
+  }
+  if (!(await confirmAccountDeletion())) return;
+
+  deleteBusy.value = true;
+  try {
+    await auth.deleteAccount(password);
+    uni.showToast({ title: '账户已删除', icon: 'success' });
+    uni.reLaunch({ url: '/pages/auth/login' });
+  } catch (err) {
+    error.value = getErrorMessage(err, '删除账户失败');
+  } finally {
+    deleteBusy.value = false;
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -515,6 +576,15 @@ function onUnbindEmail() {
 .danger[disabled] {
   color: #a8b5b0;
   border-color: #e5ebe8;
+}
+.danger-zone {
+  border: 1rpx solid #f1c7c2;
+}
+.danger-title {
+  color: #a93226;
+}
+.delete-account {
+  margin-top: 16rpx;
 }
 .error {
   display: block;
