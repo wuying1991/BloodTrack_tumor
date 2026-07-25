@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit real keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+.credentials/
+
+# Build / runtime
+dist/
+coverage/
+*.log
+npm-debug.log*
+.DS_Store
+
+# Local dumps
+uploads/
+tmp/
+temp/

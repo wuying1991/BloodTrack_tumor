@@ -4,6 +4,7 @@ import { BiochemTest } from '../models/BiochemTest';
 import { ChemoCycle } from '../models/ChemoCycle';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { buildDateFilter } from '../utils/dateRange';
 
 // 自动按 date 关联化疗周期（复用 bloodTestController 的逻辑）
 async function autoAssociateCycle(
@@ -29,13 +30,19 @@ export const getBiochemTests = asyncHandler(async (req: AuthRequest, res: Respon
   const pageNum = parseInt(page as string, 10);
   const limitNum = parseInt(limit as string, 10);
   const skip = (pageNum - 1) * limitNum;
+  const filter: Record<string, unknown> = { user: req.user?._id };
+  const date = buildDateFilter(
+    req.query.startDate as string | undefined,
+    req.query.endDate as string | undefined
+  );
+  if (date) filter.date = date;
 
-  const tests = await BiochemTest.find({ user: req.user?._id })
+  const tests = await BiochemTest.find(filter)
     .sort('-date')
     .skip(skip)
     .limit(limitNum);
 
-  const total = await BiochemTest.countDocuments({ user: req.user?._id });
+  const total = await BiochemTest.countDocuments(filter);
 
   res.json({
     success: true,

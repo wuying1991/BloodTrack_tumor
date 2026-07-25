@@ -7,6 +7,7 @@ import {
 } from '../models/Reminder';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { buildDateFilter } from '../utils/dateRange';
 
 /**
  * 把当前的 dueDate 推到下一个周期。
@@ -46,6 +47,11 @@ export const getReminders = asyncHandler(
     else if (status === 'completed') filter.completed = true;
 
     if (typeof type === 'string') filter.type = type;
+    const dueDate = buildDateFilter(
+      req.query.startDate as string | undefined,
+      req.query.endDate as string | undefined
+    );
+    if (dueDate) filter.dueDate = dueDate;
 
     const reminders = await Reminder.find(filter).sort('dueDate');
 

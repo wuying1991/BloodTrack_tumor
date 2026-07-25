@@ -260,6 +260,17 @@ describe('BloodTest API 契约测试', () => {
       const errors = validateShape(data, BLOOD_TEST_RESPONSE_SHAPE);
       expect(errors).toEqual([]);
     });
+
+    it('更新 NEU 后重新计算整体异常状态', async () => {
+      const res = await request(app)
+        .put(`/api/blood-tests/${testRecordId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ neu: 1.7 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.neu).toBe(1.7);
+      expect(res.body.data.isAbnormal).toBe(true);
+    });
   });
 
   describe('DELETE /api/blood-tests/:id - 删除血常规记录', () => {

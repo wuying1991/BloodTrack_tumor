@@ -1,0 +1,154 @@
+{
+  "pages": [
+    {
+      "path": "pages/auth/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/auth/register",
+      "style": {
+        "navigationBarTitleText": "注册",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "首页",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/calendar",
+      "style": {
+        "navigationBarTitleText": "记录日历",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/analytics/index",
+      "style": {
+        "navigationBarTitleText": "趋势",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/blood-list",
+      "style": {
+        "navigationBarTitleText": "血常规",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/blood-form",
+      "style": {
+        "navigationBarTitleText": "加一笔 · 血常规",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/biochem-list",
+      "style": {
+        "navigationBarTitleText": "生化检查",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/biochem-form",
+      "style": {
+        "navigationBarTitleText": "加一笔 · 生化",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/cycle-list",
+      "style": {
+        "navigationBarTitleText": "化疗周期",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/cycle-form",
+      "style": {
+        "navigationBarTitleText": "加一笔 · 化疗周期",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/reminder-list",
+      "style": {
+        "navigationBarTitleText": "提醒",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/records/reminder-form",
+      "style": {
+        "navigationBarTitleText": "加一笔 · 提醒",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/settings/profile",
+      "style": {
+        "navigationBarTitleText": "个人资料",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    },
+    {
+      "path": "pages/settings/account",
+      "style": {
+        "navigationBarTitleText": "账号与安全",
+        "navigationBarBackgroundColor": "#F3F6F5"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "BloodTrack",
+    "navigationBarBackgroundColor": "#F3F6F5",
+    "backgroundColor": "#F3F6F5"
+  },
+  "tabBar": {
+    "color": "#8a9a94",
+    "selectedColor": "#1f8a68",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "static/tab/home.png",
+        "selectedIconPath": "static/tab/home-active.png"
+      },
+      {
+        "pagePath": "pages/records/calendar",
+        "text": "日历",
+        "iconPath": "static/tab/records.png",
+        "selectedIconPath": "static/tab/records-active.png"
+      },
+      {
+        "pagePath": "pages/analytics/index",
+        "text": "趋势",
+        "iconPath": "static/tab/trend.png",
+        "selectedIconPath": "static/tab/trend-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tab/mine.png",
+        "selectedIconPath": "static/tab/mine-active.png"
+      }
+    ]
+  }
+}

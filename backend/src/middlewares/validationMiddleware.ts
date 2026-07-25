@@ -91,18 +91,174 @@ export const validateRegister = runValidation([
   gender: 'VALIDATION_ENUM',
 });
 
-// User login validation
+// User login validation: email OR phone OR account + password
 export const validateLogin = runValidation([
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('请输入有效的邮箱地址 (Please enter a valid email)'),
   body('password')
     .notEmpty()
     .withMessage('请输入密码 (Password is required)'),
+  body().custom((_, { req }) => {
+    const email = req.body?.email;
+    const phone = req.body?.phone;
+    const account = req.body?.account;
+    if (!email && !phone && !account) {
+      throw new Error('请输入邮箱或手机号');
+    }
+    if (email) {
+      // lightweight format check; normalizeEmail not applied in custom
+      if (typeof email !== 'string' || !email.includes('@')) {
+        throw new Error('请输入有效的邮箱地址');
+      }
+    }
+    return true;
+  }),
+  body('email')
+    .optional({ nullable: true })
+    .isEmail()
+    .withMessage('请输入有效的邮箱地址 (Please enter a valid email)'),
+], {
+  password: 'VALIDATION_PASSWORD_REQUIRED',
+  email: 'VALIDATION_EMAIL_FORMAT',
+});
+
+export const validateBindPhone = runValidation([
+  body('phone')
+    .notEmpty()
+    .withMessage('请输入手机号')
+    .custom((value) => {
+      const digits = String(value || '').replace(/\D/g, '');
+      const local =
+        digits.length === 13 && digits.startsWith('86')
+          ? digits.slice(2)
+          : digits;
+      if (!/^1\d{10}$/.test(local)) {
+        throw new Error('请输入有效的中国大陆手机号');
+      }
+      return true;
+    }),
+  body('code')
+    .notEmpty()
+    .withMessage('请输入验证码')
+    .matches(/^\d{4,8}$/)
+    .withMessage('验证码格式不正确'),
+  body('currentPassword').optional().isString(),
+  body('currentPhoneCode')
+    .optional()
+    .matches(/^\d{4,8}$/)
+    .withMessage('原手机验证码格式不正确'),
+], {
+  phone: 'INVALID_PHONE',
+  code: 'INVALID_CODE',
+});
+
+export const validateUnbindPhone = runValidation([
+  body('password').optional().isString(),
+  body('code')
+    .optional()
+    .matches(/^\d{4,8}$/)
+    .withMessage('验证码格式不正确'),
+  body().custom((_, { req }) => {
+    if (!req.body?.password && !req.body?.code) {
+      throw new Error('请提供密码或手机验证码以确认解绑');
+    }
+    return true;
+  }),
+], {
+  password: 'VALIDATION_PASSWORD_REQUIRED',
+  code: 'INVALID_CODE',
+});
+
+export const validateBindEmail = runValidation([
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('请输入有效的邮箱地址'),
+  body('password')
+    .optional()
+    .isString(),
+  body('currentPassword')
+    .optional()
+    .isString(),
 ], {
   email: 'VALIDATION_EMAIL_FORMAT',
+});
+
+export const validateUnbindEmail = runValidation([
+  body('password')
+    .notEmpty()
+    .withMessage('请输入密码以确认解绑'),
+], {
   password: 'VALIDATION_PASSWORD_REQUIRED',
+});
+
+export const validateSetPassword = runValidation([
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('密码至少需要6个字符')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('密码必须包含大小写字母和数字'),
+  body('confirmPassword')
+    .notEmpty()
+    .withMessage('请确认密码'),
+], {
+  password: 'VALIDATION_PASSWORD_STRENGTH',
+  confirmPassword: 'VALIDATION_FIELD_REQUIRED',
+});
+
+// Phone SMS send
+export const validateSmsSend = runValidation([
+  body('phone')
+    .notEmpty()
+    .withMessage('请输入手机号')
+    .custom((value) => {
+      const digits = String(value || '').replace(/\D/g, '');
+      const local =
+        digits.length === 13 && digits.startsWith('86')
+          ? digits.slice(2)
+          : digits;
+      if (!/^1\d{10}$/.test(local)) {
+        throw new Error('请输入有效的中国大陆手机号');
+      }
+      return true;
+    }),
+  body('purpose')
+    .optional()
+    .isIn(['login', 'bind'])
+    .withMessage('purpose 无效'),
+], {
+  phone: 'INVALID_PHONE',
+  purpose: 'VALIDATION_INVALID',
+});
+
+// Phone SMS login
+export const validateSmsLogin = runValidation([
+  body('phone')
+    .notEmpty()
+    .withMessage('请输入手机号')
+    .custom((value) => {
+      const digits = String(value || '').replace(/\D/g, '');
+      const local =
+        digits.length === 13 && digits.startsWith('86')
+          ? digits.slice(2)
+          : digits;
+      if (!/^1\d{10}$/.test(local)) {
+        throw new Error('请输入有效的中国大陆手机号');
+      }
+      return true;
+    }),
+  body('code')
+    .notEmpty()
+    .withMessage('请输入验证码')
+    .matches(/^\d{4,8}$/)
+    .withMessage('验证码格式不正确'),
+  body('fullName')
+    .optional()
+    .isString()
+    .isLength({ max: 50 })
+    .withMessage('姓名不能超过50个字符'),
+], {
+  phone: 'INVALID_PHONE',
+  code: 'INVALID_CODE',
+  fullName: 'VALIDATION_NAME_LENGTH',
 });
 
 // Password reset request validation
@@ -170,6 +326,10 @@ export const validateBloodTest = runValidation([
     .optional()
     .isFloat({ min: 0 })
     .withMessage('淋巴细胞计数必须为正数 (Lymphocytes must be a positive number)'),
+  body('crp')
+    .optional({ nullable: true, checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('C反应蛋白必须为非负数 (CRP must be a non-negative number)'),
   body('notes')
     .optional()
     .isString()
@@ -191,6 +351,7 @@ export const validateBloodTest = runValidation([
   plt: 'VALIDATION_NUMBER_POSITIVE',
   neu: 'VALIDATION_NUMBER_POSITIVE',
   lym: 'VALIDATION_NUMBER_POSITIVE',
+  crp: 'VALIDATION_NUMBER_POSITIVE',
   notes: 'VALIDATION_TEXT',
   chemoCycleId: 'VALIDATION_CHEMO_CYCLE_ID',
 });
@@ -225,6 +386,10 @@ export const validateBloodTestUpdate = runValidation([
     .optional()
     .isFloat({ min: 0 })
     .withMessage('淋巴细胞计数必须为正数 (Lymphocytes must be a positive number)'),
+  body('crp')
+    .optional({ nullable: true, checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('C反应蛋白必须为非负数 (CRP must be a non-negative number)'),
   body('notes')
     .optional()
     .isString()
@@ -265,6 +430,27 @@ export const validatePagination = runValidation([
 ], {
   page: 'VALIDATION_PAGE',
   limit: 'VALIDATION_LIMIT',
+});
+
+export const validateDateRangeQuery = runValidation([
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('开始日期格式无效 (Invalid start date)'),
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('结束日期格式无效 (Invalid end date)')
+    .custom((endDate, { req }) => {
+      const startDate = req.query?.startDate;
+      if (startDate && new Date(startDate as string) > new Date(endDate)) {
+        throw new Error('开始日期不能晚于结束日期 (Start date must not be after end date)');
+      }
+      return true;
+    }),
+], {
+  startDate: 'VALIDATION_DATE_FORMAT',
+  endDate: 'VALIDATION_DATE_RANGE',
 });
 
 // ID parameter validation

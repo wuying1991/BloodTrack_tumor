@@ -2,8 +2,9 @@ import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
-  email: string;
-  passwordHash: string;
+  email?: string;
+  phone?: string;
+  passwordHash?: string;
   fullName: string;
   dateOfBirth: Date;
   gender: string;
@@ -20,8 +21,22 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true, trim: true, lowercase: true },
-    passwordHash: { type: String, required: true },
+    // Sparse unique: email-only or phone-only accounts are allowed.
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+    },
+    phone: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+    // Optional for phone OTP-only accounts.
+    passwordHash: { type: String, required: false },
     fullName: { type: String, required: true, trim: true },
     dateOfBirth: { type: Date },
     gender: { type: String },
@@ -31,20 +46,24 @@ const userSchema = new Schema<IUser>(
     settings: {
       notifications: {
         email: { type: Boolean, default: true },
-        push: { type: Boolean, default: true }
+        push: { type: Boolean, default: true },
       },
       dataSharing: {
         enabled: { type: Boolean, default: false },
-        sharedWith: [{ type: String }]
+        sharedWith: [{ type: String }],
       },
-      language: { type: String, enum: ['zh-CN', 'en-US'], default: 'zh-CN' }
-    }
+      language: { type: String, enum: ['zh-CN', 'en-US'], default: 'zh-CN' },
+    },
   },
   { timestamps: true }
 );
 
-userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+userSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
+  if (!this.passwordHash) return false;
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 
+// Application-level: at least one of email or phone must exist (enforced in controllers).
 export const User = mongoose.model<IUser>('User', userSchema);

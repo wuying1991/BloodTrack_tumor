@@ -73,8 +73,8 @@ class AuthService {
   /**
    * Logout user (invalidate tokens on server)
    */
-  async logout(): Promise<LogoutResponse> {
-    return apiClient.post<LogoutResponse>('/auth/logout', {});
+  async logout(refreshToken: string): Promise<LogoutResponse> {
+    return apiClient.post<LogoutResponse>('/auth/logout', { refreshToken });
   }
 
   async forgotPassword(

@@ -29,7 +29,7 @@ export const getTrends = asyncHandler(async (req: AuthRequest, res: Response): P
 
   const tests = await BloodTest.find({ user: req.user?._id, ...dateFilter })
     .sort('date')
-    .select('date wbc rbc hgb plt neu lym isAbnormal')
+    .select('date wbc rbc hgb plt neu lym crp isAbnormal')
     .lean();
 
   const trends = tests.map(t => ({
@@ -40,6 +40,7 @@ export const getTrends = asyncHandler(async (req: AuthRequest, res: Response): P
     plt: t.plt,
     neu: t.neu,
     lym: t.lym,
+    crp: t.crp,
     isAbnormal: t.isAbnormal,
   }));
 
@@ -56,15 +57,24 @@ export const getBiochemTrends = asyncHandler(async (req: AuthRequest, res: Respo
     .sort('date')
     .lean();
 
+  // 返回与 contracts/录入一致的完整指标，供前端按肝/肾/电解质拆分趋势
   const trends = tests.map(t => ({
     date: (t as any).date.toISOString().split('T')[0],
     alt: t.alt,
     ast: t.ast,
+    ahr: t.ahr,
     tbil: t.tbil,
     dbil: t.dbil,
+    ibil: t.ibil,
+    tp: t.tp,
     alb: t.alb,
+    glo: t.glo,
+    ag: t.ag,
     ggt: t.ggt,
     alp: t.alp,
+    che: t.che,
+    tba: t.tba,
+    pa: t.pa,
     bun: t.bun,
     cr: t.cr,
     ua: t.ua,
@@ -73,6 +83,7 @@ export const getBiochemTrends = asyncHandler(async (req: AuthRequest, res: Respo
     na: t.na,
     cl: t.cl,
     ca: t.ca,
+    p: t.p,
     ldh: t.ldh,
     isAbnormal: t.isAbnormal,
   }));

@@ -3,6 +3,7 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { ChemoCycle, IChemoCycle, IMedication } from '../models/ChemoCycle';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { buildOverlapFilter } from '../utils/dateRange';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_CYCLE_DAYS = 21;
@@ -90,13 +91,20 @@ export const getChemoCycles = asyncHandler(async (req: AuthRequest, res: Respons
   const pageNum = parseInt(page as string, 10);
   const limitNum = parseInt(limit as string, 10);
   const skip = (pageNum - 1) * limitNum;
+  const filter = {
+    user: req.user?._id,
+    ...buildOverlapFilter(
+      req.query.startDate as string | undefined,
+      req.query.endDate as string | undefined
+    ),
+  };
 
-  const cycles = await ChemoCycle.find({ user: req.user?._id })
+  const cycles = await ChemoCycle.find(filter)
     .sort('-startDate')
     .skip(skip)
     .limit(limitNum);
 
-  const total = await ChemoCycle.countDocuments({ user: req.user?._id });
+  const total = await ChemoCycle.countDocuments(filter);
 
   res.json({
     success: true,
