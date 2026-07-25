@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { collectAllPages } from '../pagination';
+import { appendUniqueById, collectAllPages } from '../pagination';
 
 describe('collectAllPages', () => {
   test('concatenates every server page', async () => {
@@ -24,5 +24,19 @@ describe('collectAllPages', () => {
 
     await expect(collectAllPages(fetcher)).resolves.toEqual(['only']);
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('appendUniqueById', () => {
+  test('keeps existing order and appends only unseen records', () => {
+    expect(
+      appendUniqueById(
+        [{ _id: 'a', value: 1 }],
+        [{ _id: 'a', value: 9 }, { _id: 'b', value: 2 }]
+      )
+    ).toEqual([
+      { _id: 'a', value: 1 },
+      { _id: 'b', value: 2 },
+    ]);
   });
 });

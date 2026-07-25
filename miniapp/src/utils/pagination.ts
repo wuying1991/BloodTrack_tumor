@@ -19,3 +19,18 @@ export async function collectAllPages<T>(
     page += 1;
   }
 }
+
+export function appendUniqueById<T extends { _id: string }>(
+  current: T[],
+  incoming: T[]
+): T[] {
+  const seen = new Set(current.map((item) => item._id));
+  return [
+    ...current,
+    ...incoming.filter((item) => {
+      if (seen.has(item._id)) return false;
+      seen.add(item._id);
+      return true;
+    }),
+  ];
+}
