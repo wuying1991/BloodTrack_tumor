@@ -26,7 +26,7 @@
             </button>
           </view>
         </view>
-        <view v-if="devCode" class="dev-banner">
+        <view v-if="isDevelopment && devCode" class="dev-banner">
           <text class="dev-code" @click="smsCode = devCode">{{ devCode }}（点此填入）</text>
         </view>
         <text class="hint-line">注册后可在「账号与安全」设置密码、绑定邮箱</text>
@@ -71,9 +71,12 @@
 import { onUnmounted, ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import * as authApi from '@/api/auth';
+import { IS_DEVELOPMENT } from '@/config/env';
+import { devOnlyValue } from '@/utils/devFeatures';
 import { getErrorMessage } from '@/utils/errorMessage';
 
 const auth = useAuthStore();
+const isDevelopment = IS_DEVELOPMENT;
 const mode = ref<'phone' | 'email'>('phone');
 const fullName = ref('');
 const phone = ref('');
@@ -120,7 +123,7 @@ async function onSendCode() {
   sending.value = true;
   try {
     const res = await authApi.sendSmsCode(p, 'login');
-    if (res.devCode) devCode.value = res.devCode;
+    devCode.value = devOnlyValue(res.devCode, isDevelopment);
     startCooldown(res.cooldown || 60);
   } catch (err) {
     error.value = getErrorMessage(err, '发送失败');

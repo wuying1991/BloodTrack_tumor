@@ -41,7 +41,11 @@
           {{ cdNew > 0 ? `${cdNew}s` : '获取验证码' }}
         </button>
       </view>
-      <view v-if="devNew" class="dev" @click="phoneCode = devNew">Mock：{{ devNew }}</view>
+      <view
+        v-if="isDevelopment && devNew"
+        class="dev"
+        @click="phoneCode = devNew"
+      >Mock：{{ devNew }}</view>
       <view v-if="auth.user?.phone && isPhoneRebind" class="rebind-box">
         <text class="hint">换绑需验证：密码 或 原号验证码</text>
         <input v-if="auth.user?.hasPassword" class="input" password v-model="proofPassword" placeholder="当前密码（可选）" />
@@ -51,7 +55,11 @@
             {{ cdOld > 0 ? `${cdOld}s` : '原号发码' }}
           </button>
         </view>
-        <view v-if="devOld" class="dev" @click="oldPhoneCode = devOld">Mock：{{ devOld }}</view>
+        <view
+          v-if="isDevelopment && devOld"
+          class="dev"
+          @click="oldPhoneCode = devOld"
+        >Mock：{{ devOld }}</view>
       </view>
       <button class="primary" :loading="busy" @click="onBindPhone">
         {{ auth.user?.phone ? (isPhoneRebind ? '换绑手机号' : '确认') : '绑定手机' }}
@@ -117,10 +125,13 @@ import { computed, onUnmounted, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useAuthStore } from '@/stores/auth';
 import * as authApi from '@/api/auth';
+import { IS_DEVELOPMENT } from '@/config/env';
+import { devOnlyValue } from '@/utils/devFeatures';
 import { getErrorMessage } from '@/utils/errorMessage';
 import { getAccessToken } from '@/utils/storage';
 
 const auth = useAuthStore();
+const isDevelopment = IS_DEVELOPMENT;
 const methods = computed(
   () =>
     auth.user?.methods || {
@@ -229,7 +240,7 @@ async function sendNewPhoneCode() {
   sendingNew.value = true;
   try {
     const res = await authApi.sendSmsCode(p, 'bind');
-    if (res.devCode) devNew.value = res.devCode;
+    devNew.value = devOnlyValue(res.devCode, isDevelopment);
     startCd('new', res.cooldown || 60);
   } catch (err) {
     error.value = getErrorMessage(err);
@@ -246,7 +257,7 @@ async function sendOldPhoneCode() {
   sendingOld.value = true;
   try {
     const res = await authApi.sendSmsCode(p, 'bind');
-    if (res.devCode) devOld.value = res.devCode;
+    devOld.value = devOnlyValue(res.devCode, isDevelopment);
     startCd('old', res.cooldown || 60);
   } catch (err) {
     error.value = getErrorMessage(err);

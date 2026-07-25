@@ -51,6 +51,7 @@
           相册
         </button>
         <button
+          v-if="showMockDemo"
           class="scan-btn demo-btn"
           size="mini"
           :loading="parsing"
@@ -187,6 +188,7 @@ import { computed, reactive, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import * as bloodApi from '@/api/bloodTest';
 import * as labReportApi from '@/api/labReport';
+import { IS_DEVELOPMENT } from '@/config/env';
 import {
   BLOOD_METRICS,
   getMetricStatus,
@@ -204,6 +206,7 @@ import {
   todayDateInput,
 } from '@/utils/formatDate';
 import { getErrorMessage } from '@/utils/errorMessage';
+import { isDevFeatureEnabled } from '@/utils/devFeatures';
 import { getAccessToken } from '@/utils/storage';
 
 const METRIC_KEYS: MetricRange['key'][] = [
@@ -236,6 +239,7 @@ const allowProviderOverride = ref(false);
 const providerOptions = ref<LabReportProviderInfo[]>([]);
 const selectedProvider = ref('mock');
 const serverPrimary = ref('mock');
+const showMockDemo = isDevFeatureEnabled(IS_DEVELOPMENT);
 
 const providerHint = computed(() => {
   const p = providerOptions.value.find((x) => x.id === selectedProvider.value);
