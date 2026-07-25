@@ -7,9 +7,21 @@
  * Override in `.env.development`:
  *   VITE_API_BASE_URL=http://127.0.0.1:5001/api
  */
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL as string | undefined;
+
+if (
+  import.meta.env.PROD &&
+  (!configuredApiBase ||
+    !configuredApiBase.startsWith('https://') ||
+    /https:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(?=[:/]|$)/i.test(configuredApiBase))
+) {
+  throw new Error('生产环境 API 配置无效');
+}
+
 export const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  'http://127.0.0.1:5001/api';
+  configuredApiBase || 'http://127.0.0.1:5001/api';
+
+export const IS_DEVELOPMENT = import.meta.env.DEV;
 
 export const REQUEST_TIMEOUT_MS = 15000;
 

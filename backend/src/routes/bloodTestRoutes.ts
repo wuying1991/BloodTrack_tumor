@@ -8,7 +8,7 @@ import {
   exportBloodTests,
 } from '../controllers/bloodTestController';
 import { protect } from '../middlewares/authMiddleware';
-import { validateBloodTest, validateBloodTestUpdate, validatePagination, validateId } from '../middlewares/validationMiddleware';
+import { validateBloodTest, validateBloodTestUpdate, validatePagination, validateDateRangeQuery, validateId } from '../middlewares/validationMiddleware';
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ const router = express.Router();
 router.use(protect);
 
 router.route('/')
-  .get(validatePagination, getBloodTests)
+  .get(validatePagination, validateDateRangeQuery, getBloodTests)
   .post(validateBloodTest, createBloodTest);
 
 // 必须在 /:id 之前，否则会被 mongoId 校验拦截

@@ -6,6 +6,7 @@ import { ChemoCycle } from '../models/ChemoCycle';
 import { Reminder } from '../models/Reminder';
 import { Share } from '../models/Share';
 import { AuditLog } from '../models/AuditLog';
+import { RefreshSession } from '../models/RefreshSession';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -13,7 +14,6 @@ import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
 import { recordAuditEvent } from '../utils/auditLogger';
 import { AuthRequest } from '../middlewares/authMiddleware';
-import { secrets } from '../config/secrets';
 import {
   maskPhone,
   normalizePhone,
@@ -28,10 +28,11 @@ import {
   profilePayload,
   resolvePasswordLoginLookup,
 } from '../utils/authIdentity';
-
-// Token configurations
-const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes
-const REFRESH_TOKEN_EXPIRES_IN = '7d'; // 7 days
+import {
+  issueTokenPair,
+  revokeRefreshToken,
+  rotateRefreshToken,
+} from '../services/auth/refreshSessionService';
 
 const authUserPayload = (user: {
   _id: { toString(): string };
@@ -50,30 +51,6 @@ const authUserPayload = (user: {
     settings: user.settings,
     hasPassword: identity.hasPassword,
     methods: identity.methods,
-  };
-};
-
-/**
- * Generate access token
- */
-const generateAccessToken = (id: string): string => {
-  return jwt.sign({ id, type: 'access' }, secrets.jwt, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
-};
-
-/**
- * Generate refresh token
- */
-const generateRefreshToken = (id: string): string => {
-  return jwt.sign({ id, type: 'refresh' }, secrets.jwtRefresh, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
-};
-
-/**
- * Generate token pair (access + refresh)
- */
-const generateTokenPair = (id: string) => {
-  return {
-    accessToken: generateAccessToken(id),
-    refreshToken: generateRefreshToken(id),
   };
 };
 
@@ -115,7 +92,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response): Pr
   await recordAuditEvent({ user: user._id, action: 'register', success: true, req });
 
   // Generate tokens
-  const tokens = generateTokenPair(user._id.toString());
+  const tokens = await issueTokenPair(user._id.toString());
 
   res.status(201).json({
     success: true,
@@ -210,7 +187,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response): Promi
     anomalyType: isNewIp ? 'new_ip' : undefined,
   });
 
-  const tokens = generateTokenPair(user._id.toString());
+  const tokens = await issueTokenPair(user._id.toString());
 
   res.json({
     success: true,
@@ -321,7 +298,7 @@ export const loginWithSms = asyncHandler(async (req: Request, res: Response): Pr
     anomalyType: isNewIp ? 'new_ip' : undefined,
   });
 
-  const tokens = generateTokenPair(user._id.toString());
+  const tokens = await issueTokenPair(user._id.toString());
 
   res.status(isNew ? 201 : 200).json({
     success: true,
@@ -343,26 +320,16 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response): Pr
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, secrets.jwtRefresh) as { id: string; type: string };
-
-    if (decoded.type !== 'refresh') {
+    const rotated = await rotateRefreshToken(refreshToken);
+    if (!rotated) {
       throw ApiError.unauthorized('无效的刷新令牌 (Invalid refresh token)', 'AUTH_INVALID_REFRESH_TOKEN');
     }
 
-    // Check if user still exists
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      throw ApiError.unauthorized('用户不存在 (User not found)', 'AUTH_USER_NOT_FOUND');
-    }
-
-    // Generate new token pair
-    const tokens = generateTokenPair(user._id.toString());
-
-    await recordAuditEvent({ user: user._id, action: 'refresh_token', success: true, req });
+    await recordAuditEvent({ user: rotated.user._id, action: 'refresh_token', success: true, req });
 
     res.json({
       success: true,
-      data: tokens,
+      data: rotated.tokens,
     });
   } catch (error) {
     await recordAuditEvent({ user: null, action: 'refresh_token', success: false, req });
@@ -375,9 +342,10 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response): Pr
 
 // @desc    Logout user / Invalidate tokens
 // @route   POST /api/auth/logout
-// @access  Private
-export const logoutUser = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  await recordAuditEvent({ user: req.user?._id, action: 'logout', success: true, req });
+// @access  Public (the refresh token identifies the current device session)
+export const logoutUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const userId = await revokeRefreshToken(req.body?.refreshToken);
+  await recordAuditEvent({ user: userId, action: 'logout', success: true, req });
   res.json({
     success: true,
     message: '已成功登出 (Logged out successfully)',
@@ -945,6 +913,7 @@ export const deleteAccount = asyncHandler(
       Reminder.deleteMany({ user: userId }),
       Share.deleteMany({ user: userId }),
       BiochemTest.deleteMany({ user: userId }),
+      RefreshSession.deleteMany({ user: userId }),
     ]);
 
     await user.deleteOne();

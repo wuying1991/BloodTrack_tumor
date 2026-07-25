@@ -8,9 +8,14 @@ import type {
 
 export async function listBloodTests(
   page = 1,
-  limit = 20
+  limit = 20,
+  dateRange?: { startDate?: string; endDate?: string }
 ): Promise<BloodTestListResult> {
-  return http.get<BloodTestListResult>('/blood-tests', { page, limit });
+  return http.get<BloodTestListResult>('/blood-tests', {
+    page,
+    limit,
+    ...dateRange,
+  });
 }
 
 export async function getBloodTest(id: string): Promise<BloodTest> {

@@ -6,8 +6,12 @@ import type {
   RegisterData,
   SmsLoginPayload,
 } from '@/types/auth';
-import { clearTokens, getAccessToken, setTokens } from '@/utils/storage';
-import { ApiError } from '@/types/api';
+import {
+  clearTokens,
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+} from '@/utils/storage';
 
 interface AuthState {
   user: AuthUser | null;
@@ -102,13 +106,12 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       this.loading = true;
+      const refreshToken = getRefreshToken();
       try {
         try {
-          await authApi.logout();
+          await authApi.logout(refreshToken);
         } catch (err) {
-          if (!(err instanceof ApiError && err.statusCode === 401)) {
-            console.warn('logout API failed', err);
-          }
+          console.warn('logout API failed', err);
         }
       } finally {
         clearTokens();

@@ -7,14 +7,14 @@ import {
   deleteChemoCycle,
 } from '../controllers/chemoCycleController';
 import { protect } from '../middlewares/authMiddleware';
-import { validateChemoCycle, validateChemoCycleUpdate, validateId } from '../middlewares/validationMiddleware';
+import { validateChemoCycle, validateChemoCycleUpdate, validatePagination, validateDateRangeQuery, validateId } from '../middlewares/validationMiddleware';
 
 const router = express.Router();
 
 router.use(protect);
 
 router.route('/')
-  .get(getChemoCycles)
+  .get(validatePagination, validateDateRangeQuery, getChemoCycles)
   .post(validateChemoCycle, createChemoCycle);
 
 router.route('/:id')

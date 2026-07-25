@@ -4,6 +4,7 @@ import { BloodTest } from '../models/BloodTest';
 import { ChemoCycle } from '../models/ChemoCycle';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { buildDateFilter } from '../utils/dateRange';
 
 /**
  * 解析请求中的 chemoCycleId：
@@ -47,13 +48,19 @@ export const getBloodTests = asyncHandler(async (req: AuthRequest, res: Response
   const pageNum = parseInt(page as string, 10);
   const limitNum = parseInt(limit as string, 10);
   const skip = (pageNum - 1) * limitNum;
+  const filter: Record<string, unknown> = { user: req.user?._id };
+  const date = buildDateFilter(
+    req.query.startDate as string | undefined,
+    req.query.endDate as string | undefined
+  );
+  if (date) filter.date = date;
 
-  const bloodTests = await BloodTest.find({ user: req.user?._id })
+  const bloodTests = await BloodTest.find(filter)
     .sort(sort as string)
     .skip(skip)
     .limit(limitNum);
 
-  const total = await BloodTest.countDocuments({ user: req.user?._id });
+  const total = await BloodTest.countDocuments(filter);
 
   res.json({
     success: true,
@@ -115,7 +122,19 @@ export const getBloodTestById = asyncHandler(async (req: AuthRequest, res: Respo
 // @route   PUT /api/blood-tests/:id
 // @access  Private
 export const updateBloodTest = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const update: Record<string, unknown> = { ...req.body };
+  const updatedTest = await BloodTest.findOne({
+    _id: req.params.id,
+    user: req.user?._id,
+  });
+
+  if (!updatedTest) {
+    throw ApiError.notFound('记录未找到 (Record not found)', 'BLOOD_TEST_NOT_FOUND');
+  }
+
+  const update: Record<string, unknown> = {};
+  for (const field of ['date', 'wbc', 'rbc', 'hgb', 'plt', 'neu', 'lym', 'crp', 'notes']) {
+    if (field in req.body) update[field] = req.body[field];
+  }
 
   // 如果显式或隐式涉及 cycle 关系（chemoCycleId 字段在 body 中，或日期变了），重算
   const hasCycleField = 'chemoCycleId' in req.body;
@@ -129,15 +148,8 @@ export const updateBloodTest = asyncHandler(async (req: AuthRequest, res: Respon
     }
   }
 
-  const updatedTest = await BloodTest.findOneAndUpdate(
-    { _id: req.params.id, user: req.user?._id },
-    update,
-    { new: true, runValidators: true }
-  );
-
-  if (!updatedTest) {
-    throw ApiError.notFound('记录未找到 (Record not found)', 'BLOOD_TEST_NOT_FOUND');
-  }
+  updatedTest.set(update);
+  await updatedTest.save();
 
   res.json({
     success: true,

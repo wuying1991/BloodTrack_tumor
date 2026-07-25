@@ -26,7 +26,7 @@
             </button>
           </view>
         </view>
-        <view v-if="devCode" class="dev-banner">
+        <view v-if="isDevelopment && devCode" class="dev-banner">
           <text class="dev-title">本地 Mock 验证码</text>
           <text class="dev-code" @click="smsCode = devCode">{{ devCode }}（点此填入）</text>
         </view>
@@ -58,7 +58,7 @@
       </view>
     </view>
 
-    <view class="hint">
+    <view v-if="isDevelopment" class="hint">
       <text class="hint-text">API：{{ apiBase }}</text>
       <text class="hint-text">代理绕过 127.0.0.1；后端推荐 PORT=5001</text>
     </view>
@@ -71,7 +71,7 @@ import { onShow } from '@dcloudio/uni-app';
 import { useAuthStore } from '@/stores/auth';
 import * as authApi from '@/api/auth';
 import { getErrorMessage } from '@/utils/errorMessage';
-import { API_BASE_URL } from '@/config/env';
+import { API_BASE_URL, IS_DEVELOPMENT } from '@/config/env';
 import { getAccessToken } from '@/utils/storage';
 
 const auth = useAuthStore();
@@ -86,6 +86,7 @@ const loading = ref(false);
 const sending = ref(false);
 const cooldown = ref(0);
 const apiBase = API_BASE_URL;
+const isDevelopment = IS_DEVELOPMENT;
 let cooldownTimer: ReturnType<typeof setInterval> | null = null;
 
 onShow(() => {
@@ -126,7 +127,7 @@ async function onSendCode() {
   sending.value = true;
   try {
     const res = await authApi.sendSmsCode(p, 'login');
-    if (res.devCode) devCode.value = res.devCode;
+    if (isDevelopment && res.devCode) devCode.value = res.devCode;
     startCooldown(res.cooldown || 60);
     uni.showToast({ title: '验证码已发送', icon: 'none' });
   } catch (err) {

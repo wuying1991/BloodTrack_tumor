@@ -12,6 +12,7 @@ import { protect } from '../middlewares/authMiddleware';
 import {
   validateReminderCreate,
   validateReminderUpdate,
+  validateDateRangeQuery,
   validateId,
 } from '../middlewares/validationMiddleware';
 
@@ -23,7 +24,7 @@ router.use(protect);
 router.get('/upcoming', getUpcomingReminders);
 
 router.route('/')
-  .get(getReminders)
+  .get(validateDateRangeQuery, getReminders)
   .post(validateReminderCreate, createReminder);
 
 router.patch('/:id/complete', validateId, completeReminder);

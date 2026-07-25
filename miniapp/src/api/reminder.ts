@@ -11,12 +11,16 @@ import type {
 export async function listReminders(params?: {
   status?: ReminderStatusFilter;
   type?: ReminderType;
+  startDate?: string;
+  endDate?: string;
 }): Promise<ReminderListResult> {
   const query: Record<string, string> = {};
   if (params?.status && params.status !== 'all') {
     query.status = params.status;
   }
   if (params?.type) query.type = params.type;
+  if (params?.startDate) query.startDate = params.startDate;
+  if (params?.endDate) query.endDate = params.endDate;
   return http.get<ReminderListResult>('/reminders', query);
 }
 

@@ -432,6 +432,27 @@ export const validatePagination = runValidation([
   limit: 'VALIDATION_LIMIT',
 });
 
+export const validateDateRangeQuery = runValidation([
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('开始日期格式无效 (Invalid start date)'),
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('结束日期格式无效 (Invalid end date)')
+    .custom((endDate, { req }) => {
+      const startDate = req.query?.startDate;
+      if (startDate && new Date(startDate as string) > new Date(endDate)) {
+        throw new Error('开始日期不能晚于结束日期 (Start date must not be after end date)');
+      }
+      return true;
+    }),
+], {
+  startDate: 'VALIDATION_DATE_FORMAT',
+  endDate: 'VALIDATION_DATE_RANGE',
+});
+
 // ID parameter validation
 export const validateId = runValidation([
   param('id')

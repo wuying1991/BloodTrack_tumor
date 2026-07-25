@@ -33,6 +33,16 @@ export function shiftMonth(
   return { year: d.getFullYear(), monthIndex: d.getMonth() };
 }
 
+export function monthIsoRange(
+  year: number,
+  monthIndex: number
+): { startDate: string; endDate: string } {
+  return {
+    startDate: new Date(year, monthIndex, 1, 0, 0, 0, 0).toISOString(),
+    endDate: new Date(year, monthIndex + 1, 0, 23, 59, 59, 999).toISOString(),
+  };
+}
+
 export interface CalendarCell {
   key: string;
   day: number;

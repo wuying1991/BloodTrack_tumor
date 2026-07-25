@@ -106,6 +106,19 @@ npm run dev:mp-weixin
 npm run dev:h5
 ```
 
+## 生产构建
+
+复制 `.env.production.example` 为 `.env.production`，填写真实的 HTTPS API
+地址和微信小程序 AppID，然后运行：
+
+```bash
+npm run build:mp-weixin:production
+```
+
+生产构建会在编译前拒绝缺失、HTTP、localhost API 或无效 AppID，并在产物
+`project.config.json` 中写入 AppID、启用合法域名校验。开发构建仍使用
+`npm run build:mp-weixin`。
+
 ## 本切片验收路径
 
 ### 统一账号互通（Mock 短信）
@@ -164,4 +177,3 @@ SMS_FIXED_CODE=123456 SMS_PROVIDER=fixed PORT=5001 npm run dev
 1. 生化 / 化疗周期 / 提醒  
 2. 日历、趋势  
 3. 手机号绑定邮箱 / 真实短信 Provider（上线前）  
-

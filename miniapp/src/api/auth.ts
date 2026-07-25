@@ -54,8 +54,12 @@ export async function loginWithSms(
   return res.data;
 }
 
-export async function logout(): Promise<void> {
-  await http.post<{ success: boolean; message?: string }>('/auth/logout', {});
+export async function logout(refreshToken: string): Promise<void> {
+  await http.post<{ success: boolean; message?: string }>(
+    '/auth/logout',
+    { refreshToken },
+    true
+  );
 }
 
 export async function getProfile(): Promise<AuthUser> {

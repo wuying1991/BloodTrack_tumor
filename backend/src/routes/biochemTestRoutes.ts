@@ -12,6 +12,7 @@ import {
   validateBiochemTest,
   validateBiochemTestUpdate,
   validatePagination,
+  validateDateRangeQuery,
   validateId,
 } from '../middlewares/validationMiddleware';
 
@@ -23,7 +24,7 @@ router.use(protect);
 router.get('/export', exportBiochemTests);
 
 router.route('/')
-  .get(validatePagination, getBiochemTests)
+  .get(validatePagination, validateDateRangeQuery, getBiochemTests)
   .post(validateBiochemTest, createBiochemTest);
 
 router.route('/:id')

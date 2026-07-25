@@ -1,4 +1,8 @@
-import { API_BASE_URL, REQUEST_TIMEOUT_MS } from '@/config/env';
+import {
+  API_BASE_URL,
+  IS_DEVELOPMENT,
+  REQUEST_TIMEOUT_MS,
+} from '@/config/env';
 import { ApiError, type ApiFailureBody } from '@/types/api';
 import {
   clearTokens,
@@ -88,10 +92,11 @@ function rawRequest(options: RequestOptions): Promise<UniRequestSuccess> {
       },
       fail: (err) => {
         const msg = err.errMsg || '';
-        const hint =
-          msg.includes('fail') || msg.includes('timeout')
+        const hint = IS_DEVELOPMENT
+          ? msg.includes('fail') || msg.includes('timeout')
             ? '网络异常：请确认后端已启动，且代理已绕过 127.0.0.1（见 miniapp/README）'
-            : msg || '网络异常，请检查后端是否已启动';
+            : msg || '网络异常，请检查后端是否已启动'
+          : '网络连接失败，请稍后重试';
         reject(new ApiError(0, hint));
       },
     });

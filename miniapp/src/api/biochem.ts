@@ -8,9 +8,14 @@ import type {
 
 export async function listBiochemTests(
   page = 1,
-  limit = 20
+  limit = 20,
+  dateRange?: { startDate?: string; endDate?: string }
 ): Promise<BiochemListResult> {
-  return http.get<BiochemListResult>('/biochem-tests', { page, limit });
+  return http.get<BiochemListResult>('/biochem-tests', {
+    page,
+    limit,
+    ...dateRange,
+  });
 }
 
 export async function createBiochemTest(

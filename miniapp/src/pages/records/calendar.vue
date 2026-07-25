@@ -107,6 +107,7 @@ import {
   buildMonthGrid,
   eachDateKeyInRange,
   isoToLocalDateKey,
+  monthIsoRange,
   monthLabel,
   shiftMonth,
   toDateKey,
@@ -115,6 +116,7 @@ import { formatDisplayDateTime } from '@/utils/formatDate';
 import { getErrorMessage } from '@/utils/errorMessage';
 import { getAccessToken } from '@/utils/storage';
 import { typeLabel } from '@/constants/reminderOptions';
+import { collectAllPages } from '@/utils/pagination';
 
 type Filter = 'all' | 'blood' | 'biochem' | 'cycle' | 'reminder';
 type Kind = 'blood' | 'biochem' | 'cycle' | 'reminder';
@@ -157,6 +159,7 @@ const filter = ref<Filter>('all');
 const loading = ref(false);
 const error = ref('');
 const dayMap = ref<Record<string, DayBucket>>({});
+let loadSequence = 0;
 
 const monthTitle = computed(() => monthLabel(year.value, monthIndex.value));
 const cells = computed(() => buildMonthGrid(year.value, monthIndex.value));
@@ -291,24 +294,26 @@ function goToday() {
 }
 
 async function loadMonth() {
+  const requestId = ++loadSequence;
+  const y = year.value;
+  const m = monthIndex.value;
+  const dateRange = monthIsoRange(y, m);
   error.value = '';
   loading.value = true;
   try {
-    // Backend validatePagination: limit must be 1–100
-    const [bloodRes, biochemRes, cycleRes, reminderRes] = await Promise.all([
-      bloodApi.listBloodTests(1, 100),
-      biochemApi.listBiochemTests(1, 100),
-      cycleApi.listChemoCycles(1, 100),
-      reminderApi.listReminders({ status: 'all' }),
+    const [bloodTests, biochemTests, cycles, reminderRes] = await Promise.all([
+      collectAllPages((page) => bloodApi.listBloodTests(page, 100, dateRange)),
+      collectAllPages((page) => biochemApi.listBiochemTests(page, 100, dateRange)),
+      collectAllPages((page) => cycleApi.listChemoCycles(page, 100, dateRange)),
+      reminderApi.listReminders({ status: 'all', ...dateRange }),
     ]);
+    if (requestId !== loadSequence) return;
 
     const map: Record<string, DayBucket> = {};
-    const y = year.value;
-    const m = monthIndex.value;
     const monthStart = new Date(y, m, 1);
-    const monthEnd = new Date(y, m + 1, 0, 23, 59, 59);
+    const monthEnd = new Date(y, m + 1, 0, 23, 59, 59, 999);
 
-    for (const b of bloodRes.data || []) {
+    for (const b of bloodTests) {
       const key = isoToLocalDateKey(b.date);
       if (!key) continue;
       const d = new Date(b.date);
@@ -319,7 +324,7 @@ async function loadMonth() {
       if (b.isAbnormal) bucket.hasAbnormal = true;
     }
 
-    for (const b of biochemRes.data || []) {
+    for (const b of biochemTests) {
       const key = isoToLocalDateKey(b.date);
       if (!key) continue;
       const d = new Date(b.date);
@@ -330,7 +335,7 @@ async function loadMonth() {
       if (b.isAbnormal) bucket.hasAbnormal = true;
     }
 
-    for (const c of cycleRes.data || []) {
+    for (const c of cycles) {
       const keys = eachDateKeyInRange(c.startDate, c.endDate);
       for (const key of keys) {
         const [ky, km] = key.split('-').map(Number);
@@ -362,10 +367,11 @@ async function loadMonth() {
       selectedKey.value = toDateKey(new Date(y, m, 1));
     }
   } catch (err) {
+    if (requestId !== loadSequence) return;
     error.value = getErrorMessage(err, '加载月历失败');
     dayMap.value = {};
   } finally {
-    loading.value = false;
+    if (requestId === loadSequence) loading.value = false;
   }
 }
 

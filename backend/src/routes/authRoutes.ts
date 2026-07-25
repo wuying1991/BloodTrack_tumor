@@ -48,6 +48,7 @@ router.post('/login', validateLogin, loginUser);
 router.post('/sms/send', validateSmsSend, sendSmsCode);
 router.post('/sms/login', validateSmsLogin, loginWithSms);
 router.post('/refresh-token', refreshToken);
+router.post('/logout', logoutUser);
 router.post('/forgot-password', validateForgotPassword, forgotPassword);
 router.post('/reset-password', validateResetPassword, resetPassword);
 
@@ -63,7 +64,6 @@ router.put('/profile', protect, validateProfileUpdate, updateProfile);
 router.put('/settings', protect, validateSettingsUpdate, updateSettings);
 router.put('/change-password', protect, validateChangePassword, changePassword);
 router.delete('/account', protect, validateDeleteAccount, deleteAccount);
-router.post('/logout', protect, logoutUser);
 router.get('/audit-logs', protect, getAuditLogs);
 
 export default router;

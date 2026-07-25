@@ -8,9 +8,14 @@ import type {
 
 export async function listChemoCycles(
   page = 1,
-  limit = 20
+  limit = 20,
+  dateRange?: { startDate?: string; endDate?: string }
 ): Promise<ChemoCycleListResult> {
-  return http.get<ChemoCycleListResult>('/chemo-cycles', { page, limit });
+  return http.get<ChemoCycleListResult>('/chemo-cycles', {
+    page,
+    limit,
+    ...dateRange,
+  });
 }
 
 export async function createChemoCycle(

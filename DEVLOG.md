@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-07-25 — 小程序高优先级修复
+
+- 血常规异常判定统一到后端范围常量，补齐 NEU/LYM，并确保更新记录时重新计算。
+- 日历资源支持服务端日期范围过滤；小程序按月份拉取所有分页并用请求序号防止旧请求覆盖新月份。
+- refresh token 改为带 `jti` 的哈希会话、单次轮换和当前设备撤销；退出其他设备不受影响。
+- 新增生产构建配置校验，要求 HTTPS API 与有效微信 AppID，并在产物中启用 `urlCheck`。
+- 验证命令：
+  - `backend: node node_modules/typescript/bin/tsc --noEmit`
+  - `backend: node node_modules/jest/bin/jest.js --runInBand`
+  - `backend: npm run contract:check`
+  - `miniapp: npm test`
+  - `miniapp: npm run type-check`
+  - `miniapp: npm run build:mp-weixin`
+  - `miniapp: npm run build:mp-weixin:production`（缺配置失败；测试配置成功）
+
+---
+
 ## 📊 进度概览
 
 | 维度 | 完成 | 总数 | 占比 |

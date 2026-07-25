@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { isBloodTestAbnormal } from '../constants/bloodRanges';
 
 export interface IBloodTest extends Document {
   user: mongoose.Types.ObjectId;
@@ -33,27 +34,17 @@ const bloodTestSchema = new Schema<IBloodTest>(
   { timestamps: true }
 );
 
-// Pre-save hook to calculate if abnormal based on standard ranges
+// Keep the persisted summary in sync with the canonical ranges used by the API.
 bloodTestSchema.pre('save', function (next) {
-  // Typical adult normal ranges (can be refined later)
-  // WBC: 4.0 - 10.0 x10^9/L
-  // RBC: 3.5 - 5.8 x10^12/L
-  // HGB: 110 - 165 g/L
-  // PLT: 100 - 300 x10^9/L
-  // CRP: 0 - 10 mg/L (if provided)
-  const isWbcAbnormal = this.wbc < 4.0 || this.wbc > 10.0;
-  const isRbcAbnormal = this.rbc < 3.5 || this.rbc > 5.8;
-  const isHgbAbnormal = this.hgb < 110 || this.hgb > 165;
-  const isPltAbnormal = this.plt < 100 || this.plt > 300;
-  const isCrpAbnormal =
-    this.crp !== undefined && this.crp !== null && (this.crp < 0 || this.crp > 10);
-
-  this.isAbnormal =
-    isWbcAbnormal ||
-    isRbcAbnormal ||
-    isHgbAbnormal ||
-    isPltAbnormal ||
-    isCrpAbnormal;
+  this.isAbnormal = isBloodTestAbnormal({
+    wbc: this.wbc,
+    rbc: this.rbc,
+    hgb: this.hgb,
+    plt: this.plt,
+    neu: this.neu,
+    lym: this.lym,
+    crp: this.crp,
+  });
   next();
 });
 

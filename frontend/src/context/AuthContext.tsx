@@ -73,10 +73,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Perform logout
   const performLogout = useCallback(async () => {
+    const currentRefreshToken = localStorage.getItem('refreshToken');
     try {
       // Call logout API if user is authenticated
-      if (accessToken) {
-        await authService.logout();
+      if (currentRefreshToken) {
+        await authService.logout(currentRefreshToken);
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -91,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('tokenExpiry');
       clearTimers();
     }
-  }, [accessToken, clearTimers]);
+  }, [clearTimers]);
 
   // Update activity timestamp
   const updateActivity = useCallback(() => {

@@ -11,6 +11,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../app';
 import { User } from '../../models/User';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { RefreshSession } from '../../models/RefreshSession';
 
 let mongoServer: MongoMemoryServer;
 
@@ -363,19 +365,82 @@ describe('Auth 全链路集成测试', () => {
   // 场景6: 登出
   // ============================================================
   describe('场景6: 登出', () => {
-    it('POST /api/auth/logout - 成功登出', async () => {
+    it('POST /api/auth/logout - 使用 refresh token 成功登出当前设备', async () => {
       const res = await request(app)
         .post('/api/auth/logout')
-        .set('Authorization', `Bearer ${accessToken}`);
+        .send({ refreshToken });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.message).toBeDefined();
     });
 
-    it('POST /api/auth/logout - 无token返回401', async () => {
-      const res = await request(app).post('/api/auth/logout');
-      expect(res.status).toBe(401);
+    it('POST /api/auth/logout - 缺少或无效 token 也幂等成功', async () => {
+      const missing = await request(app).post('/api/auth/logout').send({});
+      const invalid = await request(app)
+        .post('/api/auth/logout')
+        .send({ refreshToken: 'invalid-token' });
+
+      expect(missing.status).toBe(200);
+      expect(invalid.status).toBe(200);
+    });
+  });
+
+  describe('场景7: 每台设备独立会话与 refresh token 轮换', () => {
+    let deviceA: string;
+    let deviceB: string;
+    let rotatedA: string;
+
+    beforeAll(async () => {
+      const [a, b] = await Promise.all([
+        request(app)
+          .post('/api/auth/login')
+          .send({ email: newUser.email, password: 'Changed888!' }),
+        request(app)
+          .post('/api/auth/login')
+          .send({ email: newUser.email, password: 'Changed888!' }),
+      ]);
+      deviceA = a.body.data.refreshToken;
+      deviceB = b.body.data.refreshToken;
+    });
+
+    it('refresh token 只能成功轮换一次', async () => {
+      const first = await request(app)
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken: deviceA });
+      expect(first.status).toBe(200);
+      rotatedA = first.body.data.refreshToken;
+
+      const replay = await request(app)
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken: deviceA });
+      expect(replay.status).toBe(401);
+    });
+
+    it('数据库只保存 refresh token 哈希', async () => {
+      const decoded = jwt.decode(deviceB) as { jti?: string } | null;
+      const session = await RefreshSession.findOne({ jti: decoded?.jti });
+
+      expect(session).not.toBeNull();
+      expect(session?.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(session?.tokenHash).not.toBe(deviceB);
+    });
+
+    it('退出设备 A 不影响设备 B', async () => {
+      const logout = await request(app)
+        .post('/api/auth/logout')
+        .send({ refreshToken: rotatedA });
+      expect(logout.status).toBe(200);
+
+      const refreshA = await request(app)
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken: rotatedA });
+      expect(refreshA.status).toBe(401);
+
+      const refreshB = await request(app)
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken: deviceB });
+      expect(refreshB.status).toBe(200);
     });
   });
 });
