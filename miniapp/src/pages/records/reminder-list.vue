@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { onShow, onUnload } from '@dcloudio/uni-app';
 import * as reminderApi from '@/api/reminder';
 import type { Reminder, ReminderStatusFilter } from '@/types/reminder';
 import {
@@ -78,6 +78,7 @@ import {
 } from '@/constants/reminderOptions';
 import { formatDisplayDateTime } from '@/utils/formatDate';
 import { getErrorMessage } from '@/utils/errorMessage';
+import { createRequestEpoch } from '@/utils/requestEpoch';
 import { getAccessToken } from '@/utils/storage';
 
 const items = ref<Reminder[]>([]);
@@ -85,6 +86,7 @@ const status = ref<ReminderStatusFilter>('pending');
 const loading = ref(false);
 const refreshing = ref(false);
 const error = ref('');
+const loadEpoch = createRequestEpoch();
 
 const statusFilters: Array<{ value: ReminderStatusFilter; label: string }> = [
   { value: 'pending', label: '待办' },
@@ -93,33 +95,41 @@ const statusFilters: Array<{ value: ReminderStatusFilter; label: string }> = [
 ];
 
 async function reload() {
+  const request = loadEpoch.begin();
+  const requestedStatus = status.value;
+  refreshing.value = false;
   error.value = '';
   loading.value = true;
   try {
-    const res = await reminderApi.listReminders({ status: status.value });
-    items.value = res.data || [];
+    const res = await reminderApi.listReminders({ status: requestedStatus });
+    if (loadEpoch.isCurrent(request)) items.value = res.data || [];
   } catch (err) {
-    error.value = getErrorMessage(err);
+    if (loadEpoch.isCurrent(request)) error.value = getErrorMessage(err);
   } finally {
-    loading.value = false;
+    if (loadEpoch.isCurrent(request)) loading.value = false;
   }
 }
 
 async function onPull() {
+  if (loading.value || refreshing.value) return;
+  const request = loadEpoch.begin();
+  const requestedStatus = status.value;
   refreshing.value = true;
+  error.value = '';
   try {
-    const res = await reminderApi.listReminders({ status: status.value });
-    items.value = res.data || [];
+    const res = await reminderApi.listReminders({ status: requestedStatus });
+    if (loadEpoch.isCurrent(request)) items.value = res.data || [];
   } catch (err) {
-    error.value = getErrorMessage(err);
+    if (loadEpoch.isCurrent(request)) error.value = getErrorMessage(err);
   } finally {
-    refreshing.value = false;
+    if (loadEpoch.isCurrent(request)) refreshing.value = false;
   }
 }
 
-function setStatus(v: ReminderStatusFilter) {
-  status.value = v;
-  reload();
+function setStatus(next: ReminderStatusFilter) {
+  if (status.value === next) return;
+  status.value = next;
+  void reload();
 }
 
 function goAdd() {
@@ -159,8 +169,10 @@ onShow(() => {
     uni.reLaunch({ url: '/pages/auth/login' });
     return;
   }
-  reload();
+  void reload();
 });
+
+onUnload(() => loadEpoch.invalidate());
 </script>
 
 <style scoped lang="scss">

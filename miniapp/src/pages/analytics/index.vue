@@ -111,8 +111,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, ref, watch } from 'vue';
-import { onLoad, onReady, onShow } from '@dcloudio/uni-app';
+import { computed, getCurrentInstance, ref } from 'vue';
+import { onLoad, onReady, onShow, onUnload } from '@dcloudio/uni-app';
 import AppFab from '@/components/AppFab.vue';
 import SimpleLineChart, { type ChartPoint } from '@/components/SimpleLineChart.vue';
 import * as analyticsApi from '@/api/analytics';
@@ -133,6 +133,7 @@ import {
   type TrendPanel,
 } from '@/constants/trendMetrics';
 import { getErrorMessage } from '@/utils/errorMessage';
+import { createRequestEpoch } from '@/utils/requestEpoch';
 import { getAccessToken } from '@/utils/storage';
 
 const panel = ref<TrendPanel>('blood');
@@ -144,6 +145,7 @@ const bloodTrends = ref<BloodTrendPoint[]>([]);
 const biochemTrends = ref<BiochemTrendPoint[]>([]);
 const summary = ref<AnalyticsSummary | null>(null);
 const chartWidth = ref(320);
+const loadEpoch = createRequestEpoch();
 
 const metricDefs = computed((): TrendMetricDef[] => metricsForPanel(panel.value));
 const activeDef = computed(() =>
@@ -191,13 +193,17 @@ function bloodTrendDir(key: string): 'up' | 'down' | 'stable' | undefined {
   return t?.[key];
 }
 
-function setRange(r: AnalyticsRange) {
-  range.value = r;
+function setRange(next: AnalyticsRange) {
+  if (range.value === next) return;
+  range.value = next;
+  void load();
 }
 
-function setPanel(p: TrendPanel) {
-  panel.value = p;
-  metric.value = defaultMetricForPanel(p);
+function setPanel(next: TrendPanel) {
+  if (panel.value === next) return;
+  panel.value = next;
+  metric.value = defaultMetricForPanel(next);
+  void load();
 }
 
 function goAdd() {
@@ -209,28 +215,33 @@ function goAdd() {
 }
 
 async function load() {
+  const request = loadEpoch.begin();
+  const requestedPanel = panel.value;
+  const requestedRange = range.value;
   error.value = '';
   loading.value = true;
   try {
-    if (isBloodPanel(panel.value)) {
+    if (isBloodPanel(requestedPanel)) {
       const [trends, sum] = await Promise.all([
-        analyticsApi.getBloodTrends(range.value),
+        analyticsApi.getBloodTrends(requestedRange),
         analyticsApi.getAnalyticsSummary(),
       ]);
+      if (!loadEpoch.isCurrent(request)) return;
       bloodTrends.value = trends;
       summary.value = sum;
     } else {
-      biochemTrends.value = await analyticsApi.getBiochemTrends(range.value);
+      const trends = await analyticsApi.getBiochemTrends(requestedRange);
+      if (!loadEpoch.isCurrent(request)) return;
+      biochemTrends.value = trends;
     }
   } catch (err) {
-    error.value = getErrorMessage(err, '加载趋势失败');
+    if (loadEpoch.isCurrent(request)) {
+      error.value = getErrorMessage(err, '加载趋势失败');
+    }
   } finally {
-    loading.value = false;
+    if (loadEpoch.isCurrent(request)) loading.value = false;
   }
 }
-
-watch(panel, () => load());
-watch(range, () => load());
 
 onLoad((query) => {
   applyPanelFromQuery(query?.panel as string);
@@ -251,8 +262,10 @@ onShow(() => {
   } catch {
     /* ignore */
   }
-  load();
+  void load();
 });
+
+onUnload(() => loadEpoch.invalidate());
 
 function applyPanelFromQuery(p?: string) {
   if (p && PANEL_OPTIONS.some((x) => x.value === p)) {
