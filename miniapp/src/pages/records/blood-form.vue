@@ -207,6 +207,10 @@ import {
 } from '@/utils/formatDate';
 import { getErrorMessage } from '@/utils/errorMessage';
 import { isDevFeatureEnabled } from '@/utils/devFeatures';
+import {
+  getLocalFileSize,
+  validateLabImageSize,
+} from '@/utils/labImage';
 import { getAccessToken } from '@/utils/storage';
 
 const METRIC_KEYS: MetricRange['key'][] = [
@@ -455,6 +459,11 @@ function onPickImage(source: 'camera' | 'album') {
         return;
       }
       try {
+        const size = await getLocalFileSize(path);
+        if (!validateLabImageSize(size)) {
+          error.value = '图片过大，请压缩或重新拍摄（建议 4.5MB 以内）';
+          return;
+        }
         const base64 = await readFileBase64(path);
         await runParse({
           imageBase64: base64,
